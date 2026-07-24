@@ -1,0 +1,107 @@
+@import 'tailwindcss';
+@import '../ui/tokens/tokens.css';
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    background-color: var(--color-surface-base);
+    color: var(--color-ink-primary);
+    font-family: var(--font-body);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+  }
+
+  /*
+   * Every figure in the app. Tabular figures align the column; the slashed
+   * zero distinguishes 0 from O at 13px, which matters when an engineer reads
+   * a rate aloud to a customer. (DESIGN_SYSTEM.md §3)
+   */
+  .numeric {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums slashed-zero;
+    font-feature-settings: 'tnum' 1, 'zero' 1;
+    text-align: right;
+    letter-spacing: 0;
+  }
+
+  .label {
+    font-size: var(--text-label);
+    line-height: var(--text-label--line-height);
+    letter-spacing: var(--text-label--letter-spacing);
+    text-transform: uppercase;
+    font-weight: 560;
+    color: var(--color-ink-tertiary);
+  }
+
+  /* Focus is always visible and never suppressed. */
+  :focus-visible {
+    outline: 1px solid var(--color-line-focus);
+    outline-offset: 1px;
+    border-radius: var(--radius-sm);
+  }
+
+  ::selection {
+    background: var(--color-copper-wash);
+  }
+
+  /* Scrollbars belong to the instrument, not to the OS. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-line-strong) transparent;
+  }
+}
+
+@layer components {
+  /*
+   * The signature interaction. Height and opacity only, 140ms. No slide, no
+   * scale, no bounce, no stagger. (DESIGN_SYSTEM.md §6)
+   */
+  .expand-region {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    transition:
+      grid-template-rows var(--duration-expand) var(--ease-expand),
+      opacity var(--duration-expand) var(--ease-expand);
+  }
+
+  .expand-region[data-open='true'] {
+    grid-template-rows: 1fr;
+    opacity: 1;
+  }
+
+  .expand-region > * {
+    overflow: hidden;
+  }
+
+  /*
+   * The copper tick. The number does not move, slide, count, or roll — the
+   * wash flashes behind it and fades. (DESIGN_SYSTEM.md §7)
+   */
+  @keyframes copper-tick {
+    from {
+      background-color: var(--color-copper-wash);
+    }
+    to {
+      background-color: transparent;
+    }
+  }
+
+  .copper-tick {
+    animation: copper-tick var(--duration-tick) var(--ease-expand);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .expand-region {
+    transition: none;
+  }
+  .copper-tick {
+    animation: none;
+  }
+}

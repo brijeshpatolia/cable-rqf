@@ -1,0 +1,99 @@
+/*
+ * Design tokens — the single source of every colour, size, and duration in
+ * the app. See docs/DESIGN_SYSTEM.md.
+ *
+ * Nothing in a component may use a raw hex value, a px radius, or a ms
+ * duration. If a value is needed and isn't here, it gets added here first.
+ */
+
+@theme {
+  /* ── Surface ──────────────────────────────────────────────────────── */
+  --color-surface-base: #0e1116;
+  --color-surface-panel: #161a21;
+  --color-surface-raised: #1c212a;
+  --color-surface-hover: rgba(255, 255, 255, 0.03);
+  --color-surface-active: rgba(255, 255, 255, 0.055);
+  --color-surface-selected: rgba(200, 121, 65, 0.07);
+
+  /* ── Line ─────────────────────────────────────────────────────────── */
+  --color-line-hairline: #232833;
+  --color-line-strong: #2e3542;
+  --color-line-focus: #c87941;
+
+  /* ── Ink ──────────────────────────────────────────────────────────── */
+  --color-ink-primary: #e6e8eb;
+  --color-ink-secondary: #8b929c;
+  --color-ink-tertiary: #5a616b;
+  --color-ink-on-copper: #0e1116;
+
+  /* ── Copper — the one colour ──────────────────────────────────────── */
+  --color-copper: #c87941;
+  --color-copper-hover: #d68a55;
+  --color-copper-press: #b66a36;
+  --color-copper-wash: rgba(200, 121, 65, 0.12);
+
+  /* ── Status — match tiers only, never anything else ───────────────── */
+  --color-status-exact: #3fb950;
+  --color-status-review: #d29922;
+  --color-status-manual: #f85149;
+  --color-status-neutral: #5a616b;
+  --color-status-exact-wash: rgba(63, 185, 80, 0.1);
+  --color-status-review-wash: rgba(210, 153, 34, 0.1);
+  --color-status-manual-wash: rgba(248, 81, 73, 0.1);
+
+  /* ── Type ─────────────────────────────────────────────────────────── */
+  --font-display: 'Neue Haas Grotesk Display', 'Inter Display', 'Inter',
+    ui-sans-serif, system-ui, sans-serif;
+  --font-body: 'Söhne', 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Berkeley Mono', 'JetBrains Mono', ui-monospace, 'SF Mono',
+    monospace;
+
+  --text-display-lg: 28px;
+  --text-display-lg--line-height: 32px;
+  --text-display-lg--letter-spacing: -0.02em;
+  --text-display-sm: 20px;
+  --text-display-sm--line-height: 26px;
+  --text-display-sm--letter-spacing: -0.015em;
+  --text-heading: 14px;
+  --text-heading--line-height: 20px;
+  --text-heading--letter-spacing: -0.005em;
+  --text-body: 13.5px;
+  --text-body--line-height: 20px;
+  --text-label: 11px;
+  --text-label--line-height: 14px;
+  --text-label--letter-spacing: 0.08em;
+  --text-numeric: 13px;
+  --text-numeric--line-height: 20px;
+  --text-numeric-lg: 28px;
+  --text-numeric-lg--line-height: 32px;
+  --text-micro: 11px;
+  --text-micro--line-height: 15px;
+
+  /* ── Space — 4px base, every value a multiple ─────────────────────── */
+  --spacing: 4px;
+
+  /* ── Structure ────────────────────────────────────────────────────── */
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 4px;
+
+  /* ── Motion — almost none, and that's deliberate ──────────────────── */
+  --ease-expand: cubic-bezier(0.2, 0, 0, 1);
+  --duration-expand: 140ms;
+  --duration-tick: 600ms;
+}
+
+@layer theme {
+  :root {
+    /* Row heights aren't Tailwind scale values; they're layout constants. */
+    --row-height: 32px;
+    --row-height-comfy: 38px;
+    --cell-pad-x: 12px;
+    --cell-pad-y: 6px;
+    --rail-width: 200px;
+    --drawer-width: 400px;
+
+    /* The only shadow in the app. Popovers must float above content. */
+    --shadow-popover: 0 8px 24px rgba(0, 0, 0, 0.55);
+  }
+}
