@@ -29,9 +29,11 @@ export default async function VocabularyPage() {
     substitutionStore.all(),
   ]);
 
-  const learned = terms.flatMap((t) =>
-    t.synonyms.filter((s) => s.timesSeen > 0).map((s) => ({ ...s, term: t })),
-  );
+  // Every synonym on a learned term. "Taught" counts what the Rate Owner
+  // answered; "seen" counts what customers went on to write.
+  const learned = terms
+    .filter((t) => t.learned)
+    .flatMap((t) => t.synonyms.map((s) => ({ ...s, term: t })));
   const seenThisMonth = learned.filter(
     (s) =>
       s.lastSeenAt !== null &&

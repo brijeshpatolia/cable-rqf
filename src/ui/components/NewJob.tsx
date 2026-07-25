@@ -3,21 +3,29 @@
 import { useActionState } from 'react';
 import type { ActionResult } from '@/app/jobs/actions';
 
+type Action = (p: ActionResult | null, f: FormData) => Promise<ActionResult>;
+
 /**
- * The intake.
+ * The intake — paste, or hand over the file.
  *
- * One textarea, one line per cable. Deliberately plain: until Phase 3 reads
- * the customer's document this is how every enquiry gets in, and the fastest
- * path from an email to a job is paste-and-go.
+ * The textarea comes first and stays plain, because the fastest path from an
+ * email to a job is still paste-and-go and always will be. Uploading is the
+ * same road with a reader in front of it: whatever comes out of a spreadsheet
+ * or a PDF is ordinary RFQ text, which is why nothing downstream had to learn
+ * that documents exist.
  */
 export function NewJob({
   action,
+  uploadAction,
 }: {
-  readonly action: (p: ActionResult | null, f: FormData) => Promise<ActionResult>;
+  readonly action: Action;
+  readonly uploadAction: Action;
 }) {
   const [state, submit, pending] = useActionState(action, {});
+  const [upload, sendFile, uploading] = useActionState(uploadAction, {});
 
   return (
+    <>
     <form action={submit}>
       <textarea
         name="rfq"
@@ -96,5 +104,69 @@ export function NewJob({
         </button>
       </div>
     </form>
+
+    {/*
+      Or hand over the file itself. What comes back is ordinary RFQ text in
+      the box above — extraction ends exactly where paste begins, which is why
+      the review screen never learns a document was involved.
+    */}
+    <form
+      action={sendFile}
+      className="flex flex-wrap items-center gap-3"
+      style={{
+        padding: '10px 16px',
+        borderTop: '1px solid var(--color-line-hairline)',
+      }}
+    >
+      <span
+        style={{ color: 'var(--color-ink-tertiary)', fontSize: 'var(--text-micro)' }}
+      >
+        …or upload the enquiry
+      </span>
+
+      <input
+        type="file"
+        name="document"
+        accept=".xlsx,.xlsm,.xls,.csv,.tsv,.pdf,.txt"
+        required
+        style={{
+          color: 'var(--color-ink-secondary)',
+          fontSize: 'var(--text-micro)',
+          flex: 1,
+          minWidth: 220,
+        }}
+      />
+
+      <button type="submit" disabled={uploading} style={quietButton}>
+        {uploading ? 'Reading the file…' : 'Read it'}
+      </button>
+
+      <span
+        style={{
+          width: '100%',
+          color:
+            upload.error === undefined
+              ? 'var(--color-ink-tertiary)'
+              : 'var(--color-status-manual)',
+          fontSize: 'var(--text-micro)',
+          lineHeight: 'var(--text-micro--line-height)',
+        }}
+        {...(upload.error === undefined ? {} : { role: 'alert' })}
+      >
+        {upload.error ??
+          'Spreadsheets, PDFs and plain text. Scans are not read — a misread digit is a wrong price.'}
+      </span>
+    </form>
+    </>
   );
 }
+
+const quietButton: React.CSSProperties = {
+  border: '1px solid var(--color-line-strong)',
+  borderRadius: 'var(--radius-sm)',
+  color: 'var(--color-ink-primary)',
+  padding: '5px 12px',
+  fontSize: 'var(--text-micro)',
+  minHeight: 'var(--row-height)',
+  whiteSpace: 'nowrap',
+};

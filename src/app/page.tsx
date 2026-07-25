@@ -6,7 +6,7 @@ import { statusLabel } from '@/modules/jobs';
 import { DataTable } from '@/ui/components/DataTable';
 import { NewJob } from '@/ui/components/NewJob';
 import { Panel } from '@/ui/components/Panel';
-import { openJob } from './jobs/actions';
+import { openJob, openJobFromFile } from './jobs/actions';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Inbox — Cable Quoting' };
@@ -14,9 +14,10 @@ export const metadata = { title: 'Inbox — Cable Quoting' };
 /**
  * The Inbox.
  *
- * Every enquiry the app has been given, and the box to add another. Until
- * Phase 3 reads the customer's document, that box *is* the intake — so it sits
- * at the top of the first screen rather than behind a button.
+ * Every enquiry the app has been given, and the means to add another — pasted,
+ * or read out of the customer's own spreadsheet or PDF. Intake sits at the top
+ * of the first screen rather than behind a button, because it is the thing an
+ * engineer does most.
  */
 export default async function InboxPage() {
   const actor = await session.currentActor();
@@ -57,7 +58,7 @@ export default async function InboxPage() {
       ) : (
         <>
           <Panel title="New enquiry" flush>
-            <NewJob action={openJob} />
+            <NewJob action={openJob} uploadAction={openJobFromFile} />
           </Panel>
 
           <Panel
@@ -175,7 +176,7 @@ export default async function InboxPage() {
               rows={jobs}
               rowKey={(j) => j.id}
               href={(j) => `/jobs/${j.reference}`}
-              empty="No enquiries yet. Paste one above to start."
+              empty="No enquiries yet. Paste one above, or upload the customer’s file."
             />
           </Panel>
         </>

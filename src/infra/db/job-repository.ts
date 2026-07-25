@@ -24,6 +24,7 @@ interface JobRow {
   readonly terms: string | null;
   readonly source: JobSource;
   readonly source_name: string | null;
+  readonly source_notes: string[];
   readonly raw_text: string;
   readonly created_by: string | null;
   readonly created_at: Date;
@@ -44,7 +45,7 @@ interface DecisionRow {
 
 const SELECT_JOB = `
   SELECT j.id::text, j.reference, j.status::text AS status, j.customer, j.terms,
-         j.source::text AS source, j.source_name, j.raw_text,
+         j.source::text AS source, j.source_name, j.source_notes, j.raw_text,
          u.name AS created_by, j.created_at, j.updated_at,
          q.number AS quote_number
     FROM job j
@@ -97,6 +98,7 @@ function hydrate(j: JobRow, decisions: readonly DecisionRow[]): Job {
     terms: j.terms,
     source: j.source,
     sourceName: j.source_name,
+    sourceNotes: j.source_notes ?? [],
     rawText: j.raw_text,
     createdBy: j.created_by,
     createdAt: j.created_at,
@@ -196,6 +198,7 @@ export class DbJobRepository {
     readonly customer?: string | null;
     readonly source?: JobSource;
     readonly sourceName?: string | null;
+    readonly sourceNotes?: readonly string[];
     readonly actor: Actor;
     readonly at: Date;
   }): Promise<{ readonly reference: string }> {
@@ -213,11 +216,50 @@ export class DbJobRepository {
           customer: input.customer ?? null,
           source: input.source ?? 'paste',
           sourceName: input.sourceName ?? null,
+          sourceNotes: [...(input.sourceNotes ?? [])],
           createdById: input.actor.id,
         },
       });
 
       return { reference };
+    });
+  }
+
+  /**
+   * Replaces the enquiry text, and clears every decision on the job.
+   *
+   * Decisions are keyed by line position, so editing the text renumbers the
+   * things they point at: insert a line at the top and "price line 4 by hand"
+   * silently becomes a decision about line 5. Clearing is the only safe answer,
+   * and the screen states it before the button rather than after.
+   */
+  async revise(
+    reference: string,
+    rawText: string,
+    actor: Actor,
+  ): Promise<{ readonly cleared: number }> {
+    return this.db.$transaction(async (tx) => {
+      const job = await tx.job.findUniqueOrThrow({ where: { reference } });
+      const cleared = await tx.jobLine.deleteMany({ where: { jobId: job.id } });
+
+      await tx.job.update({ where: { reference }, data: { rawText } });
+
+      await tx.auditEvent.create({
+        data: {
+          actorId: actor.id,
+          actorEmail: actor.email,
+          entity: `job:${reference}`,
+          field: 'raw_text',
+          previous: `${job.rawText.split('\n').length} lines`,
+          next: `${rawText.split('\n').length} lines`,
+          reason:
+            cleared.count === 0
+              ? 'Enquiry text corrected.'
+              : `Enquiry text corrected; ${cleared.count} decision(s) cleared because line positions moved.`,
+        },
+      });
+
+      return { cleared: cleared.count };
     });
   }
 

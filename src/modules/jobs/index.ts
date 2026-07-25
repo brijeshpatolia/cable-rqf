@@ -29,6 +29,8 @@ export interface Job {
   readonly terms: string | null;
   readonly source: JobSource;
   readonly sourceName: string | null;
+  /** What the document reader made of the file, including what it left out. */
+  readonly sourceNotes: readonly string[];
   /** The RFQ exactly as received. Never edited once the job is quoted. */
   readonly rawText: string;
   readonly createdBy: string | null;

@@ -403,6 +403,15 @@ model Job {
   /// Filename, mail subject, or "pasted" — where the text came from.
   sourceName String?   @map("source_name")
 
+  /// What the reader made of the document, in words: how many lines it found,
+  /// and — the part that matters — which rows it left out and why.
+  ///
+  /// Dropping these would mean a line vanishing from the customer's enquiry
+  /// with nobody told, which is the exact failure this app exists to prevent.
+  /// Kept on the job rather than shown once at upload, because the engineer
+  /// who needs them may not be the person who did the uploading.
+  sourceNotes String[] @map("source_notes")
+
   /// The RFQ exactly as received. Re-parsed on every render, never mutated by
   /// the app — an engineer's corrections live on the lines, not in the text.
   rawText String @map("raw_text")

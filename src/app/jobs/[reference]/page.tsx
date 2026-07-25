@@ -18,6 +18,7 @@ import { CostBreakdownView } from '@/ui/components/CostBreakdownView';
 import { ExpandableRow } from '@/ui/components/ExpandableRow';
 import { NumericCell } from '@/ui/components/NumericCell';
 import { Panel } from '@/ui/components/Panel';
+import { ReviseEnquiry } from '@/ui/components/ReviseEnquiry';
 import { SettleLine, type Nearest } from '@/ui/components/SettleLine';
 import { StatusDot, TierLegend } from '@/ui/components/StatusDot';
 import { TeachTerm } from '@/ui/components/TeachTerm';
@@ -26,6 +27,7 @@ import {
   approveJob,
   decideLine,
   describeJob,
+  reviseJob,
   teachTerm,
   undecideLine,
 } from '../actions';
@@ -137,21 +139,65 @@ export default async function JobPage({
             </Panel>
           ) : null}
 
-          <Panel title="Enquiry as received" flush>
-            <pre
-              className="numeric"
-              style={{
-                margin: 0,
-                padding: 16,
-                textAlign: 'left',
-                color: 'var(--color-ink-secondary)',
-                fontSize: 'var(--text-micro)',
-                lineHeight: '18px',
-                whiteSpace: 'pre-wrap',
-              }}
+          {persisted.sourceNotes.length > 0 ? (
+            <Panel
+              title="What the reader made of the file"
+              aside={
+                <span
+                  className="numeric"
+                  style={{
+                    color: 'var(--color-ink-tertiary)',
+                    fontSize: 'var(--text-micro)',
+                  }}
+                >
+                  {persisted.sourceName}
+                </span>
+              }
             >
-              {persisted.rawText}
-            </pre>
+              {/*
+                Including — especially — the rows it left out. A line that
+                vanishes from a customer's enquiry with nobody told is the
+                exact failure this app exists to prevent, so the reader's own
+                account of what it skipped stays with the job rather than
+                flashing past once at upload.
+              */}
+              <ul className="flex flex-col gap-1">
+                {persisted.sourceNotes.map((note) => (
+                  <li key={note} style={noteStyle}>
+                    {note}
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-3" style={{ ...noteStyle, color: 'var(--color-ink-tertiary)' }}>
+                Anything missing can be added below with “Correct the text” —
+                the lines are re-read and re-priced on save.
+              </p>
+            </Panel>
+          ) : null}
+
+          <Panel
+            title="Enquiry as received"
+            flush
+            aside={
+              persisted.source === 'paste' ? null : (
+                <span
+                  style={{
+                    color: 'var(--color-ink-tertiary)',
+                    fontSize: 'var(--text-micro)',
+                  }}
+                >
+                  read from {persisted.sourceName}
+                </span>
+              )
+            }
+          >
+            <ReviseEnquiry
+              action={reviseJob}
+              reference={reference}
+              rawText={persisted.rawText}
+              decisionCount={persisted.decisions.length}
+              canRevise={settled && can(actor, 'line.override')}
+            />
           </Panel>
 
           <Panel

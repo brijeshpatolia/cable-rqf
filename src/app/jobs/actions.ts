@@ -16,7 +16,17 @@ import { authorise } from '@/modules/auth';
 import { planDecision } from '@/modules/jobs';
 import { type Axis, type ReviewLine, hasBreakdown, isPriced } from '@/modules/matching';
 import { type Decision, type DraftLine, assembleQuote } from '@/modules/quoting';
+import { readDocument } from '@/infra/extraction/read-document';
 import { buildJob } from './build';
+
+/**
+ * The upload ceiling.
+ *
+ * Not a performance guard — a 20 MB "RFQ" is a scanned one, and this app does
+ * not read scans. Saying so at the door is kinder than reading it, finding no
+ * text, and saying so afterwards.
+ */
+const MAX_UPLOAD_BYTES = 8_000_000;
 
 /**
  * The write path for a job under review.
@@ -50,6 +60,15 @@ const jobPath = (reference: string) => {
   revalidatePath(`/jobs/${reference}`);
 };
 
+/** CRLF out, trailing whitespace off each line, blank lines at the ends gone. */
+const normalise = (text: string) =>
+  text
+    .replace(/\r\n?/g, '\n')
+    .split('\n')
+    .map((l) => l.trimEnd())
+    .join('\n')
+    .trim();
+
 function parseRate(raw: FormDataEntryValue | null) {
   const text = String(raw ?? '').trim();
   if (text === '') return { value: undefined } as const;
@@ -69,22 +88,85 @@ export async function openJob(
   const permitted = authorise(actor, 'read');
   if (!permitted.ok) return { error: permitted.failure.message };
 
-  const rawText = String(form.get('rfq') ?? '').trim();
+  const rawText = normalise(String(form.get('rfq') ?? ''));
   if (rawText === '') {
     return { error: 'Paste the enquiry first — one cable per line.' };
   }
 
   const customer = String(form.get('customer') ?? '').trim();
 
+  const at = now();
   const { reference } = await jobStore.open({
     rawText,
     customer: customer === '' ? null : customer,
     source: 'paste',
     sourceName: 'pasted',
     actor: permitted.actor,
-    at: now(),
+    at,
   });
 
+  // A customer used these words. Counted here rather than on render, so the
+  // Vocabulary screen's "seen this month" measures enquiries and not refreshes.
+  await vocabularyStore.sightedIn(rawText, at);
+
+  revalidatePath('/');
+  redirect(`/jobs/${reference}` as Route);
+}
+
+/**
+ * Opens a job from an uploaded document.
+ *
+ * The reading happens here and its result is stored as ordinary RFQ text, so
+ * the review screen never learns that a file was involved. That is the phase
+ * boundary working: extraction ends exactly where paste begins, and Phase 2 did
+ * not change to accommodate it.
+ *
+ * A document that could not be read still opens a job — carrying its raw text
+ * and a stated reason. Refusing to create anything would leave the engineer
+ * with a rejected upload and nowhere to put the enquiry; this way they can
+ * paste over the text and carry on.
+ */
+export async function openJobFromFile(
+  _previous: ActionResult | null,
+  form: FormData,
+): Promise<ActionResult> {
+  const actor = await session.currentActor();
+  const permitted = authorise(actor, 'read');
+  if (!permitted.ok) return { error: permitted.failure.message };
+
+  const file = form.get('document');
+  if (!(file instanceof File) || file.size === 0) {
+    return { error: 'Choose a file first.' };
+  }
+  if (file.size > MAX_UPLOAD_BYTES) {
+    return {
+      error: `${file.name} is ${(file.size / 1_000_000).toFixed(1)} MB. The limit is ${MAX_UPLOAD_BYTES / 1_000_000} MB — an RFQ that large is usually a scan, which this app does not read.`,
+    };
+  }
+
+  const read = await readDocument(
+    new Uint8Array(await file.arrayBuffer()),
+    file.name,
+    file.type,
+  );
+
+  const rawText = read.lines.length > 0 ? read.lines.join('\n') : read.rawText;
+  if (rawText.trim() === '') {
+    return { error: read.notes[0] ?? 'Nothing could be read from that file.' };
+  }
+
+  const at = now();
+  const { reference } = await jobStore.open({
+    rawText,
+    customer: null,
+    source: 'upload',
+    sourceName: file.name,
+    sourceNotes: read.notes,
+    actor: permitted.actor,
+    at,
+  });
+
+  await vocabularyStore.sightedIn(rawText, at);
   revalidatePath('/');
   redirect(`/jobs/${reference}` as Route);
 }
@@ -166,6 +248,46 @@ export async function undecideLine(
   jobPath(reference);
 
   return { ok: `Line ${position + 1} is open again.` };
+}
+
+/**
+ * Corrects the enquiry text.
+ *
+ * The document reader leaves rows out — a quantity of "TBC" is not a quantity
+ * worth guessing at — so an engineer has to be able to put them back. The cost
+ * is that decisions are keyed by line position and editing renumbers them, so
+ * every decision on the job is cleared. Stated before the button, not after.
+ */
+export async function reviseJob(
+  _previous: ActionResult | null,
+  form: FormData,
+): Promise<ActionResult> {
+  const actor = await session.currentActor();
+  const permitted = authorise(actor, 'line.override');
+  if (!permitted.ok) return { error: permitted.failure.message };
+
+  const reference = String(form.get('reference') ?? '');
+  // A textarea submits CRLF. Normalised on the way in, because the stored text
+  // is what every later parse and every line number is counted from.
+  const rawText = normalise(String(form.get('rfq') ?? ''));
+  if (rawText === '') return { error: 'An enquiry with no lines is not an enquiry.' };
+
+  const job = await jobStore.byReference(reference);
+  if (job === undefined) return { error: `${reference} was not found.` };
+  if (job.status !== 'review') {
+    return { error: `${reference} has been quoted. Its text is the record of what was priced.` };
+  }
+  if (rawText === normalise(job.rawText)) return { ok: 'Nothing changed.' };
+
+  const { cleared } = await jobStore.revise(reference, rawText, permitted.actor);
+  jobPath(reference);
+
+  return {
+    ok:
+      cleared === 0
+        ? 'Enquiry updated and re-priced.'
+        : `Enquiry updated and re-priced. ${cleared} decision${cleared === 1 ? '' : 's'} cleared, because the line numbers moved.`,
+  };
 }
 
 /** The customer and terms an engineer types while reviewing. */

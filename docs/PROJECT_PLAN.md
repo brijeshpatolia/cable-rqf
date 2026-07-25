@@ -335,6 +335,14 @@ Vocabulary normalisation and dictionary; the four-tier matcher; the review scree
 ### Out of scope
 Reading documents. Input is paste-a-line or paste-a-block.
 
+> **Shipped ahead of plan.** Deterministic reading of spreadsheets and digital
+> PDFs landed with Phase 2, because the Inbox needed something to hold and the
+> extraction ends exactly where paste begins — `modules/extraction` produces the
+> same text `matching` already consumed, so Phase 2 did not change a line to
+> accommodate it. What remains for Phase 3 is the mailbox, the side-by-side
+> provenance view, and the constrained LLM call for table regions a
+> deterministic reader cannot resolve.
+
 ### Screens
 
 **1. Paste & Parse**

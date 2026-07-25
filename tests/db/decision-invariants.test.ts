@@ -257,13 +257,16 @@ describe.skipIf(url === undefined)('invariants the database enforces', () => {
       `INSERT INTO substitution_rule (id, axis, from_term, to_term, rationale)
        VALUES (gen_random_uuid(), '${axis}', '${from}', '${to}', '${why}')`;
 
+    // Synthetic terms throughout, for the same reason the canonicals are: a
+    // fixture that can collide with a rule somebody really declared is a
+    // fixture that stops testing without saying so.
     it('refuses a term substituted for itself', async () => {
-      const err = await attempt(rule('sheath', 'PVC', 'PVC', 'none'));
+      const err = await attempt(rule('sheath', 'TEST-FROM', 'TEST-FROM', 'none'));
       expect(err).toContain('substitution_rule_is_a_substitution');
     });
 
     it('refuses a rule with no rationale', async () => {
-      const err = await attempt(rule('sheath', 'PVC', 'LSOH', '   '));
+      const err = await attempt(rule('sheath', 'TEST-FROM', 'TEST-TO', '   '));
       expect(err).toContain('substitution_rule_is_a_substitution');
     });
 
@@ -274,9 +277,9 @@ describe.skipIf(url === undefined)('invariants the database enforces', () => {
 
     it('refuses the same rule declared twice while in force', async () => {
       await withSetup(
-        () => run(rule('sheath', 'PVC', 'LSOH', 'LSOH is a drop-in for PVC sheathing on LV.')),
+        () => run(rule('sheath', 'TEST-FROM', 'TEST-TO', 'Synthetic rule, for the uniqueness probe below.')),
         async () => {
-          const err = await attempt(rule('sheath', 'PVC', 'LSOH', 'again'));
+          const err = await attempt(rule('sheath', 'TEST-FROM', 'TEST-TO', 'again'));
           expect(err).toMatch(/substitution_rule_in_force_unique|duplicate key/);
         },
       );
@@ -287,14 +290,14 @@ describe.skipIf(url === undefined)('invariants the database enforces', () => {
       // after the rule is withdrawn, so retiring closes rather than deletes.
       await withSetup(
         async () => {
-          await run(rule('armour', 'SWA', 'AWA', 'Aluminium wire armour, LV only.'));
+          await run(rule('armour', 'TEST-SWA', 'TEST-AWA', 'Synthetic rule, retired below.'));
           await run(
             `UPDATE substitution_rule SET retired_at = now()
-              WHERE axis = 'armour' AND from_term = 'SWA' AND to_term = 'AWA'`,
+              WHERE axis = 'armour' AND from_term = 'TEST-SWA' AND to_term = 'TEST-AWA'`,
           );
         },
         async () => {
-          const err = await attempt(rule('armour', 'SWA', 'AWA', 'Re-declared after review.'));
+          const err = await attempt(rule('armour', 'TEST-SWA', 'TEST-AWA', 'Re-declared after review.'));
           expect(err).toBeNull();
         },
       );
