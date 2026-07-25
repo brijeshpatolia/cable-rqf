@@ -1,6 +1,7 @@
-import type { PrismaClient } from '@prisma/client';
+import { Prisma, type PrismaClient } from '@prisma/client';
 import { dec } from '@/core/decimal';
 import type { Actor } from '@/modules/auth';
+import type { SourceRegion } from '@/modules/extraction';
 import type { Job, JobSource, JobStatus, PlannedDecision } from '@/modules/jobs';
 import { nextJobReference } from '@/modules/jobs';
 import type { LineDecision } from '@/modules/matching';
@@ -26,6 +27,8 @@ interface JobRow {
   readonly source_name: string | null;
   readonly source_notes: string[];
   readonly raw_text: string;
+  readonly source_text: string | null;
+  readonly line_sources: unknown;
   readonly created_by: string | null;
   readonly created_at: Date;
   readonly updated_at: Date;
@@ -46,6 +49,7 @@ interface DecisionRow {
 const SELECT_JOB = `
   SELECT j.id::text, j.reference, j.status::text AS status, j.customer, j.terms,
          j.source::text AS source, j.source_name, j.source_notes, j.raw_text,
+         j.source_text, j.line_sources,
          u.name AS created_by, j.created_at, j.updated_at,
          q.number AS quote_number
     FROM job j
@@ -89,6 +93,26 @@ function toDecision(r: DecisionRow): LineDecision | null {
   };
 }
 
+/**
+ * JSONB back into source regions, defensively.
+ *
+ * The column is written by this app and read by this app, but it is still a
+ * `Json` column: a shape that drifts, a hand-edited row, or a migration that
+ * arrives before the code that fills it would otherwise crash the job screen.
+ * A malformed entry is dropped, which costs one line its provenance and loses
+ * nobody their enquiry.
+ */
+function toSources(value: unknown): readonly SourceRegion[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((entry) => {
+    if (typeof entry !== 'object' || entry === null) return [];
+    const { line, where } = entry as Record<string, unknown>;
+    if (typeof line !== 'number' || !Number.isInteger(line) || line < 0) return [];
+    if (typeof where !== 'string') return [];
+    return [{ line, where }];
+  });
+}
+
 function hydrate(j: JobRow, decisions: readonly DecisionRow[]): Job {
   return {
     id: j.id,
@@ -100,6 +124,10 @@ function hydrate(j: JobRow, decisions: readonly DecisionRow[]): Job {
     sourceName: j.source_name,
     sourceNotes: j.source_notes ?? [],
     rawText: j.raw_text,
+    document:
+      j.source_text === null
+        ? null
+        : { text: j.source_text, sources: toSources(j.line_sources) },
     createdBy: j.created_by,
     createdAt: j.created_at,
     updatedAt: j.updated_at,
@@ -199,6 +227,11 @@ export class DbJobRepository {
     readonly source?: JobSource;
     readonly sourceName?: string | null;
     readonly sourceNotes?: readonly string[];
+    /** The file the lines were read from. Omitted for a pasted enquiry. */
+    readonly document?: {
+      readonly text: string;
+      readonly sources: readonly SourceRegion[];
+    };
     readonly actor: Actor;
     readonly at: Date;
   }): Promise<{ readonly reference: string }> {
@@ -217,6 +250,14 @@ export class DbJobRepository {
           source: input.source ?? 'paste',
           sourceName: input.sourceName ?? null,
           sourceNotes: [...(input.sourceNotes ?? [])],
+          sourceText: input.document?.text ?? null,
+          // Spread into plain objects: Prisma's `InputJsonValue` will not take
+          // a readonly interface, and it is right not to — what goes into a
+          // JSONB column has to be data, not a typed view over data.
+          lineSources:
+            input.document === undefined
+              ? Prisma.DbNull
+              : input.document.sources.map((s) => ({ line: s.line, where: s.where })),
           createdById: input.actor.id,
         },
       });
@@ -232,6 +273,11 @@ export class DbJobRepository {
    * things they point at: insert a line at the top and "price line 4 by hand"
    * silently becomes a decision about line 5. Clearing is the only safe answer,
    * and the screen states it before the button rather than after.
+   *
+   * **Provenance goes the same way, and for the same reason.** It is keyed by
+   * position too, so after a correction it points at the wrong row of the
+   * document — which is worse than pointing at nothing, because an engineer
+   * would believe it. The document itself is kept: it is still what arrived.
    */
   async revise(
     reference: string,
@@ -242,7 +288,10 @@ export class DbJobRepository {
       const job = await tx.job.findUniqueOrThrow({ where: { reference } });
       const cleared = await tx.jobLine.deleteMany({ where: { jobId: job.id } });
 
-      await tx.job.update({ where: { reference }, data: { rawText } });
+      await tx.job.update({
+        where: { reference },
+        data: { rawText, lineSources: Prisma.DbNull },
+      });
 
       await tx.auditEvent.create({
         data: {

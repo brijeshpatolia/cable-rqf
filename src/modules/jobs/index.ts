@@ -1,6 +1,7 @@
 import type { Decimal } from '@/core/decimal';
 import { type Result, err, ok } from '@/core/result';
 import type { Actor } from '@/modules/auth';
+import type { SourceRegion } from '@/modules/extraction';
 import type { LineDecision, Override, ProductChoice } from '@/modules/matching';
 
 /**
@@ -21,6 +22,20 @@ import type { LineDecision, Override, ProductChoice } from '@/modules/matching';
 export type JobStatus = 'review' | 'approved' | 'abandoned';
 export type JobSource = 'paste' | 'upload' | 'email';
 
+/**
+ * The document a job was read from, kept so the reading can be checked.
+ *
+ * `sources` is parallel to the job's *enquiry* lines and may be shorter than
+ * them, or absent: an engineer who corrects the text renumbers everything the
+ * provenance pointed at, so it is dropped rather than left pointing at the
+ * wrong row. A line with no source says so; it does not borrow its neighbour's.
+ */
+export interface SourceDocument {
+  /** Every line of the file, including the ones extraction left out. */
+  readonly text: string;
+  readonly sources: readonly SourceRegion[];
+}
+
 export interface Job {
   readonly id: string;
   readonly reference: string;
@@ -33,6 +48,13 @@ export interface Job {
   readonly sourceNotes: readonly string[];
   /** The RFQ exactly as received. Never edited once the job is quoted. */
   readonly rawText: string;
+  /**
+   * The document the lines were read out of, and where each one came from.
+   *
+   * Null for a pasted enquiry: the text *is* the document, so pointing at it
+   * would tell an engineer nothing they are not already looking at.
+   */
+  readonly document: SourceDocument | null;
   readonly createdBy: string | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;

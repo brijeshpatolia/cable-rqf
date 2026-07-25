@@ -162,6 +162,16 @@ export async function openJobFromFile(
     source: 'upload',
     sourceName: file.name,
     sourceNotes: read.notes,
+    /*
+      The document is kept beside the lines that were taken out of it, so an
+      engineer can check a quantity against the file without going back to the
+      attachment. When the reader failed, `rawText` already *is* the whole
+      document — keeping a second copy of it would only offer to show the same
+      text twice.
+    */
+    ...(read.lines.length > 0
+      ? { document: { text: read.rawText, sources: read.sources } }
+      : {}),
     actor: permitted.actor,
     at,
   });

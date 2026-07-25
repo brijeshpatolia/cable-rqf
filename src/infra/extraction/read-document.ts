@@ -2,6 +2,7 @@ import * as XLSX from 'xlsx';
 import {
   type ExtractedDocument,
   type Grid,
+  type TextRegion,
   extractFromGrid,
   extractFromText,
 } from '@/modules/extraction';
@@ -36,15 +37,20 @@ export async function readDocument(
   mime: string,
 ): Promise<ExtractedDocument> {
   switch (kindOf(filename, mime)) {
-    case 'spreadsheet':
-      return extractFromGrid(gridOf(bytes));
-    case 'pdf':
-      return extractFromText(await textOfPdf(bytes));
+    case 'spreadsheet': {
+      const { grid, sheets } = gridOf(bytes);
+      return extractFromGrid(grid, sheets);
+    }
+    case 'pdf': {
+      const { text, pages } = await textOfPdf(bytes);
+      return extractFromText(text, pages);
+    }
     case 'text':
       return extractFromText(new TextDecoder().decode(bytes));
     case 'unsupported':
       return {
         lines: [],
+        sources: [],
         notes: [
           `“${filename}” is not a format this app reads. Spreadsheets, PDFs and ` +
             'plain text are; images and Word documents are not. Paste the cable ' +
@@ -62,14 +68,23 @@ export async function readDocument(
  * An RFQ workbook routinely puts the covering letter on one sheet and the
  * schedule on another, and picking only the first would read the letter and
  * miss the cables. `findHeaderRow` then locates the table wherever it landed.
+ *
+ * The sheet boundaries come back with the grid, because once every sheet is one
+ * flat list "row 704" is a number an engineer cannot find in the file they
+ * sent. The regions are what turn it back into *Schedule of Cables, row 12*.
  */
-function gridOf(bytes: Uint8Array): Grid {
+function gridOf(bytes: Uint8Array): {
+  readonly grid: Grid;
+  readonly sheets: readonly TextRegion[];
+} {
   const book = XLSX.read(bytes, { type: 'array' });
   const rows: string[][] = [];
+  const sheets: TextRegion[] = [];
 
   for (const name of book.SheetNames) {
     const sheet = book.Sheets[name];
     if (sheet === undefined) continue;
+    const from = rows.length;
     const sheetRows = XLSX.utils.sheet_to_json<unknown[]>(sheet, {
       header: 1,
       raw: false,
@@ -80,11 +95,13 @@ function gridOf(bytes: Uint8Array): Grid {
       rows.push(row.map((cell) => (cell === null ? '' : String(cell))));
     }
     // A blank row between sheets, so a table cannot appear to run across the
-    // boundary between two of them.
+    // boundary between two of them. It belongs to the sheet it follows, so a
+    // row index never falls into the gap between two regions.
     rows.push([]);
+    sheets.push({ name, from, to: rows.length });
   }
 
-  return rows;
+  return { grid: rows, sheets };
 }
 
 /**
@@ -96,7 +113,10 @@ function gridOf(bytes: Uint8Array): Grid {
  * and the quantity beside it into two separate lines, which is precisely the
  * pairing the extractor needs.
  */
-async function textOfPdf(bytes: Uint8Array): Promise<string> {
+async function textOfPdf(bytes: Uint8Array): Promise<{
+  readonly text: string;
+  readonly pages: readonly TextRegion[];
+}> {
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
 
   const doc = await pdfjs.getDocument({
@@ -112,8 +132,10 @@ async function textOfPdf(bytes: Uint8Array): Promise<string> {
   }).promise;
 
   const out: string[] = [];
+  const pages: TextRegion[] = [];
 
   for (let p = 1; p <= doc.numPages; p++) {
+    const from = out.length;
     const page = await doc.getPage(p);
     const content = await page.getTextContent();
 
@@ -138,8 +160,9 @@ async function textOfPdf(bytes: Uint8Array): Promise<string> {
     }
 
     page.cleanup();
+    pages.push({ name: `page ${p}`, from, to: out.length });
   }
 
   await doc.cleanup();
-  return out.join('\n');
+  return { text: out.join('\n'), pages };
 }
