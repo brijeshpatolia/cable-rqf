@@ -1,9 +1,9 @@
 import { formatDate, formatInstant, formatNumber } from '@/core/format';
 import { repositories } from '@/infra/memory/repository';
 import { NOW } from '@/infra/memory/seed';
-import { copperMetalValue } from '@/modules/costing/copper';
-import { sweep } from '@/modules/pricewatch/drift';
-import type { EffectiveRow } from '@/modules/rates/effective';
+import { copperMetalValue } from '@/modules/costing';
+import { sweep } from '@/modules/pricewatch';
+import type { EffectiveRow } from '@/modules/rates';
 import { CopperBlock } from '@/ui/components/CopperBlock';
 import { DataTable, type Column } from '@/ui/components/DataTable';
 import { NumericCell } from '@/ui/components/NumericCell';

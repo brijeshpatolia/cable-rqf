@@ -6,7 +6,7 @@ import {
   driftHeadline,
   sweep,
   type DriftResult,
-} from '@/modules/pricewatch/drift';
+} from '@/modules/pricewatch';
 import { DataTable } from '@/ui/components/DataTable';
 import { NumericCell } from '@/ui/components/NumericCell';
 import { Panel } from '@/ui/components/Panel';

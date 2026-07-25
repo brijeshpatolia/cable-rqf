@@ -16,7 +16,7 @@ import type {
   MaterialRate,
   Product,
   ResolvedRateSet,
-} from '@/modules/costing/types';
+} from '@/modules/costing';
 
 import driversJson from './drivers.json';
 import machinesJson from './machines.json';

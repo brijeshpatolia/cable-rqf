@@ -7,7 +7,7 @@ import {
   products,
   rateSetAt,
 } from '@/infra/data';
-import { computeCost } from '@/modules/costing/engine';
+import { computeCost } from '@/modules/costing';
 import { deriveBounds } from './validate';
 import { isPriced, reviewJob } from './review';
 

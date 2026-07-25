@@ -1,5 +1,5 @@
 import type { Decimal } from '@/core/decimal';
-import type { CableSpec, Product } from '@/modules/costing/types';
+import type { CableSpec, Product } from '@/modules/costing';
 import type { ExtractedLine } from './parse';
 
 /**

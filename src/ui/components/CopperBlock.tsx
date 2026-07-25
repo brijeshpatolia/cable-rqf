@@ -1,5 +1,5 @@
-import { COPPER_FORMULA_CONFIRMED } from '@/modules/costing/copper';
-import type { CopperRate } from '@/modules/costing/types';
+import { COPPER_FORMULA_CONFIRMED } from '@/modules/costing';
+import type { CopperRate } from '@/modules/costing';
 import { formatInstant, formatNumber } from '@/core/format';
 import { NumericCell } from './NumericCell';
 

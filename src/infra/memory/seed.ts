@@ -1,9 +1,9 @@
 import { dec, type Decimal } from '@/core/decimal';
 import { omr, usdPerTonne } from '@/core/units';
 import { DRIVERS, RAW_MACHINES, RAW_MATERIALS } from '@/infra/data';
-import type { EffectiveRow } from '@/modules/rates/effective';
-import type { AuditEvent, LmeTick } from '@/modules/rates/ports';
-import type { OpenQuote } from '@/modules/pricewatch/drift';
+import type { EffectiveRow } from '@/modules/rates';
+import type { AuditEvent, LmeTick } from '@/modules/rates';
+import type { OpenQuote } from '@/modules/pricewatch';
 
 /**
  * Seed data.

@@ -1,5 +1,5 @@
 import { formatInstant, formatDate, formatNumber } from '@/core/format';
-import type { CostBreakdown } from '@/modules/costing/types';
+import type { CostBreakdown } from '@/modules/costing';
 import { ExpandableRow, Provenance, StrikeFooter } from './ExpandableRow';
 import { NumericCell } from './NumericCell';
 
