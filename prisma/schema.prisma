@@ -1,0 +1,249 @@
+// Cable Quoting — persistence schema.
+//
+// Two rules from docs/ARCHITECTURE.md shape everything here:
+//
+//   1. Money columns are UNCONSTRAINED `NUMERIC`. `@db.Decimal` with no
+//      arguments maps to plain `numeric`. A fixed scale was specified in the
+//      original architecture doc and measurement disproved it: NUMERIC(18,6)
+//      alters 53.7% of the imported cost master's 4,513 numeric values, which
+//      carry up to 15 significant digits. The read path casts every one of
+//      these with `::text` and rebuilds it through `dec()`, so Prisma's own
+//      Decimal — a *different* constructor from the app's, `instanceof` is
+//      false — never enters the pricing path.
+//
+//   2. Nothing is ever overwritten. Rates close with `validTo`; the audit log
+//      is append-only, enforced by a trigger in the migration. History is the
+//      product.
+//
+// Constraints Prisma's schema language cannot express — the EXCLUDE
+// constraints that make overlapping rate periods impossible, and the
+// append-only triggers — live in hand-written SQL appended to the generated
+// migration. They are the real guarantee; this file is the typed surface.
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = []
+}
+
+// Prisma 7 moved connection URLs out of the schema. They live in
+// prisma.config.ts, which supplies a driver adapter — the pg pool for
+// migrations and for the app at runtime.
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Identity ────────────────────────────────────────────────────────────
+//
+// Users are keyed by EMAIL, deliberately. It is the one identifier every
+// identity provider agrees on, so moving from password sign-in to Google or
+// Microsoft later means people sign in differently and keep their id, their
+// role, and every audit row they ever wrote. Roles live here, never in the
+// provider — who is a Rate Owner stays this system's decision.
+
+enum Role {
+  rateOwner
+  engineer
+  viewer
+}
+
+model AppUser {
+  id    String @id @default(uuid()) @db.Uuid
+  email String @unique
+  name  String
+  role  Role
+
+  /// Null when the user signs in through an external provider.
+  passwordHash String? @map("password_hash")
+
+  /// Soft delete. Nothing is ever removed.
+  disabledAt DateTime? @map("disabled_at") @db.Timestamptz(6)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  auditEvents AuditEvent[]
+
+  @@map("app_user")
+}
+
+// ─── Effective-dated rates ───────────────────────────────────────────────
+//
+// `validTo` NULL means "in force". The EXCLUDE constraint in the migration
+// makes two in-force rows for the same key impossible at the database level —
+// not in application code someone could later bypass. Verified against both
+// local Postgres 16.13 and Neon's Postgres 18.4.
+
+model MaterialRate {
+  id   String @id @default(uuid()) @db.Uuid
+  /// The RM code from the cost master, e.g. `CC1F`, `XSAUINS`.
+  code String
+
+  description String
+  uom         String
+
+  /// The fixed rate. Ignored for LME-linked codes, which reprice off copper.
+  rate Decimal @db.Decimal
+
+  /// True for the 39 copper codes that reprice with the market.
+  lmeLinked Boolean @map("lme_linked")
+
+  /// Premium over LME metal value, per code. Set only on LME-linked rows.
+  drawingPremium Decimal? @map("drawing_premium") @db.Decimal
+
+  validFrom DateTime  @map("valid_from") @db.Timestamptz(6)
+  validTo   DateTime? @map("valid_to") @db.Timestamptz(6)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([code, validFrom(sort: Desc)])
+  @@map("material_rate")
+}
+
+model MachineRate {
+  id    String @id @default(uuid()) @db.Uuid
+  code  String
+  stage String
+
+  rate Decimal @db.Decimal
+
+  validFrom DateTime  @map("valid_from") @db.Timestamptz(6)
+  validTo   DateTime? @map("valid_to") @db.Timestamptz(6)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([code, validFrom(sort: Desc)])
+  @@map("machine_rate")
+}
+
+/// The copper driver. A time series, append-only — a tick is a fact about a
+/// moment, so it is never edited, only superseded by a later one.
+model LmePrice {
+  id String @id @default(uuid()) @db.Uuid
+
+  /// The instant this price took effect.
+  at DateTime @unique @map("at") @db.Timestamptz(6)
+
+  /// USD per tonne.
+  lme Decimal @db.Decimal
+
+  /// OMR per USD. Carried per tick so a historic quote reconstructs on the
+  /// FX of its day, not today's.
+  fx Decimal @db.Decimal
+
+  /// Free text: a person's name, or the feed that supplied it.
+  enteredBy String @map("entered_by")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([at(sort: Desc)])
+  @@map("lme_price")
+}
+
+// ─── Product library ─────────────────────────────────────────────────────
+//
+// Imported from the cost master. Read-only in this phase — the write path
+// starts with rates, which is where the money is.
+
+model Product {
+  id          String @id
+  sourceSheet String @map("source_sheet")
+  designation String
+  family      String
+  standard    String
+
+  cores      Int
+  sizeMm2    Decimal @map("size_mm2") @db.Decimal
+  conductor  String
+  insulation String
+  screen     String
+  armour     String
+  sheath     String
+  voltage    String
+
+  toolingPerKm Decimal @map("tooling_per_km") @db.Decimal
+
+  bomLines   BomLine[]
+  operations MachineOp[]
+  overheads  OverheadLine[]
+
+  @@index([family])
+  @@map("product")
+}
+
+model BomLine {
+  id        String  @id @default(uuid()) @db.Uuid
+  productId String  @map("product_id")
+  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  materialKey  String  @map("material_key")
+  materialName String  @map("material_name")
+  consumption  Decimal @db.Decimal
+  /// Absolute quantity, as the source sheets hold it — never a percentage.
+  scrap        Decimal @db.Decimal
+
+  position Int
+
+  @@index([productId])
+  @@map("bom_line")
+}
+
+model MachineOp {
+  id        String  @id @default(uuid()) @db.Uuid
+  productId String  @map("product_id")
+  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  machineKey  String  @map("machine_key")
+  machineName String  @map("machine_name")
+  sequence    Int
+  hoursPerKm  Decimal @map("hours_per_km") @db.Decimal
+  /// Held per operation, not taken from the product: a stage can run once over
+  /// a laid-up cable while an earlier stage ran once per core.
+  cores       Int
+
+  @@index([productId])
+  @@map("machine_op")
+}
+
+model OverheadLine {
+  id        String  @id @default(uuid()) @db.Uuid
+  productId String  @map("product_id")
+  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  key      String
+  name     String
+  amount   Decimal @db.Decimal
+  position Int
+
+  @@index([productId])
+  @@map("overhead_line")
+}
+
+// ─── Audit ───────────────────────────────────────────────────────────────
+//
+// Append-only, enforced by a trigger. Every rate change records who, when,
+// the previous value and the new one. Values are stored as text because this
+// table records *what was written*, verbatim — reformatting an audited value
+// would defeat its purpose.
+
+model AuditEvent {
+  id String @id @default(uuid()) @db.Uuid
+
+  at DateTime @default(now()) @db.Timestamptz(6)
+
+  actorId String? @map("actor_id") @db.Uuid
+  actor   AppUser? @relation(fields: [actorId], references: [id], onDelete: Restrict)
+
+  /// Kept alongside the id so the trail stays readable if a user is ever
+  /// disabled or renamed.
+  actorEmail String @map("actor_email")
+
+  /// e.g. `material_rate:XSAUINS`, `lme_price`.
+  entity String
+  field  String
+
+  previous String
+  next     String
+  reason   String?
+
+  @@index([at(sort: Desc)])
+  @@index([entity, at(sort: Desc)])
+  @@map("audit_event")
+}
