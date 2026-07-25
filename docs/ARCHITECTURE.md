@@ -105,7 +105,11 @@ export type Kg    = Brand<Decimal, 'Kg'>;
 export type Metre = Brand<Decimal, 'Metre'>;
 ```
 
-Branded types mean a raw `number` cannot reach the engine — it's a compile error, not a runtime surprise. `Decimal` at 6 dp internally, **no intermediate rounding**; rounding happens once, at the display and document boundary, via `format.ts`. Postgres columns are `NUMERIC(18,6)`. Floats appear nowhere in the pricing path, and a lint rule bans `parseFloat` and `Number()` inside `modules/costing`.
+Branded types mean a raw `number` cannot reach the engine — it's a compile error, not a runtime surprise. `Decimal` at 28 significant digits internally, **no intermediate rounding**; rounding happens once, at the display and document boundary, via `format.ts`. Floats appear nowhere in the pricing path, and a lint rule bans `parseFloat` and `Number()` inside `modules/costing`.
+
+**Postgres columns are unconstrained `NUMERIC`, not `NUMERIC(18,6)`.** This document specified a fixed scale before the real data arrived; measurement against the imported cost master disproved it. Of 4,513 numeric values in the library, a scale of 6 dp alters **53.7%**, and even 12 dp alters 45% — the sheets carry values like `1.83595955371857` at 15 significant digits. Unconstrained `NUMERIC` round-trips every one of them exactly (`value::text` equals the source string), keeps ordering, `CHECK` and `SUM`, and has no cliff for a future small-magnitude material.
+
+The read path casts every numeric column with `::text` and reconstructs it through `dec()`, so a database driver's own decimal type never enters the pricing path.
 
 ---
 
