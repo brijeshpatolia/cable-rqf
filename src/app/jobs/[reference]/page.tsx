@@ -352,23 +352,66 @@ function LineDetail({
    * outside the library entirely offers nothing, and the form says so rather
    * than presenting an empty dropdown.
    */
-  const nearest: readonly Nearest[] = hasBreakdown(line)
-    ? [
-        {
-          code: line.product.id,
-          sourceSheet: line.product.sourceSheet ?? '',
-          designation: line.product.designation,
-          differs: line.differences.map((d) => axisLabel(d.axis)).join(', '),
-        },
-      ]
-    : line.match.tier === 'partial'
-      ? line.match.nearest.map((c) => ({
-          code: c.product.id,
-          sourceSheet: c.product.sourceSheet ?? '',
-          designation: c.product.designation,
-          differs: c.differences.map((d) => axisLabel(d.axis)).join(', '),
-        }))
-      : [];
+  const asNearest = (c: {
+    product: { id: string; sourceSheet?: string | undefined; designation: string };
+    differences: readonly {
+      axis: Parameters<typeof axisLabel>[0];
+      held: string;
+      requested: string;
+    }[];
+    sameBuild?: boolean;
+  }): Nearest => ({
+    code: c.product.id,
+    sourceSheet: c.product.sourceSheet ?? '',
+    designation: c.product.designation,
+    differs: c.differences.map((d) => axisLabel(d.axis)).join(', '),
+    /*
+      What the library *holds* on the axes that differ — not just which axes.
+      Choosing between five 3C×50 codes, the engineer is choosing a voltage;
+      naming the axis ("differs on voltage") makes them read to the end of a
+      long designation to find out which. Naming the value puts it first.
+    */
+    holds: c.differences
+      .map((d) =>
+        d.held === ''
+          ? `no ${axisLabel(d.axis)}`
+          : // A bare "70" beside a cable code reads as anything; the unit is
+            // what makes it a size.
+            d.axis === 'sizeMm2'
+            ? `${d.held} mm²`
+            : d.axis === 'cores'
+              ? `${d.held} core`
+              : d.held,
+      )
+      .join(' · '),
+    sameBuild: c.sameBuild ?? true,
+  });
+
+  /*
+    Partial *and* No-match both carry candidates now. A No-match line used to
+    end the conversation, leaving a red row with nothing to do about it — while
+    the library often holds the same core count and size under a different
+    designation, which is exactly what an engineer needs to see.
+
+    A settled line keeps the whole list rather than only the code it was
+    settled as, so changing your mind between five 3C×50 item codes is one
+    step. Offering just the current choice meant reopening the line first,
+    which threw the reason away to get the list back.
+  */
+  const offered = 'nearest' in line.match ? line.match.nearest.map(asNearest) : [];
+  const chosenNow = hasBreakdown(line)
+    ? asNearest({ product: line.product, differences: line.differences })
+    : null;
+
+  const nearest: readonly Nearest[] =
+    chosenNow === null
+      ? offered
+      : [
+          chosenNow,
+          ...offered.filter(
+            (n) => !(n.code === chosenNow.code && n.sourceSheet === chosenNow.sourceSheet),
+          ),
+        ];
 
   const current =
     'override' in line && line.override !== null

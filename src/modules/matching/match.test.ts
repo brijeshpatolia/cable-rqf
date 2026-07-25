@@ -83,10 +83,71 @@ describe('tiers', () => {
     if (result.tier === 'no-match') expect(result.reason).toContain('copper only');
   });
 
-  it('rejects a voltage Nuhas holds nothing for', () => {
+  it('offers the item codes at this size when the voltage is unheld', () => {
+    /*
+      This used to be a flat No-match with nothing offered, and it was wrong.
+      33 kV is a *line* voltage for what Nuhas costs as a 30 kV cable: the
+      copper is identical, and the library holds five item codes at 3-core
+      50 mm². A dead end there leaves an engineer with a red row and nothing to
+      do about it, when the answer was in the catalogue all along.
+
+      The app still will not price it — the tier says Partial, not Close.
+      Picking the right code stays a person's decision.
+    */
     const result = matchLine(parseLine('3C x 50mm2 Cu XLPE SWA PVC 33kV'), LIBRARY);
+    expect(result.tier).toBe('partial');
+    if (result.tier !== 'partial') return;
+
+    expect(result.reason).toContain('33kV');
+    const sameBuild = result.nearest.filter((c) => c.sameBuild);
+    expect(sameBuild.length).toBeGreaterThan(1);
+
+    // Every one of them really is the enquiry's core count and size.
+    for (const c of sameBuild) {
+      expect(c.product.spec.cores).toBe(3);
+      expect(Number(c.product.spec.sizeMm2.toString())).toBe(50);
+    }
+    // Including the 30 kV cable, which is the one an engineer would pick.
+    expect(sameBuild.map((c) => c.product.spec.voltage)).toContain('30kV');
+  });
+
+  it('still refuses a voltage where nothing at that build is held', () => {
+    const result = matchLine(parseLine('7C x 999mm2 Cu XLPE SWA PVC 33kV'), LIBRARY);
     expect(result.tier).toBe('no-match');
-    if (result.tier === 'no-match') expect(result.reason).toContain('33kV');
+    if (result.tier === 'no-match') {
+      expect(result.reason).toContain('nothing is held');
+    }
+  });
+
+  it('offers copper candidates on an aluminium line without pretending it matches', () => {
+    // The app will not price a different conductor — different cable, different
+    // cost basis. But an engineer may well quote the copper equivalent, and
+    // showing nothing helps nobody.
+    const result = matchLine(
+      parseLine('3C x 50mm2 aluminium XLPE SWA PVC 1kV'),
+      LIBRARY,
+    );
+    expect(result.tier).toBe('no-match');
+    if (result.tier !== 'no-match') return;
+
+    expect(result.reason).toContain('copper only');
+    expect(result.nearest.filter((c) => c.sameBuild).length).toBeGreaterThan(0);
+  });
+
+  it('ranks a different-build candidate by nearest cable, not fewest fields', () => {
+    /*
+      A regression this caught: ranking by "fewest differing fields" offered a
+      2.5 mm² product to a 55 mm² enquiry, because it happened to agree on more
+      of the finish. Picking it would have quoted the wrong copper entirely.
+    */
+    const result = matchLine(parseLine('3C x 55mm2 Cu XLPE SWA PVC 1kV'), LIBRARY);
+    expect(result.tier).toBe('partial');
+    if (result.tier !== 'partial') return;
+
+    const first = result.nearest[0];
+    expect(first).toBeDefined();
+    expect(Number(first!.product.spec.sizeMm2.toString())).toBe(50);
+    expect(first!.product.spec.cores).toBe(3);
   });
 
   it('marks an in-between size Partial and shows the nearest products', () => {

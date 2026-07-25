@@ -30,6 +30,10 @@ export interface Nearest {
   readonly sourceSheet: string;
   readonly designation: string;
   readonly differs: string;
+  /** What the library holds on the axes that differ, e.g. `30kV · no screen`. */
+  readonly holds: string;
+  /** Same core count and size as the enquiry — the copper is the same. */
+  readonly sameBuild: boolean;
 }
 
 type Action = (p: ActionResult | null, f: FormData) => Promise<ActionResult>;
@@ -71,11 +75,43 @@ export function SettleLine({
    * and offering the choice there would be an empty gesture.
    */
   const canChooseProduct = nearest.length > 0;
+  const sameBuildCount = nearest.filter((n) => n.sameBuild).length;
+
+  /**
+   * Item codes that appear more than once.
+   *
+   * Two products in the library genuinely share the code
+   * `P07CS3M2XLVWVKNN` across two source sheets. Only those need the sheet
+   * name spelled out to tell them apart — printing it on every row would put
+   * "3x50Cost Sheet - P07CS3M2XLVWVKNN" in front of an engineer who never
+   * needed to know the file it came from.
+   */
+  const duplicated = new Set(
+    nearest
+      .map((n) => n.code)
+      .filter((code, i, all) => all.indexOf(code) !== i),
+  );
 
   const [mode, setMode] = useState<'product' | 'rate'>(
     canChooseProduct && current?.rate == null ? 'product' : 'rate',
   );
-  const [chosen, setChosen] = useState(current?.productCode ?? nearest[0]?.code ?? '');
+  /**
+   * Selected by (code, source sheet), not by code alone.
+   *
+   * The library's natural key is both halves: two products genuinely share the
+   * item code `P07CS3M2XLVWVKNN` across two source sheets. Keying the picker on
+   * the code meant choosing the second silently priced the first — invisible,
+   * because they look identical in a dropdown.
+   */
+  const keyOf = (n: Nearest) => `${n.code}\u0000${n.sourceSheet}`;
+  const [chosen, setChosen] = useState(
+    current === null
+      ? (nearest[0] === undefined ? '' : keyOf(nearest[0]))
+      : (nearest.find((n) => n.code === current.productCode) ?? nearest[0]) === undefined
+        ? ''
+        : keyOf((nearest.find((n) => n.code === current.productCode) ?? nearest[0])!),
+  );
+  const selected = nearest.find((n) => keyOf(n) === chosen);
 
   if (!canDecide) {
     return (
@@ -85,9 +121,6 @@ export function SettleLine({
       </p>
     );
   }
-
-  const sheetOf = (code: string) =>
-    nearest.find((n) => n.code === code)?.sourceSheet ?? '';
 
   return (
     <div className="mt-3" style={{ borderTop: '1px solid var(--color-line-hairline)', paddingTop: 12 }}>
@@ -146,26 +179,50 @@ export function SettleLine({
         {mode === 'product' && canChooseProduct ? (
           <>
               <label className="flex flex-col gap-1">
-                <span className="label">Price it as</span>
+                <span className="label">
+                  Price it as
+                  {sameBuildCount === 0
+                    ? ''
+                    : ` — ${sameBuildCount} item code${sameBuildCount === 1 ? '' : 's'} at this size`}
+                </span>
                 <select
-                  name="productCode"
                   value={chosen}
                   onChange={(e) => setChosen(e.target.value)}
                   style={input}
                 >
-                  {nearest.map((n) => (
-                    <option key={`${n.code}-${n.sourceSheet}`} value={n.code}>
-                      {n.code} — {n.designation}
-                    </option>
-                  ))}
+                  {/*
+                    Grouped rather than flagged. The engineer's first question
+                    is "what do we hold at this size?", and an <optgroup>
+                    answers it before they read a single code — where a `~`
+                    prefix made them decode a symbol first.
+                  */}
+                  {sameBuildCount > 0 ? (
+                    <optgroup label={`Same size — ${sameBuildCount} item code${sameBuildCount === 1 ? '' : 's'}`}>
+                      {nearest.filter((n) => n.sameBuild).map((n) => (
+                        <option key={keyOf(n)} value={keyOf(n)}>
+                          {labelOf(n, duplicated)}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ) : null}
+
+                  {nearest.some((n) => !n.sameBuild) ? (
+                    <optgroup label="Other sizes">
+                      {nearest.filter((n) => !n.sameBuild).map((n) => (
+                        <option key={keyOf(n)} value={keyOf(n)}>
+                          {labelOf(n, duplicated)}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ) : null}
                 </select>
               </label>
-            <input type="hidden" name="sourceSheet" value={sheetOf(chosen)} />
+            <input type="hidden" name="productCode" value={selected?.code ?? ''} />
+            <input type="hidden" name="sourceSheet" value={selected?.sourceSheet ?? ''} />
             <p style={note}>
-              Differs on{' '}
-              {nearest.find((n) => n.code === chosen)?.differs || 'nothing'}. The
-              engine costs it from the library, so the line keeps its full
-              build-up and the swap is named on the quote.
+              Differs on {selected?.differs || 'nothing'}. The engine costs it
+              from the library, so the line keeps its full build-up and the swap
+              is named on the quote.
             </p>
           </>
         ) : (
@@ -217,6 +274,19 @@ export function SettleLine({
       </form>
     </div>
   );
+}
+
+/**
+ * `CODE · what differs · designation`.
+ *
+ * The differing values come second because that is what the engineer is
+ * actually choosing between. The source sheet appears only where the same code
+ * genuinely appears twice — otherwise it is a filename nobody needed.
+ */
+function labelOf(n: Nearest, duplicated: ReadonlySet<string>): string {
+  const where = duplicated.has(n.code) && n.sourceSheet !== '' ? ` [${n.sourceSheet}]` : '';
+  const what = n.holds === '' ? 'identical' : n.holds;
+  return `${n.code}${where} · ${what} · ${n.designation}`;
 }
 
 function Choice({

@@ -73,6 +73,13 @@ export interface AxisDifference {
 export interface Candidate {
   readonly product: Product;
   readonly differences: readonly AxisDifference[];
+  /**
+   * True when the candidate is the same conductor size and core count as the
+   * enquiry. These are the ones an engineer can realistically pick: the copper
+   * is the same, so what differs is a finish or a designation rather than a
+   * different cable.
+   */
+  readonly sameBuild: boolean;
 }
 
 export type MatchResult =
@@ -89,7 +96,20 @@ export type MatchResult =
       /** Nearest products and exactly which fields differ. Never priced. */
       readonly nearest: readonly Candidate[];
     }
-  | { readonly tier: 'no-match'; readonly reason: string };
+  | {
+      readonly tier: 'no-match';
+      readonly reason: string;
+      /**
+       * Offered even here.
+       *
+       * A No-match line used to end the conversation, which left an engineer
+       * with a red row and nothing to do about it. The library may still hold
+       * the same core count and size — the same copper — under a different
+       * designation, and that is exactly what an engineer needs to see before
+       * deciding. The tier still says the app will not price it.
+       */
+      readonly nearest: readonly Candidate[];
+    };
 
 /** Fields the extractor could not resolve. A line with any of these is unpriceable. */
 export function missingFields(line: ExtractedLine): readonly MatchAxis[] {
@@ -158,7 +178,14 @@ function differencesAgainst(
 
 export interface MatchOptions {
   readonly substitutions?: readonly SubstitutionRule[];
-  /** How many nearest products a Partial line shows. */
+  /**
+   * How many products to offer beyond those at the same cores × size.
+   *
+   * Everything at the same build is offered in full regardless of this number.
+   * That is the point of the list: an engineer who knows the size is right
+   * wants to see every item code that carries it, not a top-three chosen by a
+   * scoring rule they cannot see.
+   */
   readonly nearestCount?: number;
 }
 
@@ -188,26 +215,55 @@ export function matchLine(
   }
 
   const requested = specOf(line);
+  const scored = candidatesFor(requested, products, nearestCount);
+  const sameBuild = scored.filter((c) => c.sameBuild);
 
   // ── Outside the library entirely ──────────────────────────────────────
+  //
+  // Still carrying candidates. A different conductor is genuinely a different
+  // cable with a different cost basis, so the app will not price it — but the
+  // engineer may well decide to quote the copper equivalent, and refusing to
+  // even show it leaves them with a red row and nowhere to go.
   if (requested.conductor !== 'Cu') {
     return {
       tier: 'no-match',
-      reason: `${requested.conductor} conductor — the library is copper only.`,
+      reason:
+        `${requested.conductor} conductor — the library is copper only.` +
+        (sameBuild.length === 0
+          ? ''
+          : ` The same build in copper is held under ${sameBuild.length} item ` +
+            `code${sameBuild.length === 1 ? '' : 's'}, priced on copper.`),
+      nearest: scored,
     };
   }
 
   const heldVoltages = new Set(products.map((p) => p.spec.voltage));
   if (!heldVoltages.has(requested.voltage ?? '')) {
+    // A voltage the library does not hold is not automatically a cable it
+    // cannot build. 33 kV is a line voltage for what Nuhas costs as a 30 kV
+    // cable, and the copper is identical — so when the same core count and
+    // size *is* held, this is a line an engineer can settle, not a dead end.
+    if (sameBuild.length > 0) {
+      return {
+        tier: 'partial',
+        reason:
+          `${requested.voltage} is not a voltage the library holds a costed ` +
+          `product for, but ${sameBuild.length} item ` +
+          `code${sameBuild.length === 1 ? '' : 's'} carry this core count and ` +
+          'size. Voltage designations differ between standards — pick the ' +
+          'right one, or price it by hand.',
+        nearest: scored,
+      };
+    }
+
     return {
       tier: 'no-match',
-      reason: `${requested.voltage} is not a voltage the library holds a costed product for.`,
+      reason:
+        `${requested.voltage} is not a voltage the library holds a costed ` +
+        'product for, and nothing is held at this core count and size either.',
+      nearest: scored,
     };
   }
-
-  const scored = products
-    .map((product) => ({ product, differences: differencesAgainst(requested, product) }))
-    .sort((a, b) => a.differences.length - b.differences.length);
 
   // ── Exact ─────────────────────────────────────────────────────────────
   const exact = scored.find((c) => c.differences.length === 0);
@@ -230,21 +286,110 @@ export function matchLine(
     return { tier: 'close', product: candidate.product, substitution: rule, difference };
   }
 
-  // ── Partial: nearest products, stated differences, no price ──────────
-  const nearest = scored.slice(0, nearestCount);
-  const closest = nearest[0];
+  // ── Partial: candidates, stated differences, no price ────────────────
+  return { tier: 'partial', reason: reasonFor(scored), nearest: scored };
+}
 
-  const reason =
-    closest === undefined
-      ? 'No costed product to compare against.'
-      : closest.differences.length === 1
-        ? `Differs from the nearest costed product on ${axisLabel(closest.differences[0]!.axis)}: ` +
-          `asked for ${closest.differences[0]!.requested || '(none)'}, ` +
-          `library holds ${closest.differences[0]!.held || '(none)'}.`
-        : `Differs from the nearest costed product on ${closest.differences.length} fields: ` +
-          `${closest.differences.map((d) => axisLabel(d.axis)).join(', ')}.`;
+/**
+ * The products worth offering, best first.
+ *
+ * **Everything at the same cores × size comes first, and all of it is
+ * offered.** That is the finding this function exists to serve: an engineer
+ * looking at a 33 kV enquiry knows the copper is a 3-core 50 mm², and wants to
+ * see every item code carrying that build so they can pick the right one. A
+ * top-three ranked by "fewest differing fields" would have shown them cables
+ * of the wrong size that happened to agree on more of the finish — which is
+ * both useless and, if picked, wrong.
+ *
+ * Products at a different build follow, capped, because they are a fallback
+ * rather than an answer.
+ */
+export function candidatesFor(
+  requested: Partial<CableSpec>,
+  products: readonly Product[],
+  otherBuildCount = 3,
+): readonly Candidate[] {
+  const scored = products.map((product) => ({
+    product,
+    differences: differencesAgainst(requested, product),
+    sameBuild: isSameBuild(requested, product),
+  }));
 
-  return { tier: 'partial', reason, nearest };
+  // Same build: everything else is equal, so fewest differences wins.
+  const byDifferences = (a: Candidate, b: Candidate) =>
+    a.differences.length - b.differences.length ||
+    a.product.id.localeCompare(b.product.id);
+
+  /**
+   * Different build: nearest *cable* wins, not fewest differing fields.
+   *
+   * Ranking these by field count offered a 2.5 mm² cable to a 55 mm² enquiry
+   * because it happened to agree on the finish — which is worse than useless,
+   * since picking it would quote the wrong copper. Core count is compared
+   * before size, because 3-core to 4-core is a bigger jump than 50 mm² to
+   * 70 mm², and size is compared in proportion so 50→70 beats 300→500.
+   */
+  const cores = Number(valueOf(requested, 'cores'));
+  const size = Number(valueOf(requested, 'sizeMm2'));
+
+  const byNearestCable = (a: Candidate, b: Candidate) =>
+    coreDistance(a, cores) - coreDistance(b, cores) ||
+    sizeDistance(a, size) - sizeDistance(b, size) ||
+    byDifferences(a, b);
+
+  const sameBuild = scored.filter((c) => c.sameBuild).sort(byDifferences);
+  const rest = scored
+    .filter((c) => !c.sameBuild)
+    .sort(byNearestCable)
+    .slice(0, otherBuildCount);
+
+  return [...sameBuild, ...rest];
+}
+
+function coreDistance(c: Candidate, cores: number): number {
+  const held = Number(valueOf(c.product.spec, 'cores'));
+  return Number.isFinite(cores) && Number.isFinite(held) ? Math.abs(held - cores) : 0;
+}
+
+/** Proportional, so 50→70 ranks ahead of 300→500 despite the smaller ratio. */
+function sizeDistance(c: Candidate, size: number): number {
+  const held = Number(valueOf(c.product.spec, 'sizeMm2'));
+  if (!Number.isFinite(size) || !Number.isFinite(held) || size <= 0 || held <= 0) {
+    return Number.POSITIVE_INFINITY;
+  }
+  return Math.abs(Math.log(held / size));
+}
+
+/** Same core count and same conductor size — the copper is the same. */
+function isSameBuild(requested: Partial<CableSpec>, product: Product): boolean {
+  const cores = valueOf(requested, 'cores');
+  const size = valueOf(requested, 'sizeMm2');
+  if (cores === '' || size === '') return false;
+  return (
+    Number(cores) === Number(valueOf(product.spec, 'cores')) &&
+    Number(size) === Number(valueOf(product.spec, 'sizeMm2'))
+  );
+}
+
+function reasonFor(candidates: readonly Candidate[]): string {
+  const sameBuild = candidates.filter((c) => c.sameBuild).length;
+  if (sameBuild > 0) {
+    return (
+      `Not an exact match, but the library holds ${sameBuild} item ` +
+      `code${sameBuild === 1 ? '' : 's'} at this core count and size. ` +
+      'Pick the right one, or price it by hand.'
+    );
+  }
+
+  const closest = candidates[0];
+  if (closest === undefined) return 'No costed product to compare against.';
+
+  return closest.differences.length === 1
+    ? `Differs from the nearest costed product on ${axisLabel(closest.differences[0]!.axis)}: ` +
+      `asked for ${closest.differences[0]!.requested || '(none)'}, ` +
+      `library holds ${closest.differences[0]!.held || '(none)'}.`
+    : `Differs from the nearest costed product on ${closest.differences.length} fields: ` +
+      `${closest.differences.map((d) => axisLabel(d.axis)).join(', ')}.`;
 }
 
 /**
