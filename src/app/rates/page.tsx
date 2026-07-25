@@ -1,4 +1,8 @@
 import { formatDate, formatInstant, formatNumber } from '@/core/format';
+import { session } from '@/infra/auth/session';
+import { can } from '@/modules/auth';
+import { LmeEntry, RateEditor } from '@/ui/components/RateEditors';
+import { enterLmePrice, supersedeRate } from './actions';
 import { repositories } from '@/infra/repositories';
 import { now } from '@/infra/clock';
 import { copperMetalValue } from '@/modules/costing';
@@ -25,16 +29,34 @@ export default async function RateDeskPage() {
   const asOf = now();
   const { rates, quotes } = repositories;
 
-  const [rateSet, materialRows, machineRows, lme, openQuotes] = await Promise.all([
+  const [rateSet, materialRows, machineRows, lme, openQuotes, allProducts] = await Promise.all([
     rates.resolveAt(asOf),
     rates.materialRows(),
     rates.machineRows(),
     rates.lmeHistory(5),
     quotes.open(),
+    repositories.products.list(),
   ]);
 
   const copper = copperMetalValue(rateSet.copper);
   const drift = sweep(openQuotes, rateSet.copper.lme, asOf);
+
+  // The controls are hidden for anyone who may not use them — and the actions
+  // behind them check again, because a hidden button is not a permission.
+  const actor = await session.currentActor();
+  const mayEdit = can(actor, 'rate.edit');
+
+  // A material the rate owner is most likely to want: the one the whole
+  // library's copper hangs off.
+  const sampleCode = [...rateSet.materials.keys()].find((k) => {
+    const m = rateSet.materials.get(k);
+    return m !== undefined && !m.lmeLinked;
+  });
+  const sample = sampleCode === undefined ? undefined : rateSet.materials.get(sampleCode);
+  const copperCode = [...rateSet.materials.keys()].find(
+    (k) => rateSet.materials.get(k)?.lmeLinked === true,
+  );
+  const copperMaterial = copperCode === undefined ? undefined : rateSet.materials.get(copperCode);
 
   const inForce = (r: EffectiveRow<Decimal>) => r.validTo === null;
 
@@ -78,7 +100,7 @@ export default async function RateDeskPage() {
       */}
       <Panel title="Blast radius">
         <div className="flex flex-wrap items-baseline gap-x-10 gap-y-4">
-          <Metric label="Products repriced" value={<Count n={8} />} />
+          <Metric label="Products repriced" value={<Count n={allProducts.length} />} />
           <Metric label="Open quotes" value={<Count n={openQuotes.length} />} />
           <Metric
             label="Quotes flagged"
@@ -121,6 +143,76 @@ export default async function RateDeskPage() {
         </div>
 
         <aside style={{ width: 340 }} className="shrink-0 flex flex-col gap-6">
+          {mayEdit ? (
+            <>
+              <Panel title="Enter copper price">
+                <LmeEntry
+                  action={enterLmePrice}
+                  currentLme={rateSet.copper.lme.toString()}
+                  currentFx={rateSet.copper.fx.toString()}
+                  productCount={allProducts.length}
+                />
+              </Panel>
+
+              {sampleCode !== undefined && sample !== undefined ? (
+                <Panel title={`Edit rate — ${sampleCode}`}>
+                  <RateEditor
+                    action={supersedeRate}
+                    kind="material"
+                    code={sampleCode}
+                    currentValue={sample.rate.toString()}
+                    currentPremium={null}
+                    lmeLinked={false}
+                  />
+                </Panel>
+              ) : null}
+
+              {copperCode !== undefined && copperMaterial !== undefined ? (
+                <Panel title={`Edit premium — ${copperCode}`}>
+                  <RateEditor
+                    action={supersedeRate}
+                    kind="material"
+                    code={copperCode}
+                    currentValue={copperMaterial.rate.toString()}
+                    currentPremium={
+                      copperMaterial.drawingPremium?.toString() ?? null
+                    }
+                    lmeLinked
+                  />
+                </Panel>
+              ) : null}
+            </>
+          ) : (
+            <Panel title="Rate editing">
+              <p
+                style={{
+                  color: 'var(--color-ink-secondary)',
+                  fontSize: 'var(--text-micro)',
+                  lineHeight: 'var(--text-micro--line-height)',
+                }}
+              >
+                {actor === null
+                  ? 'Sign in as the rate owner to edit rates.'
+                  : 'Only the rate owner may edit rates. Rate editing and quote approval are deliberately different people.'}
+              </p>
+              {actor === null ? (
+                <a
+                  href="/sign-in"
+                  className="mt-3 block text-center"
+                  style={{
+                    backgroundColor: 'var(--color-copper)',
+                    color: 'var(--color-ink-on-copper)',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '7px 12px',
+                    fontWeight: 550,
+                  }}
+                >
+                  Sign in
+                </a>
+              ) : null}
+            </Panel>
+          )}
+
           <Panel title="LME copper" flush>
             <DataTable
               columns={[
@@ -251,7 +343,7 @@ function rateColumns(unit: string): readonly Column<EffectiveRow<Decimal>>[] {
       key: 'id',
       header: 'Row',
       align: 'right',
-      width: 70,
+      width: 92,
       render: (r) => (
         <span
           className="numeric"
@@ -260,11 +352,19 @@ function rateColumns(unit: string): readonly Column<EffectiveRow<Decimal>>[] {
             fontSize: 'var(--text-micro)',
           }}
         >
-          #{r.rateId}
+          {shortId(r.rateId)}
         </span>
       ),
     },
   ];
+}
+
+/**
+ * Enough of the row's id to tie a rate to its audit entry, without a 36-
+ * character uuid wrapping over four lines. The full value is one query away.
+ */
+function shortId(id: string): string {
+  return id.length > 12 ? `#${id.slice(0, 8)}` : `#${id}`;
 }
 
 /** Closed rows sink below the ones in force; keys stay together. */
