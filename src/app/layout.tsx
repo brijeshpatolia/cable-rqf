@@ -11,7 +11,7 @@ const NAV = [
   { label: 'Inbox', href: '/', phase: 3 },
   { label: 'Review', href: '/review', phase: 2 },
   { label: 'Catalogue', href: '/catalogue', phase: 1 },
-  { label: 'Quotes', href: '/quotes', phase: 1 },
+  { label: 'Quotes', href: '/quotes', phase: 2 },
   { label: 'Rate Desk', href: '/rates', phase: 1 },
   { label: 'Price Watch', href: '/price-watch', phase: 1 },
 ] as const;

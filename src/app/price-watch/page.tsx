@@ -112,12 +112,20 @@ export default async function PriceWatchPage() {
               header: 'Quote',
               width: 140,
               render: (r: DriftResult) => (
-                <span
+                // A flagged quote is one someone is about to act on, so the
+                // number goes straight to the quote rather than making them
+                // search for it.
+                <a
+                  href={`/quotes/${r.quote.number}`}
                   className="numeric"
-                  style={{ textAlign: 'left', display: 'block' }}
+                  style={{
+                    textAlign: 'left',
+                    display: 'block',
+                    color: 'var(--color-copper)',
+                  }}
                 >
-                  {r.quote.quoteId}
-                </span>
+                  {r.quote.number}
+                </a>
               ),
             },
             {
@@ -199,7 +207,7 @@ export default async function PriceWatchPage() {
             },
           ]}
           rows={s.results}
-          rowKey={(r) => r.quote.quoteId}
+          rowKey={(r) => r.quote.number}
           empty="No open quotes."
         />
       </Panel>

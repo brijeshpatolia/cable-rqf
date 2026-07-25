@@ -60,6 +60,7 @@ model AppUser {
   createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
 
   auditEvents AuditEvent[]
+  quotes      Quote[]
 
   @@map("app_user")
 }
@@ -256,4 +257,81 @@ model AuditEvent {
   @@index([at(sort: Desc)])
   @@index([entity, at(sort: Desc)])
   @@map("audit_event")
+}
+
+// ─── Quotes ──────────────────────────────────────────────────────────────
+//
+// Reconstruction is belt and braces (ARCHITECTURE.md §5). A quote records
+// `pricedAt`, so the rates it was struck on can be re-resolved; AND it freezes
+// the complete cost breakdown as JSONB. Either alone is insufficient — the
+// first breaks if history is ever corrected, the second cannot say *which*
+// rate row a number came from. Together, "why was this 4.812 in March?" is one
+// click and cannot drift.
+
+enum QuoteStatus {
+  draft
+  approved
+  sent
+  lapsed
+}
+
+model Quote {
+  id     String      @id @default(uuid()) @db.Uuid
+  /// Human-facing, sequential per year: Q-2026-0148.
+  number String      @unique
+  status QuoteStatus @default(draft)
+
+  customer String
+  /// Free text on the document: delivery, payment, anything negotiated.
+  terms    String?
+
+  /// The instant the rates were resolved at. The engine can re-resolve from it.
+  pricedAt DateTime @map("priced_at") @db.Timestamptz(6)
+  /// After this, the price is no longer offered. Copper moves.
+  validUntil DateTime @map("valid_until") @db.Timestamptz(6)
+
+  /// The strike, stamped on the document itself so the paper carries its own
+  /// provenance even when separated from this system.
+  lmeStruck     Decimal @map("lme_struck") @db.Decimal
+  fxStruck      Decimal @map("fx_struck") @db.Decimal
+  marginPercent Decimal @map("margin_percent") @db.Decimal
+
+  createdById String?  @map("created_by_id") @db.Uuid
+  createdBy   AppUser? @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  approvedAt  DateTime? @map("approved_at") @db.Timestamptz(6)
+
+  lines QuoteLine[]
+
+  @@index([status, createdAt(sort: Desc)])
+  @@index([customer])
+  @@map("quote")
+}
+
+model QuoteLine {
+  id      String @id @default(uuid()) @db.Uuid
+  quoteId String @map("quote_id") @db.Uuid
+  quote   Quote  @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  position Int
+
+  /// What the customer asked for, verbatim. Kept because a quote is answerable
+  /// to the enquiry, not only to the product it was matched to.
+  requestText String @map("request_text")
+
+  productCode String @map("product_code")
+  sourceSheet String @map("source_sheet")
+  designation String
+
+  quantityMetres Decimal @map("quantity_metres") @db.Decimal
+  unitRate       Decimal @map("unit_rate") @db.Decimal
+  lineTotal      Decimal @map("line_total") @db.Decimal
+
+  /// The complete CostBreakdown, frozen at approval. Every material, every
+  /// machine stage, every rate row it drew from.
+  costSnapshot Json @map("cost_snapshot")
+
+  @@unique([quoteId, position])
+  @@index([quoteId])
+  @@map("quote_line")
 }

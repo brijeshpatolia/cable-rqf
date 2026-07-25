@@ -6,7 +6,7 @@ import { assessDrift, driftHeadline, sweep, type OpenQuote } from './drift';
 const NOW = new Date('2026-07-24T10:00:00Z');
 
 const quote = (over: Partial<OpenQuote> = {}): OpenQuote => ({
-  quoteId: 'Q-1001',
+  number: 'Q-1001',
   customer: 'Muscat Electricals',
   struckLme: usdPerTonne('9340'),
   struckAt: new Date('2026-07-01T08:00:00Z'),
@@ -52,7 +52,7 @@ describe('drift', () => {
 
   it('excludes lapsed quotes from total exposure', () => {
     const s = sweep(
-      [quote(), quote({ quoteId: 'Q-2', expiresAt: new Date('2026-07-01') })],
+      [quote(), quote({ number: 'Q-2', expiresAt: new Date('2026-07-01') })],
       usdPerTonne('9720'),
       NOW,
     );
@@ -62,7 +62,7 @@ describe('drift', () => {
 
   it('writes the headline the spec asks for', () => {
     const s = sweep(
-      [quote(), quote({ quoteId: 'Q-2' }), quote({ quoteId: 'Q-3' })],
+      [quote(), quote({ number: 'Q-2' }), quote({ number: 'Q-3' })],
       usdPerTonne('9720'),
       NOW,
     );
@@ -73,7 +73,7 @@ describe('drift', () => {
 
   it('reads as a range when the flagged quotes were struck at different prices', () => {
     const s = sweep(
-      [quote(), quote({ quoteId: 'Q-2', struckLme: usdPerTonne('8994') })],
+      [quote(), quote({ number: 'Q-2', struckLme: usdPerTonne('8994') })],
       usdPerTonne('9720'),
       NOW,
     );

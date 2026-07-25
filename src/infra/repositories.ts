@@ -5,6 +5,7 @@ import type {
   RateRepository,
 } from '@/modules/rates';
 import { DbProductRepository, DbRateRepository } from './db/repository';
+import { DbQuoteRepository } from './db/quote-repository';
 import { DbRateWriter } from './db/write-repository';
 import {
   MemoryAuditRepository,
@@ -44,15 +45,25 @@ export const repositories: Repositories = useMemory
   : {
       rates: new DbRateRepository(),
       products: new DbProductRepository(),
-      // Quotes and the audit trail have no screens yet, so they keep the
-      // in-memory shapes until the phase that gives them one. Named here
-      // rather than hidden, so the gap is visible.
-      quotes: new MemoryQuoteRepository(),
+      quotes: new DbQuoteRepository(),
+      // The audit trail has no screen yet, so it keeps the in-memory shape
+      // until the phase that gives it one. Named here rather than hidden, so
+      // the gap is visible — the rows are being written either way.
       audit: new MemoryAuditRepository(),
     };
 
 /** The rate write path. Only meaningful against the database. */
 export const rateWriter = new DbRateWriter();
+
+/**
+ * The quote store, beyond the `open()` the price watch needs.
+ *
+ * Named separately because it has no in-memory counterpart and should not
+ * pretend to: a quote is a document with legal weight, and a fake one that
+ * evaporates on restart is worse than a screen that says the database is not
+ * configured.
+ */
+export const quoteStore = new DbQuoteRepository();
 
 /** True when the app is reading real data rather than the seeded stand-in. */
 export const isDatabaseBacked = !useMemory;

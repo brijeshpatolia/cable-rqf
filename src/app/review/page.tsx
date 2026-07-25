@@ -1,73 +1,41 @@
-import { metres } from '@/core/units';
-import { SOURCE_TERMS } from '@/infra/data';
-import { repositories } from '@/infra/repositories';
-import { now } from '@/infra/clock';
-import { computeCost } from '@/modules/costing';
+import { ZERO, type Decimal } from '@/core/decimal';
+import { session } from '@/infra/auth/session';
+import { can } from '@/modules/auth';
 import { axisLabel } from '@/modules/matching';
-import { byReviewOrder, isHeld, isPriced, reviewJob } from '@/modules/matching';
-import { deriveBounds } from '@/modules/matching';
+import { byReviewOrder, isHeld, isPriced } from '@/modules/matching';
+import { ApproveJob } from '@/ui/components/ApproveJob';
 import { CostBreakdownView } from '@/ui/components/CostBreakdownView';
 import { ExpandableRow } from '@/ui/components/ExpandableRow';
 import { NumericCell } from '@/ui/components/NumericCell';
 import { Panel } from '@/ui/components/Panel';
 import { StatusDot, TierLegend } from '@/ui/components/StatusDot';
 import type { Tier } from '@/ui/components/tier';
+import { approveJob } from './actions';
+import { SAMPLE_RFQ, buildJob } from './job';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata = { title: 'Review — Cable Quoting' };
 
-/**
- * A worked example standing in for a pasted RFQ, until Phase 3 puts document
- * extraction in front of this screen. Every tier is represented, because the
- * point of the screen is what it does with the ones it cannot price.
- */
-const SAMPLE_RFQ = [
-  '1  3C x 50mm2 Cu XLPE SWA PVC 1kV — 12,000 m',
-  '2  4C x 16 sq mm copper, cross linked polyethylene, steel wire armoured, p.v.c, 0.6/1kV — 8,500 m',
-  '3  10 Pair x 1.5mm2 Cu XLPE IOSCR FRRT PVC SWA 500V — 2,000 m',
-  '4  3C x 55mm2 Cu XLPE SWA PVC 1kV — 1,500 m',
-  '5  3C x 50mm2 aluminium XLPE SWA PVC 1kV — 4,000 m',
-  '6  3C x 50mm2 Cu XLPE SWA PVC 33kV — 900 m',
-  '7  3C x 50mm2 Cu XLPE SWA PVC 1kV with unobtainium bedding — 300 m',
-].join('\n');
+export default async function ReviewPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ rfq?: string }>;
+}) {
+  const { rfq: submitted } = await searchParams;
+  const rfq = submitted !== undefined && submitted.trim() !== '' ? submitted : SAMPLE_RFQ;
 
-/** Strips the leading line number a customer's table usually carries. */
-const stripIndex = (l: string) => l.replace(/^\d+\s+/, '');
-
-export default async function ReviewPage() {
-  const asOf = now();
-  const { products, rates } = repositories;
-  const [rateSet, library] = await Promise.all([
-    rates.resolveAt(asOf),
-    products.list(),
+  const [{ job }, actor] = await Promise.all([
+    buildJob(rfq),
+    session.currentActor(),
   ]);
 
-  // Which materials reprice with copper comes from the resolved rate set, not
-  // from the imported JSON — otherwise this screen would keep answering from
-  // the snapshot after the rate owner edits something.
-  const lmeLinked = new Set(
-    [...rateSet.materials]
-      .filter(([, m]) => m.lmeLinked)
-      .map(([code]) => code),
-  );
-  const bounds = deriveBounds(library, lmeLinked, (p) => {
-    const r = computeCost(p, { metres: metres(1000) }, rateSet, SOURCE_TERMS);
-    return r.ok ? r.value.unitRate : null;
-  });
-
-  const job = reviewJob(
-    SAMPLE_RFQ.split('\n').map(stripIndex).join('\n'),
-    library,
-    rateSet,
-    SOURCE_TERMS,
-    bounds,
-  );
-
   const lines = [...job.lines].sort(byReviewOrder);
-  const total = job.lines
-    .filter(isPriced)
-    .reduce((acc, l) => acc.plus(l.breakdown.lineTotal), rateSet.copper.lme.times(0));
+  const priced = job.lines.filter(isPriced);
+  const total = priced.reduce<Decimal>(
+    (acc, l) => acc.plus(l.breakdown.lineTotal),
+    ZERO,
+  );
 
   return (
     <div style={{ padding: 24 }} className="flex flex-col gap-6">
@@ -92,21 +60,66 @@ export default async function ReviewPage() {
 
       <div className="flex gap-6">
         <div className="min-w-0 flex-1 flex flex-col gap-6">
+          {/*
+            Editable, because until Phase 3 reads the customer's document this
+            textarea *is* the intake. A plain GET form: the text goes in the
+            URL, the server re-parses and re-prices it, and the result is a
+            link an engineer can send to a colleague. Phase 3 replaces this
+            with the extracted document, and takes the URL length limit with
+            it.
+          */}
           <Panel title="RFQ as received" flush>
-            <pre
-              className="numeric"
-              style={{
-                margin: 0,
-                padding: 16,
-                textAlign: 'left',
-                color: 'var(--color-ink-secondary)',
-                fontSize: 'var(--text-micro)',
-                lineHeight: '18px',
-                whiteSpace: 'pre-wrap',
-              }}
-            >
-              {SAMPLE_RFQ}
-            </pre>
+            <form method="get" action="/review">
+              <textarea
+                name="rfq"
+                defaultValue={rfq}
+                rows={8}
+                spellCheck={false}
+                className="numeric w-full"
+                style={{
+                  display: 'block',
+                  margin: 0,
+                  padding: 16,
+                  textAlign: 'left',
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  resize: 'vertical',
+                  color: 'var(--color-ink-secondary)',
+                  fontSize: 'var(--text-micro)',
+                  lineHeight: '18px',
+                }}
+              />
+              <div
+                className="flex items-center justify-between gap-4"
+                style={{
+                  padding: '8px 16px',
+                  borderTop: '1px solid var(--color-line-hairline)',
+                }}
+              >
+                <span
+                  style={{
+                    color: 'var(--color-ink-tertiary)',
+                    fontSize: 'var(--text-micro)',
+                  }}
+                >
+                  One line per item. Quantity in metres at the end of the line.
+                </span>
+                <button
+                  type="submit"
+                  style={{
+                    border: '1px solid var(--color-line-strong)',
+                    borderRadius: 'var(--radius-md)',
+                    color: 'var(--color-ink-primary)',
+                    padding: '5px 12px',
+                    fontSize: 'var(--text-body)',
+                    minHeight: 'var(--row-height)',
+                  }}
+                >
+                  Price this
+                </button>
+              </div>
+            </form>
           </Panel>
 
           <Panel
@@ -293,38 +306,13 @@ export default async function ReviewPage() {
               </div>
             </div>
 
-            {/*
-              The approve action always states its condition. It never sits
-              grey and silent (DESIGN_SYSTEM.md §9).
-            */}
-            <button
-              type="button"
-              disabled={job.blockers.length > 0}
-              className="mt-5 w-full"
-              style={{
-                backgroundColor:
-                  job.blockers.length > 0
-                    ? 'var(--color-surface-raised)'
-                    : 'var(--color-copper)',
-                color:
-                  job.blockers.length > 0
-                    ? 'var(--color-ink-tertiary)'
-                    : 'var(--color-ink-on-copper)',
-                border:
-                  job.blockers.length > 0
-                    ? '1px solid var(--color-line-hairline)'
-                    : 'none',
-                borderRadius: 'var(--radius-md)',
-                padding: '8px 12px',
-                fontWeight: 550,
-                minHeight: 'var(--row-height)',
-                cursor: job.blockers.length > 0 ? 'not-allowed' : 'pointer',
-              }}
-            >
-              {job.blockers.length > 0
-                ? `Approve — ${job.blockers.join(', ')}`
-                : 'Approve job'}
-            </button>
+            <ApproveJob
+              action={approveJob}
+              blockers={job.blockers}
+              rfq={rfq}
+              lineCount={priced.length}
+              canApprove={can(actor, 'quote.approve')}
+            />
           </Panel>
 
           <Panel title="Match tiers">

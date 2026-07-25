@@ -91,7 +91,7 @@ export const LME_HISTORY: readonly LmeTick[] = [
 
 export const OPEN_QUOTES: readonly OpenQuote[] = [
   {
-    quoteId: 'Q-2026-0148',
+    number: 'Q-2026-0148',
     customer: 'Muscat Electricals LLC',
     struckLme: usdPerTonne('9340.00'),
     struckAt: new Date('2026-07-24T04:00:00Z'),
@@ -101,7 +101,7 @@ export const OPEN_QUOTES: readonly OpenQuote[] = [
     fx: DRIVERS.fx,
   },
   {
-    quoteId: 'Q-2026-0141',
+    number: 'Q-2026-0141',
     customer: 'Sohar Industrial Contracting',
     struckLme: usdPerTonne('8994.00'),
     struckAt: new Date('2026-07-18T04:00:00Z'),
@@ -111,7 +111,7 @@ export const OPEN_QUOTES: readonly OpenQuote[] = [
     fx: DRIVERS.fx,
   },
   {
-    quoteId: 'Q-2026-0137',
+    number: 'Q-2026-0137',
     customer: 'Duqm Port Authority',
     struckLme: usdPerTonne('9102.00'),
     struckAt: new Date('2026-07-21T04:00:00Z'),
@@ -121,7 +121,7 @@ export const OPEN_QUOTES: readonly OpenQuote[] = [
     fx: DRIVERS.fx,
   },
   {
-    quoteId: 'Q-2026-0129',
+    number: 'Q-2026-0129',
     customer: 'Salalah Methanol',
     struckLme: usdPerTonne('9215.50'),
     struckAt: new Date('2026-06-22T04:00:00Z'),

@@ -111,6 +111,14 @@ Branded types mean a raw `number` cannot reach the engine — it's a compile err
 
 The read path casts every numeric column with `::text` and reconstructs it through `dec()`, so a database driver's own decimal type never enters the pricing path.
 
+### Rounding on a document a customer can check
+
+A screen and a sheet of paper need different precision, and the difference is not cosmetic. On screen a unit rate sits beside the build-up that produced it. On paper it sits beside an amount the customer will multiply out — and the amount is computed from the *unrounded* rate, so the two disagree in the last few baisa. At the 3 dp the screen uses, a 12,500 m line reconciles to within about 4 OMR; at 4 dp, within about 0.6.
+
+So `PRECISION.quotedRate` is 4, and **the document states which figure is authoritative** rather than leaving the customer to find the discrepancy: *"Amounts are calculated on the unrounded unit rate; the rate shown is rounded to 4 places."* Both the PDF and the workbook carry it. The alternative — recomputing amounts from the rounded rate so the paper is self-consistent — was rejected because it would give one quote two different totals depending on where you read it.
+
+A spreadsheet cell is a float whatever we do, so `quote-xlsx.ts` is the one deliberate float boundary in the codebase: `Decimal → toFixed(display precision) → Number`, once, at the edge, with the exact figures still on the Cost build-up sheet's provenance columns.
+
 ---
 
 ## 5. Data model shape
@@ -151,6 +159,10 @@ Default to **server components**. Dense tables render on the server; the client 
 Client components are the exception list, and it stays short: `DataTable` (virtualisation + expansion state), inline rate editors, `CommandPalette`, `ConfirmBar`, the copper ticker.
 
 **The expandable breakdown ships server-rendered with its row.** No fetch on click, no loading state — which is exactly what makes the signature interaction feel like an instrument rather than a web page. Mutations go through **Server Actions** that call module functions; a Server Action is a thin adapter — validate input, call the module, revalidate the path. Business logic never lives in `app/`.
+
+**A Server Action is a public endpoint, so it never accepts a price.** `approveJob` is handed the RFQ *text* and re-prices it server-side through the same `buildJob` the screen used. A number that arrived over the wire is a number nobody at Nuhas computed, and re-pricing also means the quote is struck on the rates in force at the instant of approval rather than whenever the page happened to render. Every action repeats its authority check server-side too: a hidden button is not a permission.
+
+**Quote pages and both export routes are behind sign-in; the rest of the app is not — deliberately.** A rate table is commercially sensitive. A quote carries the customer's name, the price they were given, and the complete internal cost build-up, at a URL an outsider can guess in one try (`Q-2026-0001`). The rest of the screens move behind the same check when sign-in stops being optional.
 
 ---
 

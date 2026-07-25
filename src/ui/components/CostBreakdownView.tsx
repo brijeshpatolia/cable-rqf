@@ -42,8 +42,14 @@ export function CostBreakdownView({
             </tr>
           </thead>
           <tbody>
-            {b.materials.map((m) => (
-              <tr key={m.materialKey}>
+            {/*
+              Keyed by position as well as code: a bill of materials may list
+              the same code twice, and a product routinely runs the same
+              machine at two stages. Keying on the code alone makes React drop
+              or duplicate rows of a cost sheet an engineer is reading.
+            */}
+            {b.materials.map((m, i) => (
+              <tr key={`${m.materialKey}-${i}`}>
                 <Td align="left">
                   <div>{m.materialName}</div>
                   <Provenance>
@@ -95,8 +101,8 @@ export function CostBreakdownView({
             </tr>
           </thead>
           <tbody>
-            {b.operations.map((o) => (
-              <tr key={o.machineKey}>
+            {b.operations.map((o, i) => (
+              <tr key={`${o.machineKey}-${i}`}>
                 <Td align="left">
                   <div>{o.machineName}</div>
                   <Provenance>
@@ -135,8 +141,8 @@ export function CostBreakdownView({
       >
         <table className="w-full">
           <tbody>
-            {b.overheads.map((o) => (
-              <tr key={o.key}>
+            {b.overheads.map((o, i) => (
+              <tr key={`${o.key}-${i}`}>
                 <Td align="left">{o.name}</Td>
                 <Td>
                   <NumericCell value={o.cost} kind="costPerKm" />
