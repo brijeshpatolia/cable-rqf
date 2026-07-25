@@ -2,6 +2,8 @@ import type { PrismaClient } from '@prisma/client';
 import { dec } from '@/core/decimal';
 import { type Result, err, ok } from '@/core/result';
 import type {
+  AmendRatePlan,
+  CreateRatePlan,
   CurrentRate,
   EditError,
   LmeEntryPlan,
@@ -65,11 +67,14 @@ export class DbRateWriter {
               rate: string;
               lme_linked: boolean;
               drawing_premium: string | null;
+              description: string;
+              uom: string;
               valid_from: Date;
               valid_to: Date | null;
             }[]
           >`SELECT id::text, code, rate::text AS rate, lme_linked,
-                   drawing_premium::text AS drawing_premium, valid_from, valid_to
+                   drawing_premium::text AS drawing_premium,
+                   description, uom, valid_from, valid_to
               FROM material_rate WHERE code = ${code} AND valid_to IS NULL`
         : await this.db.$queryRaw<
             {
@@ -78,11 +83,14 @@ export class DbRateWriter {
               rate: string;
               lme_linked: boolean;
               drawing_premium: string | null;
+              description: string;
+              uom: string;
               valid_from: Date;
               valid_to: Date | null;
             }[]
           >`SELECT id::text, code, rate::text AS rate, false AS lme_linked,
-                   NULL::text AS drawing_premium, valid_from, valid_to
+                   NULL::text AS drawing_premium, stage AS description,
+                   'hour' AS uom, valid_from, valid_to
               FROM machine_rate WHERE code = ${code} AND valid_to IS NULL`;
 
     const row = rows[0];
@@ -100,6 +108,8 @@ export class DbRateWriter {
       lmeLinked: row.lme_linked,
       drawingPremium:
         row.drawing_premium === null ? null : dec(row.drawing_premium),
+      description: row.description,
+      uom: row.uom,
     };
   }
 
@@ -156,6 +166,155 @@ export class DbRateWriter {
             reason: plan.audit.reason,
           },
         });
+      });
+
+      return ok(undefined);
+    } catch (e) {
+      if (e instanceof ConcurrentChange || isConflict(e)) return err(CONFLICT);
+      throw e;
+    }
+  }
+
+  /**
+   * The master as the Rate Desk shows it: every code in force, with what it is.
+   *
+   * A separate read rather than widening `ResolvedRateSet`, because that type
+   * is the hot pricing path and a description is a label. The engine has no
+   * business carrying one, and adding it there would mean every costing run
+   * hauled 167 strings it never looks at.
+   */
+  async master(): Promise<
+    readonly {
+      kind: 'material' | 'machine';
+      code: string;
+      description: string;
+      uom: string;
+      rate: string;
+      lmeLinked: boolean;
+      drawingPremium: string | null;
+    }[]
+  > {
+    const [materials, machines] = await Promise.all([
+      this.db.$queryRaw<
+        {
+          code: string;
+          description: string;
+          uom: string;
+          rate: string;
+          lme_linked: boolean;
+          drawing_premium: string | null;
+        }[]
+      >`SELECT code, description, uom, rate::text AS rate, lme_linked,
+               drawing_premium::text AS drawing_premium
+          FROM material_rate WHERE valid_to IS NULL ORDER BY code`,
+      this.db.$queryRaw<{ code: string; stage: string; rate: string }[]>`
+        SELECT code, stage, rate::text AS rate
+          FROM machine_rate WHERE valid_to IS NULL ORDER BY code`,
+    ]);
+
+    return [
+      ...materials.map((m) => ({
+        kind: 'material' as const,
+        code: m.code,
+        description: m.description,
+        uom: m.uom,
+        rate: m.rate,
+        lmeLinked: m.lme_linked,
+        drawingPremium: m.drawing_premium,
+      })),
+      ...machines.map((m) => ({
+        kind: 'machine' as const,
+        code: m.code,
+        description: m.stage,
+        uom: 'hour',
+        rate: m.rate,
+        lmeLinked: false,
+        drawingPremium: null,
+      })),
+    ];
+  }
+
+  /**
+   * Adds a code to the master.
+   *
+   * Opens an effective-dated row exactly like a supersede does, so a code
+   * added today has the same shape as one imported in January and the EXCLUDE
+   * constraint governs both. There is nothing to close: the code did not
+   * exist, which is what `planCreateRate` verified.
+   */
+  async applyCreate(plan: CreateRatePlan): Promise<Result<void, EditError>> {
+    try {
+      await this.db.$transaction(async (tx) => {
+        if (plan.kind === 'material') {
+          await tx.$executeRaw`
+            INSERT INTO material_rate
+              (id, code, description, uom, rate, lme_linked, drawing_premium,
+               valid_from, valid_to, created_at)
+            VALUES (gen_random_uuid(), ${plan.code}, ${plan.description}, ${plan.uom},
+                    ${plan.value.toString()}::numeric, ${plan.lmeLinked},
+                    ${plan.drawingPremium?.toString() ?? null}::numeric,
+                    ${plan.validFrom}::timestamptz, NULL, now())`;
+        } else {
+          await tx.$executeRaw`
+            INSERT INTO machine_rate
+              (id, code, stage, rate, valid_from, valid_to, created_at)
+            VALUES (gen_random_uuid(), ${plan.code}, ${plan.description},
+                    ${plan.value.toString()}::numeric,
+                    ${plan.validFrom}::timestamptz, NULL, now())`;
+        }
+
+        await tx.auditEvent.create({ data: { ...plan.audit } });
+      });
+
+      return ok(undefined);
+    } catch (e) {
+      if (isConflict(e)) return err(CONFLICT);
+      throw e;
+    }
+  }
+
+  /**
+   * Changes what a code is, keeping its rate.
+   *
+   * Same close-and-reopen as a supersede, and for the same reason: whether a
+   * code is LME-linked decides how every product containing it reprices, so it
+   * is a pricing fact. A pricing fact that changed in place would make every
+   * quote struck before the change unreconstructible.
+   */
+  async applyAmend(plan: AmendRatePlan): Promise<Result<void, EditError>> {
+    try {
+      await this.db.$transaction(async (tx) => {
+        const closed =
+          plan.kind === 'material'
+            ? await tx.$executeRaw`
+                UPDATE material_rate SET valid_to = ${plan.close.validTo}::timestamptz
+                 WHERE id = ${plan.close.rateId}::uuid AND valid_to IS NULL`
+            : await tx.$executeRaw`
+                UPDATE machine_rate SET valid_to = ${plan.close.validTo}::timestamptz
+                 WHERE id = ${plan.close.rateId}::uuid AND valid_to IS NULL`;
+
+        if (closed !== 1) throw new ConcurrentChange();
+
+        if (plan.kind === 'material') {
+          await tx.$executeRaw`
+            INSERT INTO material_rate
+              (id, code, description, uom, rate, lme_linked, drawing_premium,
+               valid_from, valid_to, created_at)
+            VALUES (gen_random_uuid(), ${plan.code}, ${plan.open.description},
+                    ${plan.open.uom}, ${plan.open.value.toString()}::numeric,
+                    ${plan.open.lmeLinked},
+                    ${plan.open.drawingPremium?.toString() ?? null}::numeric,
+                    ${plan.open.validFrom}::timestamptz, NULL, now())`;
+        } else {
+          await tx.$executeRaw`
+            INSERT INTO machine_rate
+              (id, code, stage, rate, valid_from, valid_to, created_at)
+            VALUES (gen_random_uuid(), ${plan.code}, ${plan.open.description},
+                    ${plan.open.value.toString()}::numeric,
+                    ${plan.open.validFrom}::timestamptz, NULL, now())`;
+        }
+
+        await tx.auditEvent.create({ data: { ...plan.audit } });
       });
 
       return ok(undefined);

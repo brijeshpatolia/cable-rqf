@@ -6,7 +6,13 @@ import { now } from '@/infra/clock';
 import { session } from '@/infra/auth/session';
 import { repositories, rateWriter } from '@/infra/repositories';
 import { authorise } from '@/modules/auth';
-import { planLmeEntry, planSupersede, type RateKind } from '@/modules/rates';
+import {
+  planAmendRate,
+  planCreateRate,
+  planLmeEntry,
+  planSupersede,
+  type RateKind,
+} from '@/modules/rates';
 
 /**
  * The rate write path, as Server Actions.
@@ -23,6 +29,22 @@ import { planLmeEntry, planSupersede, type RateKind } from '@/modules/rates';
 export interface ActionResult {
   readonly error?: string;
   readonly ok?: string;
+}
+
+/**
+ * Every screen downstream of a rate, in one place.
+ *
+ * `/review` was in this list and is now `/` and `/jobs/[reference]`; a job's
+ * prices are recomputed on every render, so a rate change has to reach them.
+ * Listing the paths once means the next screen that prices something gets
+ * added here rather than to four call sites, three of which somebody forgets.
+ */
+function revalidateRateDependents() {
+  for (const path of ['/', '/rates', '/catalogue', '/price-watch']) {
+    revalidatePath(path);
+  }
+  revalidatePath('/catalogue/[id]', 'page');
+  revalidatePath('/jobs/[reference]', 'page');
 }
 
 function parseDecimal(raw: FormDataEntryValue | null, what: string) {
@@ -74,11 +96,7 @@ export async function supersedeRate(
   const written = await rateWriter.applySupersede(plan.value);
   if (!written.ok) return { error: written.error.message };
 
-  // Every screen that prices anything is downstream of a rate.
-  for (const path of ['/rates', '/catalogue', '/review', '/price-watch']) {
-    revalidatePath(path);
-  }
-  revalidatePath('/catalogue/[id]', 'page');
+  revalidateRateDependents();
 
   return { ok: `${code} superseded. The previous value is kept, closed at now.` };
 }
@@ -109,12 +127,96 @@ export async function enterLmePrice(
   const written = await rateWriter.applyLmeEntry(plan.value);
   if (!written.ok) return { error: written.error.message };
 
-  for (const path of ['/rates', '/catalogue', '/review', '/price-watch']) {
-    revalidatePath(path);
-  }
-  revalidatePath('/catalogue/[id]', 'page');
+  revalidateRateDependents();
 
   return {
     ok: `Copper set to ${lme.value.toString()} USD/t. Every product containing copper has repriced.`,
   };
+}
+
+/**
+ * Adding a code to the master.
+ *
+ * Sudhir's second finding: the Rate Desk could change what a material *costs*
+ * but not what the master *holds*. Adding a code was a spreadsheet job, which
+ * meant the app's library and the real one drifted apart the first time a new
+ * material arrived.
+ */
+export async function createRate(
+  _previous: ActionResult | null,
+  form: FormData,
+): Promise<ActionResult> {
+  const actor = await session.currentActor();
+  const permitted = authorise(actor, 'rate.edit');
+  if (!permitted.ok) return { error: permitted.failure.message };
+
+  const kind = String(form.get('kind') ?? 'material') as RateKind;
+  const code = String(form.get('code') ?? '');
+  const lmeLinked = form.get('lmeLinked') === 'on';
+
+  const value = parseDecimal(form.get('value'), 'rate');
+  if ('error' in value) return { error: value.error };
+
+  const premiumRaw = String(form.get('premium') ?? '').trim();
+
+  const plan = planCreateRate(
+    {
+      kind,
+      code,
+      description: String(form.get('description') ?? ''),
+      uom: String(form.get('uom') ?? ''),
+      value: value.value,
+      lmeLinked,
+      ...(premiumRaw === '' ? {} : { drawingPremium: dec(premiumRaw) }),
+      at: now(),
+      reason: String(form.get('reason') ?? ''),
+      actor: permitted.actor,
+    },
+    await rateWriter.currentRate(kind, code.trim().toUpperCase()),
+  );
+  if (!plan.ok) return { error: plan.error.message };
+
+  const written = await rateWriter.applyCreate(plan.value);
+  if (!written.ok) return { error: written.error.message };
+
+  revalidateRateDependents();
+  return {
+    ok: `${plan.value.code} added to the master. It is available to every bill of materials from now.`,
+  };
+}
+
+/** Changes what a code is — its description, unit, or whether it tracks copper. */
+export async function amendRate(
+  _previous: ActionResult | null,
+  form: FormData,
+): Promise<ActionResult> {
+  const actor = await session.currentActor();
+  const permitted = authorise(actor, 'rate.edit');
+  if (!permitted.ok) return { error: permitted.failure.message };
+
+  const kind = String(form.get('kind') ?? 'material') as RateKind;
+  const code = String(form.get('code') ?? '').trim();
+  const premiumRaw = String(form.get('premium') ?? '').trim();
+
+  const plan = planAmendRate(
+    {
+      kind,
+      code,
+      description: String(form.get('description') ?? ''),
+      uom: String(form.get('uom') ?? ''),
+      lmeLinked: form.get('lmeLinked') === 'on',
+      ...(premiumRaw === '' ? {} : { drawingPremium: dec(premiumRaw) }),
+      at: now(),
+      reason: String(form.get('reason') ?? ''),
+      actor: permitted.actor,
+    },
+    await rateWriter.currentRate(kind, code),
+  );
+  if (!plan.ok) return { error: plan.error.message };
+
+  const written = await rateWriter.applyAmend(plan.value);
+  if (!written.ok) return { error: written.error.message };
+
+  revalidateRateDependents();
+  return { ok: `${code} amended. ${plan.value.audit.next}.` };
 }

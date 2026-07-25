@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { dec } from '@/core/decimal';
 import type { Actor } from '@/modules/auth';
-import { type CurrentRate, planLmeEntry, planSupersede } from './edit';
+import {
+  type CurrentRate,
+  planAmendRate,
+  planCreateRate,
+  planLmeEntry,
+  planSupersede,
+} from './edit';
 
 const ACTOR: Actor = {
   id: 'u1',
@@ -24,6 +30,8 @@ const fixed = (value: string): CurrentRate => ({
   },
   lmeLinked: false,
   drawingPremium: null,
+  description: 'Test material',
+  uom: 'kg',
 });
 
 const linked = (rate: string, premium: string): CurrentRate => ({
@@ -36,6 +44,8 @@ const linked = (rate: string, premium: string): CurrentRate => ({
     table: 'material_rate',
   },
   lmeLinked: true,
+  description: 'Test copper',
+  uom: 'kg',
   drawingPremium: dec(premium),
 });
 
@@ -200,5 +210,150 @@ describe('planLmeEntry', () => {
     );
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.value.audit.previous).toBe('—');
+  });
+});
+
+/**
+ * Adding to the master, and amending it.
+ *
+ * The Rate Owner could always do both in the spreadsheet and could not do
+ * either here — Sudhir's second finding. What these tests pin down is that
+ * neither becomes a back door for changing a price without superseding one.
+ */
+const AT = JAN;
+const LATER = JUL;
+const CURRENT = fixed('1.5');
+
+describe('planCreateRate', () => {
+  const request = (over: Partial<Parameters<typeof planCreateRate>[0]> = {}) => ({
+    kind: 'material' as const,
+    code: 'NEWMAT',
+    description: 'New drum wrapper, 700 mm',
+    uom: 'kg',
+    value: dec('1.85'),
+    at: AT,
+    reason: 'New supplier line added to the master.',
+    actor: ACTOR,
+    ...over,
+  });
+
+  it('normalises the code, because a bill of materials points at it', () => {
+    // `cc1f` and `CC1F ` naming two materials is invisible until a product
+    // prices twice.
+    const result = planCreateRate(request({ code: '  newmat ' }), undefined);
+    if (!result.ok) throw new Error(result.error.message);
+    expect(result.value.code).toBe('NEWMAT');
+  });
+
+  it('refuses a code the master already holds', () => {
+    const result = planCreateRate(request(), CURRENT);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.message).toContain('Supersede its rate instead');
+  });
+
+  it('refuses a blank code, a blank description, and a blank reason', () => {
+    expect(planCreateRate(request({ code: '  ' }), undefined).ok).toBe(false);
+    expect(planCreateRate(request({ description: ' ' }), undefined).ok).toBe(false);
+    expect(planCreateRate(request({ reason: '' }), undefined).ok).toBe(false);
+  });
+
+  it('refuses an LME-linked code with no drawing premium', () => {
+    // It prices off copper plus a premium; without one it prices off nothing.
+    const result = planCreateRate(request({ lmeLinked: true }), undefined);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.code).toBe('PREMIUM_MISMATCH');
+  });
+
+  it('accepts an LME-linked code that states its premium', () => {
+    const result = planCreateRate(
+      request({ lmeLinked: true, drawingPremium: dec('0.42') }),
+      undefined,
+    );
+    if (!result.ok) throw new Error(result.error.message);
+    expect(result.value.lmeLinked).toBe(true);
+    expect(result.value.drawingPremium?.toString()).toBe('0.42');
+  });
+
+  it('never marks a machine LME-linked', () => {
+    // Machine time does not price off copper, whatever the form submits.
+    const result = planCreateRate(
+      request({ kind: 'machine', lmeLinked: true, drawingPremium: dec('1') }),
+      undefined,
+    );
+    if (!result.ok) throw new Error(result.error.message);
+    expect(result.value.lmeLinked).toBe(false);
+    expect(result.value.drawingPremium).toBeNull();
+  });
+
+  it('defaults the unit sensibly per kind', () => {
+    const material = planCreateRate(request({ uom: '' }), undefined);
+    const machine = planCreateRate(request({ kind: 'machine', uom: '' }), undefined);
+    if (!material.ok || !machine.ok) throw new Error('expected both');
+    expect(material.value.uom).toBe('kg');
+    expect(machine.value.uom).toBe('hour');
+  });
+});
+
+describe('planAmendRate', () => {
+  const request = (over: Partial<Parameters<typeof planAmendRate>[0]> = {}) => ({
+    kind: 'material' as const,
+    code: 'XSAUINS',
+    description: 'Renamed material',
+    uom: 'kg',
+    at: LATER,
+    reason: 'Supplier renamed the grade.',
+    actor: ACTOR,
+    ...over,
+  });
+
+  it('carries the rate forward untouched', () => {
+    // The rule that keeps this from being a back door: an amendment changes
+    // what a code *is*, never what it costs.
+    const result = planAmendRate(request(), CURRENT);
+    if (!result.ok) throw new Error(result.error.message);
+    expect(result.value.open.value.toString()).toBe(CURRENT.row.value.toString());
+  });
+
+  it('closes the old row exactly where the new one opens', () => {
+    const result = planAmendRate(request(), CURRENT);
+    if (!result.ok) throw new Error(result.error.message);
+    expect(result.value.close.validTo).toEqual(result.value.open.validFrom);
+  });
+
+  it('refuses a code the master does not hold', () => {
+    const result = planAmendRate(request(), undefined);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.code).toBe('UNKNOWN_CODE');
+  });
+
+  it('refuses an amendment that changes nothing', () => {
+    const result = planAmendRate(
+      request({ description: CURRENT.description, uom: CURRENT.uom }),
+      CURRENT,
+    );
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.code).toBe('NO_CHANGE');
+  });
+
+  it('refuses an instant at or before the row in force', () => {
+    const result = planAmendRate(request({ at: CURRENT.row.validFrom }), CURRENT);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.code).toBe('NOT_LATER');
+  });
+
+  it('refuses linking to the LME without a premium', () => {
+    const result = planAmendRate(request({ lmeLinked: true }), CURRENT);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.code).toBe('PREMIUM_MISMATCH');
+  });
+
+  it('names what changed, so the audit row reads without a diff', () => {
+    const result = planAmendRate(
+      request({ description: 'Renamed material', uom: 'm' }),
+      CURRENT,
+    );
+    if (!result.ok) throw new Error(result.error.message);
+    expect(result.value.audit.next).toContain('description →');
+    expect(result.value.audit.next).toContain('uom → m');
   });
 });

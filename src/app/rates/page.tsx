@@ -1,9 +1,10 @@
 import { formatDate, formatInstant, formatNumber } from '@/core/format';
 import { session } from '@/infra/auth/session';
 import { can } from '@/modules/auth';
-import { LmeEntry, RateEditor } from '@/ui/components/RateEditors';
-import { enterLmePrice, supersedeRate } from './actions';
-import { repositories } from '@/infra/repositories';
+import { LmeEntry } from '@/ui/components/RateEditors';
+import { MasterEditor, type MasterRow } from '@/ui/components/MasterEditor';
+import { amendRate, createRate, enterLmePrice, supersedeRate } from './actions';
+import { rateWriter, repositories } from '@/infra/repositories';
 import { now } from '@/infra/clock';
 import { copperMetalValue } from '@/modules/costing';
 import { sweep } from '@/modules/pricewatch';
@@ -46,17 +47,17 @@ export default async function RateDeskPage() {
   const actor = await session.currentActor();
   const mayEdit = can(actor, 'rate.edit');
 
-  // A material the rate owner is most likely to want: the one the whole
-  // library's copper hangs off.
-  const sampleCode = [...rateSet.materials.keys()].find((k) => {
-    const m = rateSet.materials.get(k);
-    return m !== undefined && !m.lmeLinked;
-  });
-  const sample = sampleCode === undefined ? undefined : rateSet.materials.get(sampleCode);
-  const copperCode = [...rateSet.materials.keys()].find(
-    (k) => rateSet.materials.get(k)?.lmeLinked === true,
-  );
-  const copperMaterial = copperCode === undefined ? undefined : rateSet.materials.get(copperCode);
+  /*
+    The whole master, for the editor's picker.
+
+    Previously the Rate Desk offered an edit box for one arbitrary "sample"
+    code and one copper code — which meant 165 of the 167 rows were read-only,
+    and adding a code was a spreadsheet job. That is the gap Sudhir's second
+    finding names.
+  */
+  const master: readonly MasterRow[] = mayEdit
+    ? [...(await rateWriter.master())].sort((a, b) => a.code.localeCompare(b.code))
+    : [];
 
   const inForce = (r: EffectiveRow<Decimal>) => r.validTo === null;
 
@@ -154,33 +155,27 @@ export default async function RateDeskPage() {
                 />
               </Panel>
 
-              {sampleCode !== undefined && sample !== undefined ? (
-                <Panel title={`Edit rate — ${sampleCode}`}>
-                  <RateEditor
-                    action={supersedeRate}
-                    kind="material"
-                    code={sampleCode}
-                    currentValue={sample.rate.toString()}
-                    currentPremium={null}
-                    lmeLinked={false}
-                  />
-                </Panel>
-              ) : null}
-
-              {copperCode !== undefined && copperMaterial !== undefined ? (
-                <Panel title={`Edit premium — ${copperCode}`}>
-                  <RateEditor
-                    action={supersedeRate}
-                    kind="material"
-                    code={copperCode}
-                    currentValue={copperMaterial.rate.toString()}
-                    currentPremium={
-                      copperMaterial.drawingPremium?.toString() ?? null
-                    }
-                    lmeLinked
-                  />
-                </Panel>
-              ) : null}
+              <Panel
+                title="The master"
+                aside={
+                  <span
+                    className="numeric"
+                    style={{
+                      color: 'var(--color-ink-tertiary)',
+                      fontSize: 'var(--text-micro)',
+                    }}
+                  >
+                    {master.length} codes
+                  </span>
+                }
+              >
+                <MasterEditor
+                  createAction={createRate}
+                  amendAction={amendRate}
+                  supersedeAction={supersedeRate}
+                  rows={master}
+                />
+              </Panel>
             </>
           ) : (
             <Panel title="Rate editing">
