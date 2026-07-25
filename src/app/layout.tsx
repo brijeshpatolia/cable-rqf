@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Cable Quoting — Nuhas Oman',
+  title: 'Cable Quoting',
   description: 'RFQ to priced quotation, on live copper.',
 };
 
@@ -42,12 +42,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                   fontWeight: 550,
                   letterSpacing: '-0.01em',
                 }}
-              >
-                Nuhas Oman
-              </div>
-              <div
-                className="label"
-                style={{ marginTop: 2 }}
               >
                 Cable Quoting
               </div>

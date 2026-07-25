@@ -7,7 +7,7 @@ import { DataTable } from '@/ui/components/DataTable';
 import { NumericCell } from '@/ui/components/NumericCell';
 import { Panel } from '@/ui/components/Panel';
 
-export const metadata = { title: 'Catalogue — Nuhas Oman' };
+export const metadata = { title: 'Catalogue — Cable Quoting' };
 
 /**
  * Nuhas's own quoting terms, from the cost master's Drivers sheet: margin on

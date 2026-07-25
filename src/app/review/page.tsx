@@ -13,7 +13,7 @@ import { Panel } from '@/ui/components/Panel';
 import { StatusDot, TierLegend } from '@/ui/components/StatusDot';
 import type { Tier } from '@/ui/components/tier';
 
-export const metadata = { title: 'Review — Nuhas Oman' };
+export const metadata = { title: 'Review — Cable Quoting' };
 
 /**
  * A worked example standing in for a pasted RFQ, until Phase 3 puts document
