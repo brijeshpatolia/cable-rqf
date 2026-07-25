@@ -143,7 +143,14 @@ model LmePrice {
 // starts with rates, which is where the money is.
 
 model Product {
-  id          String @id
+  /// Synthetic. The natural key is (code, sourceSheet): two cables in the
+  /// imported library carry the same product code in two different source
+  /// sheets, with identical costs. Keyed on code alone, one would silently
+  /// overwrite the other and the parity harness would drop from 99 to 97.
+  id String @id @default(uuid()) @db.Uuid
+
+  /// The product code as the cost master holds it. Not unique on its own.
+  code        String
   sourceSheet String @map("source_sheet")
   designation String
   family      String
@@ -164,13 +171,15 @@ model Product {
   operations MachineOp[]
   overheads  OverheadLine[]
 
+  @@unique([code, sourceSheet])
+  @@index([code])
   @@index([family])
   @@map("product")
 }
 
 model BomLine {
   id        String  @id @default(uuid()) @db.Uuid
-  productId String  @map("product_id")
+  productId String  @map("product_id") @db.Uuid
   product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
 
   materialKey  String  @map("material_key")
@@ -187,16 +196,17 @@ model BomLine {
 
 model MachineOp {
   id        String  @id @default(uuid()) @db.Uuid
-  productId String  @map("product_id")
+  productId String  @map("product_id") @db.Uuid
   product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
 
   machineKey  String  @map("machine_key")
   machineName String  @map("machine_name")
   sequence    Int
   hoursPerKm  Decimal @map("hours_per_km") @db.Decimal
-  /// Held per operation, not taken from the product: a stage can run once over
-  /// a laid-up cable while an earlier stage ran once per core.
-  cores       Int
+  /// The multiplier this stage runs at. The cost master calls this column
+  /// "Cores" but it is not an integer count — 117 of 728 rows are fractional,
+  /// up to 97.2. Rounding it to an integer changes the cost.
+  cores       Decimal @db.Decimal
 
   @@index([productId])
   @@map("machine_op")
@@ -204,7 +214,7 @@ model MachineOp {
 
 model OverheadLine {
   id        String  @id @default(uuid()) @db.Uuid
-  productId String  @map("product_id")
+  productId String  @map("product_id") @db.Uuid
   product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
 
   key      String

@@ -57,7 +57,8 @@ CREATE TABLE "lme_price" (
 
 -- CreateTable
 CREATE TABLE "product" (
-    "id" TEXT NOT NULL,
+    "id" UUID NOT NULL,
+    "code" TEXT NOT NULL,
     "source_sheet" TEXT NOT NULL,
     "designation" TEXT NOT NULL,
     "family" TEXT NOT NULL,
@@ -78,7 +79,7 @@ CREATE TABLE "product" (
 -- CreateTable
 CREATE TABLE "bom_line" (
     "id" UUID NOT NULL,
-    "product_id" TEXT NOT NULL,
+    "product_id" UUID NOT NULL,
     "material_key" TEXT NOT NULL,
     "material_name" TEXT NOT NULL,
     "consumption" DECIMAL NOT NULL,
@@ -91,12 +92,12 @@ CREATE TABLE "bom_line" (
 -- CreateTable
 CREATE TABLE "machine_op" (
     "id" UUID NOT NULL,
-    "product_id" TEXT NOT NULL,
+    "product_id" UUID NOT NULL,
     "machine_key" TEXT NOT NULL,
     "machine_name" TEXT NOT NULL,
     "sequence" INTEGER NOT NULL,
     "hours_per_km" DECIMAL NOT NULL,
-    "cores" INTEGER NOT NULL,
+    "cores" DECIMAL NOT NULL,
 
     CONSTRAINT "machine_op_pkey" PRIMARY KEY ("id")
 );
@@ -104,7 +105,7 @@ CREATE TABLE "machine_op" (
 -- CreateTable
 CREATE TABLE "overhead_line" (
     "id" UUID NOT NULL,
-    "product_id" TEXT NOT NULL,
+    "product_id" UUID NOT NULL,
     "key" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "amount" DECIMAL NOT NULL,
@@ -144,7 +145,13 @@ CREATE UNIQUE INDEX "lme_price_at_key" ON "lme_price"("at");
 CREATE INDEX "lme_price_at_idx" ON "lme_price"("at" DESC);
 
 -- CreateIndex
+CREATE INDEX "product_code_idx" ON "product"("code");
+
+-- CreateIndex
 CREATE INDEX "product_family_idx" ON "product"("family");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "product_code_source_sheet_key" ON "product"("code", "source_sheet");
 
 -- CreateIndex
 CREATE INDEX "bom_line_product_id_idx" ON "bom_line"("product_id");
@@ -174,24 +181,30 @@ ALTER TABLE "overhead_line" ADD CONSTRAINT "overhead_line_product_id_fkey" FOREI
 ALTER TABLE "audit_event" ADD CONSTRAINT "audit_event_actor_id_fkey" FOREIGN KEY ("actor_id") REFERENCES "app_user"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- ═══════════════════════════════════════════════════════════════════════════
--- Hand-written. Everything below expresses guarantees Prisma's schema
--- language cannot, and they are the point of the schema rather than a
--- decoration on it. See docs/ARCHITECTURE.md §5.
+-- Invariants Prisma's schema language cannot express.
+--
+-- This file is appended verbatim to the initial migration. It is kept
+-- separately because it is the part of the schema that carries the actual
+-- guarantees — the generated DDL above it only creates tables.
+--
+-- Every statement here is covered by tests/db/invariants.test.ts, which
+-- executes the violating case and asserts the database refuses it.
 -- ═══════════════════════════════════════════════════════════════════════════
 
 -- Required by the EXCLUDE constraints: btree_gist lets a plain-equality
--- column (the rate's key) sit alongside a range overlap test in one GiST
+-- column (the rate's code) sit alongside a range overlap test in one GiST
 -- index. Verified available on local Postgres 16.13 and Neon 18.4.
 CREATE EXTENSION IF NOT EXISTS btree_gist;
 
--- ── No two rates in force for the same key at the same instant ────────────
+-- ── No two rates in force for the same code at the same instant ───────────
 --
--- This is the invariant the whole effective-dating design rests on, and it
--- belongs in the database rather than in application code that a later
--- feature could bypass. `valid_to` NULL means open-ended, which tstzrange
--- treats as unbounded — so an open row correctly conflicts with any later
--- overlapping row, while an ADJACENT row (a clean supersede, where one
--- period ends exactly as the next begins) is accepted.
+-- The invariant the whole effective-dating design rests on. It belongs in the
+-- database rather than in application code a later feature could bypass.
+--
+-- `valid_to` NULL means open-ended, which tstzrange treats as unbounded — so
+-- an open row conflicts with any later overlapping row, while an ADJACENT row
+-- (a clean supersede, where one period ends exactly as the next begins) is
+-- accepted. That distinction is the one worth testing.
 
 ALTER TABLE "material_rate"
   ADD CONSTRAINT "material_rate_no_overlap"
@@ -218,8 +231,8 @@ ALTER TABLE "machine_rate"
 
 -- ── Rates and prices are non-negative ─────────────────────────────────────
 --
--- Deliberately >= 0 and not > 0: a genuine zero rate exists in the imported
--- library (machine RBD-TWD1 costs 0.000 OMR/hr on several sheets).
+-- Deliberately >= 0 rather than > 0: a genuine zero rate exists in the
+-- imported library — machine RBD-TWD1 costs 0.000 OMR/hr on several sheets.
 ALTER TABLE "material_rate"
   ADD CONSTRAINT "material_rate_non_negative" CHECK ("rate" >= 0);
 
@@ -227,8 +240,8 @@ ALTER TABLE "material_rate"
   ADD CONSTRAINT "material_rate_premium_non_negative"
   CHECK ("drawing_premium" IS NULL OR "drawing_premium" >= 0);
 
--- An LME-linked code prices off copper and must carry a premium; a fixed
--- code must not, because a premium there would silently do nothing.
+-- An LME-linked code prices off copper and must carry a premium; a fixed code
+-- must not, because a premium there would silently do nothing.
 ALTER TABLE "material_rate"
   ADD CONSTRAINT "material_rate_premium_iff_lme_linked"
   CHECK (("lme_linked" AND "drawing_premium" IS NOT NULL)
@@ -252,54 +265,46 @@ ALTER TABLE "machine_op"
 ALTER TABLE "product"
   ADD CONSTRAINT "product_shape" CHECK ("cores" >= 1 AND "size_mm2" > 0);
 
--- ── History is the product: the audit log is append-only ──────────────────
+-- ── History is the product: append-only tables ────────────────────────────
 --
--- A trigger rather than a permission grant, so it holds for every role
--- including the one the app connects as. An audit trail that can be edited
--- is not an audit trail.
+-- Triggers rather than permission grants, so they hold for every role
+-- including the one the app connects as. An audit trail that can be edited is
+-- not an audit trail.
 
-CREATE OR REPLACE FUNCTION audit_event_is_append_only()
+CREATE OR REPLACE FUNCTION reject_mutation()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   RAISE EXCEPTION
-    'audit_event is append-only: % is not permitted', TG_OP
+    '% is append-only: % is not permitted', TG_TABLE_NAME, TG_OP
     USING ERRCODE = '0A000';
 END;
 $$;
 
 CREATE TRIGGER audit_event_no_update
   BEFORE UPDATE ON "audit_event"
-  FOR EACH ROW EXECUTE FUNCTION audit_event_is_append_only();
+  FOR EACH ROW EXECUTE FUNCTION reject_mutation();
 
 CREATE TRIGGER audit_event_no_delete
   BEFORE DELETE ON "audit_event"
-  FOR EACH ROW EXECUTE FUNCTION audit_event_is_append_only();
+  FOR EACH ROW EXECUTE FUNCTION reject_mutation();
 
--- The LME series is a record of facts about moments. A tick is never
--- corrected in place — a wrong one is superseded by a later entry, so the
--- quote that was struck on it can still be reconstructed.
-CREATE OR REPLACE FUNCTION lme_price_is_append_only()
-RETURNS TRIGGER LANGUAGE plpgsql AS $$
-BEGIN
-  RAISE EXCEPTION
-    'lme_price is append-only: % is not permitted. Enter a new tick instead.',
-    TG_OP
-    USING ERRCODE = '0A000';
-END;
-$$;
-
+-- The LME series records facts about moments. A tick is never corrected in
+-- place — a wrong one is superseded by a later entry, so the quote that was
+-- struck on it can still be reconstructed exactly.
 CREATE TRIGGER lme_price_no_update
   BEFORE UPDATE ON "lme_price"
-  FOR EACH ROW EXECUTE FUNCTION lme_price_is_append_only();
+  FOR EACH ROW EXECUTE FUNCTION reject_mutation();
 
 CREATE TRIGGER lme_price_no_delete
   BEFORE DELETE ON "lme_price"
-  FOR EACH ROW EXECUTE FUNCTION lme_price_is_append_only();
+  FOR EACH ROW EXECUTE FUNCTION reject_mutation();
 
--- ── Supporting index for the resolve-as-of query ──────────────────────────
--- The EXCLUDE constraints already build a GiST index that serves the
--- in-force lookup; these partial indexes make "the row in force right now"
--- — by far the most common query — a single-row probe.
+-- ── Supporting indexes for the resolve-as-of query ────────────────────────
+--
+-- The EXCLUDE constraints already build a GiST index that serves the in-force
+-- lookup. These partial unique indexes make "the row in force right now" — by
+-- far the most common query — a single-row probe, and independently guarantee
+-- that only one row per code can be open at a time.
 CREATE UNIQUE INDEX "material_rate_one_in_force"
   ON "material_rate" ("code") WHERE "valid_to" IS NULL;
 

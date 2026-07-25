@@ -70,21 +70,21 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "0.827",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "BNRS1600",
         "machineName": "BNRS1600",
         "sequence": 2,
         "hoursPerKm": "0.289",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-90R1",
         "machineName": "EX-90R1",
         "sequence": 3,
         "hoursPerKm": "0.154",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -196,21 +196,21 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "1.102",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "BNRS1600",
         "machineName": "BNRS1600",
         "sequence": 2,
         "hoursPerKm": "0.254",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-90R1",
         "machineName": "EX-90R1",
         "sequence": 3,
         "hoursPerKm": "0.178",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -322,21 +322,21 @@
         "machineName": "RBD-TWD2",
         "sequence": 1,
         "hoursPerKm": "1.102",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "BNRS1600",
         "machineName": "BNRS1600",
         "sequence": 2,
         "hoursPerKm": "0.205",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-90R1",
         "machineName": "EX-90R1",
         "sequence": 3,
         "hoursPerKm": "0.193",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -448,21 +448,21 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "2.179",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "BNRS1600",
         "machineName": "BNRS1600",
         "sequence": 2,
         "hoursPerKm": "0.176",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-90R1",
         "machineName": "EX-90R1",
         "sequence": 3,
         "hoursPerKm": "0.247",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -556,21 +556,21 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "1.102",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "BNRS1600",
         "machineName": "BNRS1600",
         "sequence": 2,
         "hoursPerKm": "0.205",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "CRW-MP01",
         "machineName": "CRW-MP01",
         "sequence": 3,
         "hoursPerKm": "0.412",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -682,21 +682,21 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "1.21",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "STR-37RS",
         "machineName": "STR-37RS",
         "sequence": 2,
         "hoursPerKm": "0.871",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-90R1",
         "machineName": "EX-90R1",
         "sequence": 3,
         "hoursPerKm": "0.353",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -808,21 +808,21 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "0.723",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "BNR-L001",
         "machineName": "BNR-L001",
         "sequence": 2,
         "hoursPerKm": "0.217",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-60M1",
         "machineName": "EX-60M1",
         "sequence": 3,
         "hoursPerKm": "0.116",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -994,56 +994,56 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "0.01",
-        "cores": 40.7999992370606
+        "cores": "40.7999992370606"
       },
       {
         "machineKey": "FWD-0001",
         "machineName": "FWD-0001",
         "sequence": 2,
         "hoursPerKm": "0.926",
-        "cores": 50.3999977111816
+        "cores": "50.3999977111816"
       },
       {
         "machineKey": "EX-60M1",
         "machineName": "EX-60M1",
         "sequence": 3,
         "hoursPerKm": "0.039",
-        "cores": 20.3999996185303
+        "cores": "20.3999996185303"
       },
       {
         "machineKey": "BNR-L004",
         "machineName": "BNR-L004",
         "sequence": 4,
         "hoursPerKm": "0.617",
-        "cores": 10.1999998092651
+        "cores": "10.1999998092651"
       },
       {
         "machineKey": "STR-37RS",
         "machineName": "STR-37RS",
         "sequence": 5,
         "hoursPerKm": "2.315",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-90R1",
         "machineName": "EX-90R1",
         "sequence": 6,
         "hoursPerKm": "1.208",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "ST-2000P",
         "machineName": "ST-2000P",
         "sequence": 7,
         "hoursPerKm": "2.137",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-120R1",
         "machineName": "EX-120R1",
         "sequence": 8,
         "hoursPerKm": "1.389",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -1221,63 +1221,63 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "0.01",
-        "cores": 40.7999992370606
+        "cores": "40.7999992370606"
       },
       {
         "machineKey": "VTP-A001",
         "machineName": "VTP-A001",
         "sequence": 2,
         "hoursPerKm": "2.437",
-        "cores": 20.3999996185303
+        "cores": "20.3999996185303"
       },
       {
         "machineKey": "FWD-0001",
         "machineName": "FWD-0001",
         "sequence": 3,
         "hoursPerKm": "0.926",
-        "cores": 50.3999977111816
+        "cores": "50.3999977111816"
       },
       {
         "machineKey": "EX-60M1",
         "machineName": "EX-60M1",
         "sequence": 4,
         "hoursPerKm": "0.039",
-        "cores": 20.3999996185303
+        "cores": "20.3999996185303"
       },
       {
         "machineKey": "BNR-L004",
         "machineName": "BNR-L004",
         "sequence": 5,
         "hoursPerKm": "0.617",
-        "cores": 10.1999998092651
+        "cores": "10.1999998092651"
       },
       {
         "machineKey": "STR-37RS",
         "machineName": "STR-37RS",
         "sequence": 6,
         "hoursPerKm": "2.315",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-90R1",
         "machineName": "EX-90R1",
         "sequence": 7,
         "hoursPerKm": "1.208",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "ST-2000P",
         "machineName": "ST-2000P",
         "sequence": 8,
         "hoursPerKm": "2.137",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-120R1",
         "machineName": "EX-120R1",
         "sequence": 9,
         "hoursPerKm": "1.389",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -1455,56 +1455,56 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "0.01",
-        "cores": 40.7999992370606
+        "cores": "40.7999992370606"
       },
       {
         "machineKey": "FWD-0001",
         "machineName": "FWD-0001",
         "sequence": 2,
         "hoursPerKm": "0.926",
-        "cores": 50.3999977111816
+        "cores": "50.3999977111816"
       },
       {
         "machineKey": "EX-60M1",
         "machineName": "EX-60M1",
         "sequence": 3,
         "hoursPerKm": "0.044",
-        "cores": 20.3999996185303
+        "cores": "20.3999996185303"
       },
       {
         "machineKey": "BNR-L004",
         "machineName": "BNR-L004",
         "sequence": 4,
         "hoursPerKm": "0.93",
-        "cores": 10.1999998092651
+        "cores": "10.1999998092651"
       },
       {
         "machineKey": "STR-37RS",
         "machineName": "STR-37RS",
         "sequence": 5,
         "hoursPerKm": "2.48",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-90R1",
         "machineName": "EX-90R1",
         "sequence": 6,
         "hoursPerKm": "1.208",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-2000P",
         "machineName": "DT-2000P",
         "sequence": 7,
         "hoursPerKm": "1.852",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-120R1",
         "machineName": "EX-120R1",
         "sequence": 8,
         "hoursPerKm": "1.389",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -1598,21 +1598,21 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "2.179",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "STR-37RS",
         "machineName": "STR-37RS",
         "sequence": 2,
         "hoursPerKm": "0.735",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "CRW-MP02",
         "machineName": "CRW-MP02",
         "sequence": 3,
         "hoursPerKm": "0.588",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -1766,63 +1766,63 @@
         "machineName": "RBD-TWD2",
         "sequence": 1,
         "hoursPerKm": "1.102",
-        "cores": 12.2399997711182
+        "cores": "12.2399997711182"
       },
       {
         "machineKey": "FWD-0001",
         "machineName": "FWD-0001",
         "sequence": 2,
         "hoursPerKm": "2.058",
-        "cores": 12.2399997711182
+        "cores": "12.2399997711182"
       },
       {
         "machineKey": "BNR-N001",
         "machineName": "BNR-N001",
         "sequence": 3,
         "hoursPerKm": "0.13",
-        "cores": 12.2399997711182
+        "cores": "12.2399997711182"
       },
       {
         "machineKey": "FWD-0001",
         "machineName": "FWD-0001",
         "sequence": 4,
         "hoursPerKm": "0.926",
-        "cores": 4.5
+        "cores": "4.5"
       },
       {
         "machineKey": "EX-60M1",
         "machineName": "EX-60M1",
         "sequence": 5,
         "hoursPerKm": "0.044",
-        "cores": 12.2399997711182
+        "cores": "12.2399997711182"
       },
       {
         "machineKey": "STR-37RS",
         "machineName": "STR-37RS",
         "sequence": 6,
         "hoursPerKm": "2.48",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-90R1",
         "machineName": "EX-90R1",
         "sequence": 7,
         "hoursPerKm": "0.796",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "ST-2000P",
         "machineName": "ST-2000P",
         "sequence": 8,
         "hoursPerKm": "1.052",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-120R1",
         "machineName": "EX-120R1",
         "sequence": 9,
         "hoursPerKm": "0.943",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -1982,70 +1982,70 @@
         "machineName": "RBD-TWD2",
         "sequence": 1,
         "hoursPerKm": "1.102",
-        "cores": 12.2399997711182
+        "cores": "12.2399997711182"
       },
       {
         "machineKey": "FWD-0001",
         "machineName": "FWD-0001",
         "sequence": 2,
         "hoursPerKm": "2.058",
-        "cores": 12.2399997711182
+        "cores": "12.2399997711182"
       },
       {
         "machineKey": "BNR-N001",
         "machineName": "BNR-N001",
         "sequence": 3,
         "hoursPerKm": "0.13",
-        "cores": 12.2399997711182
+        "cores": "12.2399997711182"
       },
       {
         "machineKey": "VTP-A001",
         "machineName": "VTP-A001",
         "sequence": 4,
         "hoursPerKm": "2.437",
-        "cores": 12.2399997711182
+        "cores": "12.2399997711182"
       },
       {
         "machineKey": "FWD-0001",
         "machineName": "FWD-0001",
         "sequence": 5,
         "hoursPerKm": "0.926",
-        "cores": 4.5
+        "cores": "4.5"
       },
       {
         "machineKey": "EX-60M1",
         "machineName": "EX-60M1",
         "sequence": 6,
         "hoursPerKm": "0.044",
-        "cores": 12.2399997711182
+        "cores": "12.2399997711182"
       },
       {
         "machineKey": "STR-37RS",
         "machineName": "STR-37RS",
         "sequence": 7,
         "hoursPerKm": "2.48",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-90R1",
         "machineName": "EX-90R1",
         "sequence": 8,
         "hoursPerKm": "0.796",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "ST-2000P",
         "machineName": "ST-2000P",
         "sequence": 9,
         "hoursPerKm": "1.089",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-120R1",
         "machineName": "EX-120R1",
         "sequence": 10,
         "hoursPerKm": "1.129",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -2169,42 +2169,42 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "2.179",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "STR-61RS",
         "machineName": "STR-61RS",
         "sequence": 2,
         "hoursPerKm": "0.701",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M1",
         "machineName": "EX-150M1",
         "sequence": 3,
         "hoursPerKm": "0.7",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M3",
         "machineName": "EX-150M3",
         "sequence": 4,
         "hoursPerKm": "1.532",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-2000P",
         "machineName": "DT-2000P",
         "sequence": 5,
         "hoursPerKm": "1.362",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M1",
         "machineName": "EX-150M1",
         "sequence": 6,
         "hoursPerKm": "1.543",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -2328,42 +2328,42 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "1.21",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "STR-61RS",
         "machineName": "STR-61RS",
         "sequence": 2,
         "hoursPerKm": "1.307",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M1",
         "machineName": "EX-150M1",
         "sequence": 3,
         "hoursPerKm": "1.218",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M3",
         "machineName": "EX-150M3",
         "sequence": 4,
         "hoursPerKm": "1.815",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-2000P",
         "machineName": "DT-2000P",
         "sequence": 5,
         "hoursPerKm": "1.588",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M1",
         "machineName": "EX-150M1",
         "sequence": 6,
         "hoursPerKm": "1.852",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -2487,42 +2487,42 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "2.179",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "STR-61RS",
         "machineName": "STR-61RS",
         "sequence": 2,
         "hoursPerKm": "1.089",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M1",
         "machineName": "EX-150M1",
         "sequence": 3,
         "hoursPerKm": "1.262",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M3",
         "machineName": "EX-150M3",
         "sequence": 4,
         "hoursPerKm": "2.117",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-3000P",
         "machineName": "DT-3000P",
         "sequence": 5,
         "hoursPerKm": "2.003",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M1",
         "machineName": "EX-150M1",
         "sequence": 6,
         "hoursPerKm": "1.975",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -2646,42 +2646,42 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "2.572",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "STR-61RS",
         "machineName": "STR-61RS",
         "sequence": 2,
         "hoursPerKm": "1.783",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M1",
         "machineName": "EX-150M1",
         "sequence": 3,
         "hoursPerKm": "1.19",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M3",
         "machineName": "EX-150M3",
         "sequence": 4,
         "hoursPerKm": "2.315",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-3000P",
         "machineName": "DT-3000P",
         "sequence": 5,
         "hoursPerKm": "2.315",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M1",
         "machineName": "EX-150M1",
         "sequence": 6,
         "hoursPerKm": "2.43",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -2823,56 +2823,56 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "2.179",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "STR-61RS",
         "machineName": "STR-61RS",
         "sequence": 2,
         "hoursPerKm": "1.089",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "TAPE-02",
         "machineName": "TAPE-02",
         "sequence": 3,
         "hoursPerKm": "1.751",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-CCVT1",
         "machineName": "EX-CCVT1",
         "sequence": 4,
         "hoursPerKm": "3.922",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "TAPE-02",
         "machineName": "TAPE-02",
         "sequence": 5,
         "hoursPerKm": "2.778",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 6,
         "hoursPerKm": "2.268",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT3000P1",
         "machineName": "DT3000P1",
         "sequence": 7,
         "hoursPerKm": "4.07",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 8,
         "hoursPerKm": "3.33",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -3014,56 +3014,56 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "2.572",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "STR-61RS",
         "machineName": "STR-61RS",
         "sequence": 2,
         "hoursPerKm": "1.783",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "TAPE-01",
         "machineName": "TAPE-01",
         "sequence": 3,
         "hoursPerKm": "1.543",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-CCVT1",
         "machineName": "EX-CCVT1",
         "sequence": 4,
         "hoursPerKm": "5.157",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "TAPE-02",
         "machineName": "TAPE-02",
         "sequence": 5,
         "hoursPerKm": "2.976",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 6,
         "hoursPerKm": "2.886",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT3000P1",
         "machineName": "DT3000P1",
         "sequence": 7,
         "hoursPerKm": "4.579",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 8,
         "hoursPerKm": "4.07",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -3223,49 +3223,49 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "0.01",
-        "cores": 4
+        "cores": "4"
       },
       {
         "machineKey": "FWD-0001",
         "machineName": "FWD-0001",
         "sequence": 2,
         "hoursPerKm": "0.926",
-        "cores": 4.5
+        "cores": "4.5"
       },
       {
         "machineKey": "EX-60M1",
         "machineName": "EX-60M1",
         "sequence": 3,
         "hoursPerKm": "0.039",
-        "cores": 2
+        "cores": "2"
       },
       {
         "machineKey": "BNR-L004",
         "machineName": "BNR-L004",
         "sequence": 4,
         "hoursPerKm": "0.617",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-60M1",
         "machineName": "EX-60M1",
         "sequence": 5,
         "hoursPerKm": "0.772",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "ARM-48BN",
         "machineName": "ARM-48BN",
         "sequence": 6,
         "hoursPerKm": "2.315",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-120R1",
         "machineName": "EX-120R1",
         "sequence": 7,
         "hoursPerKm": "0.926",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -3431,56 +3431,56 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "0.01",
-        "cores": 4
+        "cores": "4"
       },
       {
         "machineKey": "VTP-A001",
         "machineName": "VTP-A001",
         "sequence": 2,
         "hoursPerKm": "2.437",
-        "cores": 2
+        "cores": "2"
       },
       {
         "machineKey": "FWD-0001",
         "machineName": "FWD-0001",
         "sequence": 3,
         "hoursPerKm": "0.926",
-        "cores": 4.5
+        "cores": "4.5"
       },
       {
         "machineKey": "EX-60M1",
         "machineName": "EX-60M1",
         "sequence": 4,
         "hoursPerKm": "0.039",
-        "cores": 2
+        "cores": "2"
       },
       {
         "machineKey": "BNR-L004",
         "machineName": "BNR-L004",
         "sequence": 5,
         "hoursPerKm": "0.617",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-60M1",
         "machineName": "EX-60M1",
         "sequence": 6,
         "hoursPerKm": "0.772",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "ARM-48BN",
         "machineName": "ARM-48BN",
         "sequence": 7,
         "hoursPerKm": "2.315",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-120R1",
         "machineName": "EX-120R1",
         "sequence": 8,
         "hoursPerKm": "0.926",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -3592,21 +3592,21 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "2.179",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "STR-37RS",
         "machineName": "STR-37RS",
         "sequence": 2,
         "hoursPerKm": "0.735",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-90R1",
         "machineName": "EX-90R1",
         "sequence": 3,
         "hoursPerKm": "0.473",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -3742,56 +3742,56 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "2.179",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "STR-61RS",
         "machineName": "STR-61RS",
         "sequence": 2,
         "hoursPerKm": "1.089",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "TAPE-02",
         "machineName": "TAPE-02",
         "sequence": 3,
         "hoursPerKm": "1.751",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-CCVT1",
         "machineName": "EX-CCVT1",
         "sequence": 4,
         "hoursPerKm": "2.99",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "TAPE-02",
         "machineName": "TAPE-02",
         "sequence": 5,
         "hoursPerKm": "2.058",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 6,
         "hoursPerKm": "2.469",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-3000P1",
         "machineName": "DT-3000P1",
         "sequence": 7,
         "hoursPerKm": "4.535",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 8,
         "hoursPerKm": "4.07",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -3933,56 +3933,56 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "2.572",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "STR-61RS",
         "machineName": "STR-61RS",
         "sequence": 2,
         "hoursPerKm": "1.783",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "TAPE-01",
         "machineName": "TAPE-01",
         "sequence": 3,
         "hoursPerKm": "1.543",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-CCVT1",
         "machineName": "EX-CCVT1",
         "sequence": 4,
         "hoursPerKm": "2.99",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "TAPE-01",
         "machineName": "TAPE-01",
         "sequence": 5,
         "hoursPerKm": "1.852",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 6,
         "hoursPerKm": "2.469",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-3000P1",
         "machineName": "DT-3000P1",
         "sequence": 7,
         "hoursPerKm": "4.859",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 8,
         "hoursPerKm": "4.07",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -4124,56 +4124,56 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "2.572",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "STR-61RS",
         "machineName": "STR-61RS",
         "sequence": 2,
         "hoursPerKm": "1.783",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "TAPE-01",
         "machineName": "TAPE-01",
         "sequence": 3,
         "hoursPerKm": "1.543",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-CCVT1",
         "machineName": "EX-CCVT1",
         "sequence": 4,
         "hoursPerKm": "1.953",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "TAPE-02",
         "machineName": "TAPE-02",
         "sequence": 5,
         "hoursPerKm": "2.058",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 6,
         "hoursPerKm": "2.469",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT3000P1",
         "machineName": "DT3000P1",
         "sequence": 7,
         "hoursPerKm": "3.72",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 8,
         "hoursPerKm": "3.663",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -4285,35 +4285,35 @@
         "machineName": "RBD-TWD2",
         "sequence": 1,
         "hoursPerKm": "1.102",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "FWD-0001",
         "machineName": "FWD-0001",
         "sequence": 2,
         "hoursPerKm": "2.058",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "BNR-N001",
         "machineName": "BNR-N001",
         "sequence": 3,
         "hoursPerKm": "0.13",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-100M1",
         "machineName": "EX-100M1",
         "sequence": 4,
         "hoursPerKm": "0.033",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "CLR-PS02",
         "machineName": "CLR-PS02",
         "sequence": 5,
         "hoursPerKm": "0.072",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -4485,63 +4485,63 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "0.01",
-        "cores": 82.4000015258789
+        "cores": "82.4000015258789"
       },
       {
         "machineKey": "VTP-A001",
         "machineName": "VTP-A001",
         "sequence": 2,
         "hoursPerKm": "2.437",
-        "cores": 41.2000007629395
+        "cores": "41.2000007629395"
       },
       {
         "machineKey": "FWD-0001",
         "machineName": "FWD-0001",
         "sequence": 3,
         "hoursPerKm": "0.926",
-        "cores": 97.2000045776367
+        "cores": "97.2000045776367"
       },
       {
         "machineKey": "EX-60M1",
         "machineName": "EX-60M1",
         "sequence": 4,
         "hoursPerKm": "0.039",
-        "cores": 41.2000007629395
+        "cores": "41.2000007629395"
       },
       {
         "machineKey": "BNR-L004",
         "machineName": "BNR-L004",
         "sequence": 5,
         "hoursPerKm": "0.617",
-        "cores": 20.6000003814697
+        "cores": "20.6000003814697"
       },
       {
         "machineKey": "STR-37RS",
         "machineName": "STR-37RS",
         "sequence": 6,
         "hoursPerKm": "2.834",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-120R1",
         "machineName": "EX-120R1",
         "sequence": 7,
         "hoursPerKm": "1.353",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-2000P",
         "machineName": "DT-2000P",
         "sequence": 8,
         "hoursPerKm": "1.188",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M3",
         "machineName": "EX-150M3",
         "sequence": 9,
         "hoursPerKm": "1.488",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -4719,56 +4719,56 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "0.01",
-        "cores": 82.4000015258789
+        "cores": "82.4000015258789"
       },
       {
         "machineKey": "FWD-0001",
         "machineName": "FWD-0001",
         "sequence": 2,
         "hoursPerKm": "0.926",
-        "cores": 97.2000045776367
+        "cores": "97.2000045776367"
       },
       {
         "machineKey": "EX-60M1",
         "machineName": "EX-60M1",
         "sequence": 3,
         "hoursPerKm": "0.039",
-        "cores": 41.2000007629395
+        "cores": "41.2000007629395"
       },
       {
         "machineKey": "BNR-L004",
         "machineName": "BNR-L004",
         "sequence": 4,
         "hoursPerKm": "0.617",
-        "cores": 20.6000003814697
+        "cores": "20.6000003814697"
       },
       {
         "machineKey": "STR-37RS",
         "machineName": "STR-37RS",
         "sequence": 5,
         "hoursPerKm": "2.834",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-120R1",
         "machineName": "EX-120R1",
         "sequence": 6,
         "hoursPerKm": "1.353",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-2000P",
         "machineName": "DT-2000P",
         "sequence": 7,
         "hoursPerKm": "1.488",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M3",
         "machineName": "EX-150M3",
         "sequence": 8,
         "hoursPerKm": "1.488",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -4940,56 +4940,56 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "0.01",
-        "cores": 82.4000015258789
+        "cores": "82.4000015258789"
       },
       {
         "machineKey": "FWD-0001",
         "machineName": "FWD-0001",
         "sequence": 2,
         "hoursPerKm": "0.926",
-        "cores": 97.2000045776367
+        "cores": "97.2000045776367"
       },
       {
         "machineKey": "EX-60M1",
         "machineName": "EX-60M1",
         "sequence": 3,
         "hoursPerKm": "0.044",
-        "cores": 41.2000007629395
+        "cores": "41.2000007629395"
       },
       {
         "machineKey": "BNR-L004",
         "machineName": "BNR-L004",
         "sequence": 4,
         "hoursPerKm": "0.93",
-        "cores": 20.6000003814697
+        "cores": "20.6000003814697"
       },
       {
         "machineKey": "STR-37RS",
         "machineName": "STR-37RS",
         "sequence": 5,
         "hoursPerKm": "3.053",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-120R1",
         "machineName": "EX-120R1",
         "sequence": 6,
         "hoursPerKm": "1.417",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-2000P",
         "machineName": "DT-2000P",
         "sequence": 7,
         "hoursPerKm": "1.488",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M3",
         "machineName": "EX-150M3",
         "sequence": 8,
         "hoursPerKm": "1.566",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -5143,63 +5143,63 @@
         "machineName": "RBD-TWD2",
         "sequence": 1,
         "hoursPerKm": "1.102",
-        "cores": 24.7199993133545
+        "cores": "24.7199993133545"
       },
       {
         "machineKey": "FWD-0001",
         "machineName": "FWD-0001",
         "sequence": 2,
         "hoursPerKm": "1.157",
-        "cores": 24.7199993133545
+        "cores": "24.7199993133545"
       },
       {
         "machineKey": "BNR-N001",
         "machineName": "BNR-N001",
         "sequence": 3,
         "hoursPerKm": "0.156",
-        "cores": 24.7199993133545
+        "cores": "24.7199993133545"
       },
       {
         "machineKey": "FWD-0001",
         "machineName": "FWD-0001",
         "sequence": 4,
         "hoursPerKm": "0.926",
-        "cores": 4.5
+        "cores": "4.5"
       },
       {
         "machineKey": "EX-60M1",
         "machineName": "EX-60M1",
         "sequence": 5,
         "hoursPerKm": "0.039",
-        "cores": 24.7199993133545
+        "cores": "24.7199993133545"
       },
       {
         "machineKey": "STR-37RS",
         "machineName": "STR-37RS",
         "sequence": 6,
         "hoursPerKm": "3.053",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-120R1",
         "machineName": "EX-120R1",
         "sequence": 7,
         "hoursPerKm": "0.98",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-2000P",
         "machineName": "DT-2000P",
         "sequence": 8,
         "hoursPerKm": "1.167",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-120R1",
         "machineName": "EX-120R1",
         "sequence": 9,
         "hoursPerKm": "1.129",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -5353,63 +5353,63 @@
         "machineName": "RBD-TWD2",
         "sequence": 1,
         "hoursPerKm": "1.102",
-        "cores": 24.7199993133545
+        "cores": "24.7199993133545"
       },
       {
         "machineKey": "FWD-0001",
         "machineName": "FWD-0001",
         "sequence": 2,
         "hoursPerKm": "2.058",
-        "cores": 24.7199993133545
+        "cores": "24.7199993133545"
       },
       {
         "machineKey": "BNR-N001",
         "machineName": "BNR-N001",
         "sequence": 3,
         "hoursPerKm": "0.13",
-        "cores": 24.7199993133545
+        "cores": "24.7199993133545"
       },
       {
         "machineKey": "FWD-0001",
         "machineName": "FWD-0001",
         "sequence": 4,
         "hoursPerKm": "0.926",
-        "cores": 4.5
+        "cores": "4.5"
       },
       {
         "machineKey": "EX-60M1",
         "machineName": "EX-60M1",
         "sequence": 5,
         "hoursPerKm": "0.044",
-        "cores": 24.7199993133545
+        "cores": "24.7199993133545"
       },
       {
         "machineKey": "STR-37RS",
         "machineName": "STR-37RS",
         "sequence": 6,
         "hoursPerKm": "3.053",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-120R1",
         "machineName": "EX-120R1",
         "sequence": 7,
         "hoursPerKm": "0.98",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-2000P",
         "machineName": "DT-2000P",
         "sequence": 8,
         "hoursPerKm": "1.613",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-120R1",
         "machineName": "EX-120R1",
         "sequence": 9,
         "hoursPerKm": "1.129",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -5569,70 +5569,70 @@
         "machineName": "RBD-TWD2",
         "sequence": 1,
         "hoursPerKm": "1.102",
-        "cores": 24.7199993133545
+        "cores": "24.7199993133545"
       },
       {
         "machineKey": "FWD-0001",
         "machineName": "FWD-0001",
         "sequence": 2,
         "hoursPerKm": "2.058",
-        "cores": 24.7199993133545
+        "cores": "24.7199993133545"
       },
       {
         "machineKey": "BNR-N001",
         "machineName": "BNR-N001",
         "sequence": 3,
         "hoursPerKm": "0.13",
-        "cores": 24.7199993133545
+        "cores": "24.7199993133545"
       },
       {
         "machineKey": "VTP-A001",
         "machineName": "VTP-A001",
         "sequence": 4,
         "hoursPerKm": "2.437",
-        "cores": 24.7199993133545
+        "cores": "24.7199993133545"
       },
       {
         "machineKey": "FWD-0001",
         "machineName": "FWD-0001",
         "sequence": 5,
         "hoursPerKm": "0.926",
-        "cores": 4.5
+        "cores": "4.5"
       },
       {
         "machineKey": "EX-60M1",
         "machineName": "EX-60M1",
         "sequence": 6,
         "hoursPerKm": "0.044",
-        "cores": 24.7199993133545
+        "cores": "24.7199993133545"
       },
       {
         "machineKey": "STR-37RS",
         "machineName": "STR-37RS",
         "sequence": 7,
         "hoursPerKm": "3.053",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-120R1",
         "machineName": "EX-120R1",
         "sequence": 8,
         "hoursPerKm": "1.016",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-2000P",
         "machineName": "DT-2000P",
         "sequence": 9,
         "hoursPerKm": "1.653",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M3",
         "machineName": "EX-150M3",
         "sequence": 10,
         "hoursPerKm": "1.157",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -5792,70 +5792,70 @@
         "machineName": "RBD-TWD2",
         "sequence": 1,
         "hoursPerKm": "1.102",
-        "cores": 24.7199993133545
+        "cores": "24.7199993133545"
       },
       {
         "machineKey": "FWD-0001",
         "machineName": "FWD-0001",
         "sequence": 2,
         "hoursPerKm": "1.157",
-        "cores": 24.7199993133545
+        "cores": "24.7199993133545"
       },
       {
         "machineKey": "BNR-N001",
         "machineName": "BNR-N001",
         "sequence": 3,
         "hoursPerKm": "0.156",
-        "cores": 24.7199993133545
+        "cores": "24.7199993133545"
       },
       {
         "machineKey": "VTP-A001",
         "machineName": "VTP-A001",
         "sequence": 4,
         "hoursPerKm": "3.157",
-        "cores": 24.7199993133545
+        "cores": "24.7199993133545"
       },
       {
         "machineKey": "FWD-0001",
         "machineName": "FWD-0001",
         "sequence": 5,
         "hoursPerKm": "0.926",
-        "cores": 4.5
+        "cores": "4.5"
       },
       {
         "machineKey": "EX-60M1",
         "machineName": "EX-60M1",
         "sequence": 6,
         "hoursPerKm": "0.039",
-        "cores": 24.7199993133545
+        "cores": "24.7199993133545"
       },
       {
         "machineKey": "STR-37RS",
         "machineName": "STR-37RS",
         "sequence": 7,
         "hoursPerKm": "3.053",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-120R1",
         "machineName": "EX-120R1",
         "sequence": 8,
         "hoursPerKm": "1.016",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-2000P",
         "machineName": "DT-2000P",
         "sequence": 9,
         "hoursPerKm": "1.21",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-120R1",
         "machineName": "EX-120R1",
         "sequence": 10,
         "hoursPerKm": "1.157",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -6009,63 +6009,63 @@
         "machineName": "RBD-TWD2",
         "sequence": 1,
         "hoursPerKm": "1.102",
-        "cores": 1.00999999046326
+        "cores": "1.00999999046326"
       },
       {
         "machineKey": "FWD-0001",
         "machineName": "FWD-0001",
         "sequence": 2,
         "hoursPerKm": "2.058",
-        "cores": 1.00999999046326
+        "cores": "1.00999999046326"
       },
       {
         "machineKey": "BNR-N001",
         "machineName": "BNR-N001",
         "sequence": 3,
         "hoursPerKm": "0.13",
-        "cores": 1.00999999046326
+        "cores": "1.00999999046326"
       },
       {
         "machineKey": "FWD-0001",
         "machineName": "FWD-0001",
         "sequence": 4,
         "hoursPerKm": "0.926",
-        "cores": 4.5
+        "cores": "4.5"
       },
       {
         "machineKey": "EX-60M1",
         "machineName": "EX-60M1",
         "sequence": 5,
         "hoursPerKm": "0.044",
-        "cores": 1.00999999046326
+        "cores": "1.00999999046326"
       },
       {
         "machineKey": "BNR-L004",
         "machineName": "BNR-L004",
         "sequence": 6,
         "hoursPerKm": "1.111",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-120R1",
         "machineName": "EX-120R1",
         "sequence": 7,
         "hoursPerKm": "0.726",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "ARM-48BN",
         "machineName": "ARM-48BN",
         "sequence": 8,
         "hoursPerKm": "2.315",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-120R1",
         "machineName": "EX-120R1",
         "sequence": 9,
         "hoursPerKm": "0.827",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -6225,70 +6225,70 @@
         "machineName": "RBD-TWD2",
         "sequence": 1,
         "hoursPerKm": "1.102",
-        "cores": 1.00999999046326
+        "cores": "1.00999999046326"
       },
       {
         "machineKey": "FWD-0001",
         "machineName": "FWD-0001",
         "sequence": 2,
         "hoursPerKm": "2.058",
-        "cores": 1.00999999046326
+        "cores": "1.00999999046326"
       },
       {
         "machineKey": "BNR-N001",
         "machineName": "BNR-N001",
         "sequence": 3,
         "hoursPerKm": "0.13",
-        "cores": 1.00999999046326
+        "cores": "1.00999999046326"
       },
       {
         "machineKey": "VTP-A001",
         "machineName": "VTP-A001",
         "sequence": 4,
         "hoursPerKm": "2.437",
-        "cores": 1.00999999046326
+        "cores": "1.00999999046326"
       },
       {
         "machineKey": "FWD-0001",
         "machineName": "FWD-0001",
         "sequence": 5,
         "hoursPerKm": "0.926",
-        "cores": 4.5
+        "cores": "4.5"
       },
       {
         "machineKey": "EX-60M1",
         "machineName": "EX-60M1",
         "sequence": 6,
         "hoursPerKm": "0.044",
-        "cores": 1.00999999046326
+        "cores": "1.00999999046326"
       },
       {
         "machineKey": "BNR-L004",
         "machineName": "BNR-L004",
         "sequence": 7,
         "hoursPerKm": "1.111",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-120R1",
         "machineName": "EX-120R1",
         "sequence": 8,
         "hoursPerKm": "0.726",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "ARM-48BN",
         "machineName": "ARM-48BN",
         "sequence": 9,
         "hoursPerKm": "2.315",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-120R1",
         "machineName": "EX-120R1",
         "sequence": 10,
         "hoursPerKm": "0.846",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -6472,56 +6472,56 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "0.01",
-        "cores": 8.07999992370606
+        "cores": "8.07999992370606"
       },
       {
         "machineKey": "FWD-0001",
         "machineName": "FWD-0001",
         "sequence": 2,
         "hoursPerKm": "0.926",
-        "cores": 13.5900001525879
+        "cores": "13.5900001525879"
       },
       {
         "machineKey": "EX-60M1",
         "machineName": "EX-60M1",
         "sequence": 3,
         "hoursPerKm": "0.039",
-        "cores": 4.03999996185303
+        "cores": "4.03999996185303"
       },
       {
         "machineKey": "BNR-L004",
         "machineName": "BNR-L004",
         "sequence": 4,
         "hoursPerKm": "0.617",
-        "cores": 2.01999998092651
+        "cores": "2.01999998092651"
       },
       {
         "machineKey": "BNR-L004",
         "machineName": "BNR-L004",
         "sequence": 5,
         "hoursPerKm": "0.868",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-60M1",
         "machineName": "EX-60M1",
         "sequence": 6,
         "hoursPerKm": "0.772",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "ARM-48BN",
         "machineName": "ARM-48BN",
         "sequence": 7,
         "hoursPerKm": "2.315",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-120R1",
         "machineName": "EX-120R1",
         "sequence": 8,
         "hoursPerKm": "0.926",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -6663,56 +6663,56 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "1.006",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "BNRS1600",
         "machineName": "BNRS1600",
         "sequence": 2,
         "hoursPerKm": "0.176",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "EX-CCVT2",
         "machineName": "EX-CCVT2",
         "sequence": 3,
         "hoursPerKm": "0.637",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "TAPE-01",
         "machineName": "TAPE-01",
         "sequence": 4,
         "hoursPerKm": "1.403",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "DT-3000P",
         "machineName": "DT-3000P",
         "sequence": 5,
         "hoursPerKm": "1.302",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 6,
         "hoursPerKm": "0.992",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-3000P",
         "machineName": "DT-3000P",
         "sequence": 7,
         "hoursPerKm": "1.587",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 8,
         "hoursPerKm": "0.988",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -6860,49 +6860,49 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "2.179",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "BNRS1600",
         "machineName": "BNRS1600",
         "sequence": 2,
         "hoursPerKm": "0.176",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "EX-90R1",
         "machineName": "EX-90R1",
         "sequence": 3,
         "hoursPerKm": "0.329",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "DT-2000P",
         "machineName": "DT-2000P",
         "sequence": 4,
         "hoursPerKm": "1.148",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-100M2",
         "machineName": "EX-100M2",
         "sequence": 5,
         "hoursPerKm": "0.7",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-2000P",
         "machineName": "DT-2000P",
         "sequence": 6,
         "hoursPerKm": "1.648",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-120R1",
         "machineName": "EX-120R1",
         "sequence": 7,
         "hoursPerKm": "1.016",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -7038,56 +7038,56 @@
         "machineName": "RBD-TWD2",
         "sequence": 1,
         "hoursPerKm": "1.102",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "FWD-0001",
         "machineName": "FWD-0001",
         "sequence": 2,
         "hoursPerKm": "2.058",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "BNR-N001",
         "machineName": "BNR-N001",
         "sequence": 3,
         "hoursPerKm": "0.13",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "EX-60M1",
         "machineName": "EX-60M1",
         "sequence": 4,
         "hoursPerKm": "0.044",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "BNR-L002",
         "machineName": "BNR-L002",
         "sequence": 5,
         "hoursPerKm": "0.661",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-90R1",
         "machineName": "EX-90R1",
         "sequence": 6,
         "hoursPerKm": "0.579",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "ARM-48BN",
         "machineName": "ARM-48BN",
         "sequence": 7,
         "hoursPerKm": "2.315",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-100M2",
         "machineName": "EX-100M2",
         "sequence": 8,
         "hoursPerKm": "0.772",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -7229,56 +7229,56 @@
         "machineName": "RBD-TWD2",
         "sequence": 1,
         "hoursPerKm": "1.102",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "FWD-0001",
         "machineName": "FWD-0001",
         "sequence": 2,
         "hoursPerKm": "2.437",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "BNR-N007",
         "machineName": "BNR-N007",
         "sequence": 3,
         "hoursPerKm": "0.139",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "EX-60M1",
         "machineName": "EX-60M1",
         "sequence": 4,
         "hoursPerKm": "0.051",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "BNR-L002",
         "machineName": "BNR-L002",
         "sequence": 5,
         "hoursPerKm": "0.661",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-90R1",
         "machineName": "EX-90R1",
         "sequence": 6,
         "hoursPerKm": "0.579",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "ARM-48BN",
         "machineName": "ARM-48BN",
         "sequence": 7,
         "hoursPerKm": "2.315",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-100M2",
         "machineName": "EX-100M2",
         "sequence": 8,
         "hoursPerKm": "0.676",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -7438,70 +7438,70 @@
         "machineName": "RBD-TWD2",
         "sequence": 1,
         "hoursPerKm": "1.102",
-        "cores": 3.02999997138977
+        "cores": "3.02999997138977"
       },
       {
         "machineKey": "FWD-0001",
         "machineName": "FWD-0001",
         "sequence": 2,
         "hoursPerKm": "1.157",
-        "cores": 3.02999997138977
+        "cores": "3.02999997138977"
       },
       {
         "machineKey": "BNR-N001",
         "machineName": "BNR-N001",
         "sequence": 3,
         "hoursPerKm": "0.156",
-        "cores": 3.02999997138977
+        "cores": "3.02999997138977"
       },
       {
         "machineKey": "VTP-A001",
         "machineName": "VTP-A001",
         "sequence": 4,
         "hoursPerKm": "3.157",
-        "cores": 3.02999997138977
+        "cores": "3.02999997138977"
       },
       {
         "machineKey": "FWD-0001",
         "machineName": "FWD-0001",
         "sequence": 5,
         "hoursPerKm": "0.926",
-        "cores": 4.5
+        "cores": "4.5"
       },
       {
         "machineKey": "EX-60M1",
         "machineName": "EX-60M1",
         "sequence": 6,
         "hoursPerKm": "0.039",
-        "cores": 3.02999997138977
+        "cores": "3.02999997138977"
       },
       {
         "machineKey": "BNR-L002",
         "machineName": "BNR-L002",
         "sequence": 7,
         "hoursPerKm": "0.93",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-90R1",
         "machineName": "EX-90R1",
         "sequence": 8,
         "hoursPerKm": "0.726",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "ARM-48BN",
         "machineName": "ARM-48BN",
         "sequence": 9,
         "hoursPerKm": "2.315",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-120R1",
         "machineName": "EX-120R1",
         "sequence": 10,
         "hoursPerKm": "0.846",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -7643,56 +7643,56 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "2.179",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "STR-37RS",
         "machineName": "STR-37RS",
         "sequence": 2,
         "hoursPerKm": "0.735",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "EX-CCVT2",
         "machineName": "EX-CCVT2",
         "sequence": 3,
         "hoursPerKm": "1.424",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "TAPE-01",
         "machineName": "TAPE-01",
         "sequence": 4,
         "hoursPerKm": "1.556",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "DT-3600C",
         "machineName": "DT-3600C",
         "sequence": 5,
         "hoursPerKm": "2.155",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 6,
         "hoursPerKm": "1.587",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-3600C",
         "machineName": "DT-3600C",
         "sequence": 7,
         "hoursPerKm": "1.701",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 8,
         "hoursPerKm": "2.289",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -7834,56 +7834,56 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "2.179",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "STR-37RS",
         "machineName": "STR-37RS",
         "sequence": 2,
         "hoursPerKm": "0.735",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "EX-CCVT2",
         "machineName": "EX-CCVT2",
         "sequence": 3,
         "hoursPerKm": "2.341",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "TAPE-01",
         "machineName": "TAPE-01",
         "sequence": 4,
         "hoursPerKm": "2.315",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "DT-3600C",
         "machineName": "DT-3600C",
         "sequence": 5,
         "hoursPerKm": "3.287",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 6,
         "hoursPerKm": "2.137",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-3600C",
         "machineName": "DT-3600C",
         "sequence": 7,
         "hoursPerKm": "2.818",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 8,
         "hoursPerKm": "3.053",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -8025,56 +8025,56 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "1.225",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "STR-37RS",
         "machineName": "STR-37RS",
         "sequence": 2,
         "hoursPerKm": "0.7",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "EX-CCVT2",
         "machineName": "EX-CCVT2",
         "sequence": 3,
         "hoursPerKm": "1.547",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "TAPE-01",
         "machineName": "TAPE-01",
         "sequence": 4,
         "hoursPerKm": "1.613",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "DT-3600C",
         "machineName": "DT-3600C",
         "sequence": 5,
         "hoursPerKm": "2.155",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 6,
         "hoursPerKm": "1.764",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-3600C",
         "machineName": "DT-3600C",
         "sequence": 7,
         "hoursPerKm": "1.701",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 8,
         "hoursPerKm": "2.616",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -8216,56 +8216,56 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "2.572",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "STR-37RS",
         "machineName": "STR-37RS",
         "sequence": 2,
         "hoursPerKm": "0.7",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "EX-CCVT2",
         "machineName": "EX-CCVT2",
         "sequence": 3,
         "hoursPerKm": "2.748",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "TAPE-01",
         "machineName": "TAPE-01",
         "sequence": 4,
         "hoursPerKm": "2.315",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "DT-3600C",
         "machineName": "DT-3600C",
         "sequence": 5,
         "hoursPerKm": "3.287",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 6,
         "hoursPerKm": "2.442",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-3600C",
         "machineName": "DT-3600C",
         "sequence": 7,
         "hoursPerKm": "2.818",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 8,
         "hoursPerKm": "3.307",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -8413,56 +8413,56 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "1.21",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "STR-37RS",
         "machineName": "STR-37RS",
         "sequence": 2,
         "hoursPerKm": "0.809",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "EX-CCVT2",
         "machineName": "EX-CCVT2",
         "sequence": 3,
         "hoursPerKm": "1.707",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "TAPE-01",
         "machineName": "TAPE-01",
         "sequence": 4,
         "hoursPerKm": "1.613",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "DT-3600C",
         "machineName": "DT-3600C",
         "sequence": 5,
         "hoursPerKm": "2.334",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 6,
         "hoursPerKm": "1.984",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-3600C",
         "machineName": "DT-3600C",
         "sequence": 7,
         "hoursPerKm": "2.63",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 8,
         "hoursPerKm": "2.818",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -8604,56 +8604,56 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "1.21",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "STR-37RS",
         "machineName": "STR-37RS",
         "sequence": 2,
         "hoursPerKm": "0.809",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "EX-CCVT2",
         "machineName": "EX-CCVT2",
         "sequence": 3,
         "hoursPerKm": "2.748",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "TAPE-01",
         "machineName": "TAPE-01",
         "sequence": 4,
         "hoursPerKm": "2.315",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "DT-3600C",
         "machineName": "DT-3600C",
         "sequence": 5,
         "hoursPerKm": "3.561",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 6,
         "hoursPerKm": "2.63",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-3600C",
         "machineName": "DT-3600C",
         "sequence": 7,
         "hoursPerKm": "4.274",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 8,
         "hoursPerKm": "3.561",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -8801,56 +8801,56 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "2.179",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "STR-61RS",
         "machineName": "STR-61RS",
         "sequence": 2,
         "hoursPerKm": "0.701",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "EX-CCVT2",
         "machineName": "EX-CCVT2",
         "sequence": 3,
         "hoursPerKm": "1.994",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "TAPE-02",
         "machineName": "TAPE-02",
         "sequence": 4,
         "hoursPerKm": "1.613",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "DT-3600C",
         "machineName": "DT-3600C",
         "sequence": 5,
         "hoursPerKm": "3.053",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 6,
         "hoursPerKm": "2.442",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-3600C",
         "machineName": "DT-3600C",
         "sequence": 7,
         "hoursPerKm": "3.561",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 8,
         "hoursPerKm": "3.287",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -8992,56 +8992,56 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "2.179",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "STR-61RS",
         "machineName": "STR-61RS",
         "sequence": 2,
         "hoursPerKm": "0.701",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "EX-CCVT2",
         "machineName": "EX-CCVT2",
         "sequence": 3,
         "hoursPerKm": "3.057",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "TAPE-02",
         "machineName": "TAPE-02",
         "sequence": 4,
         "hoursPerKm": "2.058",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "DT-3600C",
         "machineName": "DT-3600C",
         "sequence": 5,
         "hoursPerKm": "4.748",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 6,
         "hoursPerKm": "2.818",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-3600C",
         "machineName": "DT-3600C",
         "sequence": 7,
         "hoursPerKm": "3.858",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 8,
         "hoursPerKm": "4.274",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -9183,56 +9183,56 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "1.21",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "STR-61RS",
         "machineName": "STR-61RS",
         "sequence": 2,
         "hoursPerKm": "1.307",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "EX-CCVT1",
         "machineName": "EX-CCVT1",
         "sequence": 3,
         "hoursPerKm": "2.16",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "TAPE-02",
         "machineName": "TAPE-02",
         "sequence": 4,
         "hoursPerKm": "1.653",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "DT-3600C",
         "machineName": "DT-3600C",
         "sequence": 5,
         "hoursPerKm": "3.885",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 6,
         "hoursPerKm": "2.818",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-3600C",
         "machineName": "DT-3600C",
         "sequence": 7,
         "hoursPerKm": "4.274",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 8,
         "hoursPerKm": "4.209",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -9374,56 +9374,56 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "1.21",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "STR-61RS",
         "machineName": "STR-61RS",
         "sequence": 2,
         "hoursPerKm": "1.307",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "EX-CCVT1",
         "machineName": "EX-CCVT1",
         "sequence": 3,
         "hoursPerKm": "3.657",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "TAPE-02",
         "machineName": "TAPE-02",
         "sequence": 4,
         "hoursPerKm": "2.058",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "DT-3600C",
         "machineName": "DT-3600C",
         "sequence": 5,
         "hoursPerKm": "5.144",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 6,
         "hoursPerKm": "3.307",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-3600C",
         "machineName": "DT-3600C",
         "sequence": 7,
         "hoursPerKm": "6.614",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 8,
         "hoursPerKm": "5.144",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -9571,63 +9571,63 @@
         "machineName": "RBD-TWD2",
         "sequence": 1,
         "hoursPerKm": "1.102",
-        "cores": 3.02999997138977
+        "cores": "3.02999997138977"
       },
       {
         "machineKey": "FWD-0001",
         "machineName": "FWD-0001",
         "sequence": 2,
         "hoursPerKm": "2.437",
-        "cores": 3.02999997138977
+        "cores": "3.02999997138977"
       },
       {
         "machineKey": "BNR-N007",
         "machineName": "BNR-N007",
         "sequence": 3,
         "hoursPerKm": "0.139",
-        "cores": 3.02999997138977
+        "cores": "3.02999997138977"
       },
       {
         "machineKey": "FWD-0001",
         "machineName": "FWD-0001",
         "sequence": 4,
         "hoursPerKm": "0.926",
-        "cores": 4.5
+        "cores": "4.5"
       },
       {
         "machineKey": "EX-60M1",
         "machineName": "EX-60M1",
         "sequence": 5,
         "hoursPerKm": "0.051",
-        "cores": 3.02999997138977
+        "cores": "3.02999997138977"
       },
       {
         "machineKey": "BNR-L002",
         "machineName": "BNR-L002",
         "sequence": 6,
         "hoursPerKm": "0.794",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-120R1",
         "machineName": "EX-120R1",
         "sequence": 7,
         "hoursPerKm": "0.827",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "ARM-48BN",
         "machineName": "ARM-48BN",
         "sequence": 8,
         "hoursPerKm": "2.315",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-120R1",
         "machineName": "EX-120R1",
         "sequence": 9,
         "hoursPerKm": "0.911",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -9769,56 +9769,56 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "1.006",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "BNRS1600",
         "machineName": "BNRS1600",
         "sequence": 2,
         "hoursPerKm": "0.176",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "EX-CCVT2",
         "machineName": "EX-CCVT2",
         "sequence": 3,
         "hoursPerKm": "1.755",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "TAPE-02",
         "machineName": "TAPE-02",
         "sequence": 4,
         "hoursPerKm": "1.506",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "DT-3000P",
         "machineName": "DT-3000P",
         "sequence": 5,
         "hoursPerKm": "2.268",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 6,
         "hoursPerKm": "1.19",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-3000P",
         "machineName": "DT-3000P",
         "sequence": 7,
         "hoursPerKm": "1.928",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 8,
         "hoursPerKm": "1.744",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -9960,56 +9960,56 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "1.102",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "BNRS1600",
         "machineName": "BNRS1600",
         "sequence": 2,
         "hoursPerKm": "0.205",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "EX-CCVT2",
         "machineName": "EX-CCVT2",
         "sequence": 3,
         "hoursPerKm": "1.148",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "TAPE-01",
         "machineName": "TAPE-01",
         "sequence": 4,
         "hoursPerKm": "1.452",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "DT-3000P",
         "machineName": "DT-3000P",
         "sequence": 5,
         "hoursPerKm": "1.867",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 6,
         "hoursPerKm": "1.063",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-3000P",
         "machineName": "DT-3000P",
         "sequence": 7,
         "hoursPerKm": "1.701",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 8,
         "hoursPerKm": "1.546",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -10151,56 +10151,56 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "1.102",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "BNRS1600",
         "machineName": "BNRS1600",
         "sequence": 2,
         "hoursPerKm": "0.205",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "EX-CCVT2",
         "machineName": "EX-CCVT2",
         "sequence": 3,
         "hoursPerKm": "1.946",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "TAPE-02",
         "machineName": "TAPE-02",
         "sequence": 4,
         "hoursPerKm": "1.506",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "DT-3000P",
         "machineName": "DT-3000P",
         "sequence": 5,
         "hoursPerKm": "2.646",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 6,
         "hoursPerKm": "1.394",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-3000P",
         "machineName": "DT-3000P",
         "sequence": 7,
         "hoursPerKm": "2.818",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 8,
         "hoursPerKm": "2.035",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -10342,56 +10342,56 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "1.21",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "STR-37RS",
         "machineName": "STR-37RS",
         "sequence": 2,
         "hoursPerKm": "0.871",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "EX-CCVT2",
         "machineName": "EX-CCVT2",
         "sequence": 3,
         "hoursPerKm": "1.295",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "TAPE-01",
         "machineName": "TAPE-01",
         "sequence": 4,
         "hoursPerKm": "1.556",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "DT-3000P",
         "machineName": "DT-3000P",
         "sequence": 5,
         "hoursPerKm": "1.867",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 6,
         "hoursPerKm": "1.19",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-3000P",
         "machineName": "DT-3000P",
         "sequence": 7,
         "hoursPerKm": "1.701",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 8,
         "hoursPerKm": "1.546",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -10539,49 +10539,49 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "0.723",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "BNR-L001",
         "machineName": "BNR-L001",
         "sequence": 2,
         "hoursPerKm": "0.217",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "EX-60M1",
         "machineName": "EX-60M1",
         "sequence": 3,
         "hoursPerKm": "0.154",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "ST-2000P",
         "machineName": "ST-2000P",
         "sequence": 4,
         "hoursPerKm": "0.823",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-90R1",
         "machineName": "EX-90R1",
         "sequence": 5,
         "hoursPerKm": "0.579",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "ST-2000P",
         "machineName": "ST-2000P",
         "sequence": 6,
         "hoursPerKm": "0.846",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-90R1",
         "machineName": "EX-90R1",
         "sequence": 7,
         "hoursPerKm": "0.676",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -10723,56 +10723,56 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "2.179",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "STR-37RS",
         "machineName": "STR-37RS",
         "sequence": 2,
         "hoursPerKm": "0.735",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "EX-CCVT2",
         "machineName": "EX-CCVT2",
         "sequence": 3,
         "hoursPerKm": "0.905",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "TAPE-01",
         "machineName": "TAPE-01",
         "sequence": 4,
         "hoursPerKm": "1.556",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "DT-3600C",
         "machineName": "DT-3600C",
         "sequence": 5,
         "hoursPerKm": "1.709",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 6,
         "hoursPerKm": "1.443",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-3600C",
         "machineName": "DT-3600C",
         "sequence": 7,
         "hoursPerKm": "1.701",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 8,
         "hoursPerKm": "1.587",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -10920,49 +10920,49 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "2.179",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "STR-37RS",
         "machineName": "STR-37RS",
         "sequence": 2,
         "hoursPerKm": "0.735",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "EX-150M1",
         "machineName": "EX-150M1",
         "sequence": 3,
         "hoursPerKm": "0.592",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "DT3000P1",
         "machineName": "DT3000P1",
         "sequence": 4,
         "hoursPerKm": "1.563",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M3",
         "machineName": "EX-150M3",
         "sequence": 5,
         "hoursPerKm": "1.184",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT3000P1",
         "machineName": "DT3000P1",
         "sequence": 6,
         "hoursPerKm": "1.587",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M1",
         "machineName": "EX-150M1",
         "sequence": 7,
         "hoursPerKm": "1.543",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -11110,49 +11110,49 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "2.572",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "STR-37RS",
         "machineName": "STR-37RS",
         "sequence": 2,
         "hoursPerKm": "0.7",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "EX-150M1",
         "machineName": "EX-150M1",
         "sequence": 3,
         "hoursPerKm": "0.592",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "DT3000P1",
         "machineName": "DT3000P1",
         "sequence": 4,
         "hoursPerKm": "1.603",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M3",
         "machineName": "EX-150M3",
         "sequence": 5,
         "hoursPerKm": "1.389",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT3000P1",
         "machineName": "DT3000P1",
         "sequence": 6,
         "hoursPerKm": "1.671",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M1",
         "machineName": "EX-150M1",
         "sequence": 7,
         "hoursPerKm": "1.736",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -11300,49 +11300,49 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "0.827",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "BNRS1600",
         "machineName": "BNRS1600",
         "sequence": 2,
         "hoursPerKm": "0.289",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "EX-90R1",
         "machineName": "EX-90R1",
         "sequence": 3,
         "hoursPerKm": "0.193",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "ST-2000P",
         "machineName": "ST-2000P",
         "sequence": 4,
         "hoursPerKm": "0.686",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-90R1",
         "machineName": "EX-90R1",
         "sequence": 5,
         "hoursPerKm": "0.592",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "ST-2000P",
         "machineName": "ST-2000P",
         "sequence": 6,
         "hoursPerKm": "0.846",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-120R1",
         "machineName": "EX-120R1",
         "sequence": 7,
         "hoursPerKm": "0.7",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -11484,56 +11484,56 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "1.21",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "STR-37RS",
         "machineName": "STR-37RS",
         "sequence": 2,
         "hoursPerKm": "0.809",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "EX-CCVT2",
         "machineName": "EX-CCVT2",
         "sequence": 3,
         "hoursPerKm": "1.093",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "TAPE-01",
         "machineName": "TAPE-01",
         "sequence": 4,
         "hoursPerKm": "1.556",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "DT-3600C",
         "machineName": "DT-3600C",
         "sequence": 5,
         "hoursPerKm": "1.832",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 6,
         "hoursPerKm": "1.764",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-3600C",
         "machineName": "DT-3600C",
         "sequence": 7,
         "hoursPerKm": "2.442",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 8,
         "hoursPerKm": "2.126",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -11681,49 +11681,49 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "1.21",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "STR-37RS",
         "machineName": "STR-37RS",
         "sequence": 2,
         "hoursPerKm": "0.809",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "EX-150M1",
         "machineName": "EX-150M1",
         "sequence": 3,
         "hoursPerKm": "0.592",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "DT3000P1",
         "machineName": "DT3000P1",
         "sequence": 4,
         "hoursPerKm": "1.852",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M3",
         "machineName": "EX-150M3",
         "sequence": 5,
         "hoursPerKm": "1.543",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT3000P1",
         "machineName": "DT3000P1",
         "sequence": 6,
         "hoursPerKm": "1.899",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M1",
         "machineName": "EX-150M1",
         "sequence": 7,
         "hoursPerKm": "2.126",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -11865,56 +11865,56 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "2.179",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "STR-61RS",
         "machineName": "STR-61RS",
         "sequence": 2,
         "hoursPerKm": "0.701",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "EX-CCVT2",
         "machineName": "EX-CCVT2",
         "sequence": 3,
         "hoursPerKm": "1.233",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "TAPE-02",
         "machineName": "TAPE-02",
         "sequence": 4,
         "hoursPerKm": "1.613",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "DT-3600C",
         "machineName": "DT-3600C",
         "sequence": 5,
         "hoursPerKm": "2.442",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 6,
         "hoursPerKm": "2.126",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-3600C",
         "machineName": "DT-3600C",
         "sequence": 7,
         "hoursPerKm": "3.307",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 8,
         "hoursPerKm": "2.616",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -12062,49 +12062,49 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "2.179",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "STR-61RS",
         "machineName": "STR-61RS",
         "sequence": 2,
         "hoursPerKm": "0.809",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "EX-150M1",
         "machineName": "EX-150M1",
         "sequence": 3,
         "hoursPerKm": "0.7",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "DT3000P1",
         "machineName": "DT3000P1",
         "sequence": 4,
         "hoursPerKm": "2.469",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M3",
         "machineName": "EX-150M3",
         "sequence": 5,
         "hoursPerKm": "1.736",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT3000P1",
         "machineName": "DT3000P1",
         "sequence": 6,
         "hoursPerKm": "2.205",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M1",
         "machineName": "EX-150M1",
         "sequence": 7,
         "hoursPerKm": "2.646",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -12252,49 +12252,49 @@
         "machineName": "RBD-TWD2",
         "sequence": 1,
         "hoursPerKm": "1.102",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "BNRS1600",
         "machineName": "BNRS1600",
         "sequence": 2,
         "hoursPerKm": "0.229",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "EX-90R1",
         "machineName": "EX-90R1",
         "sequence": 3,
         "hoursPerKm": "0.231",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "ST-2000P",
         "machineName": "ST-2000P",
         "sequence": 4,
         "hoursPerKm": "1.184",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-100M2",
         "machineName": "EX-100M2",
         "sequence": 5,
         "hoursPerKm": "0.592",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-2000P",
         "machineName": "DT-2000P",
         "sequence": 6,
         "hoursPerKm": "1.452",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-100M2",
         "machineName": "EX-100M2",
         "sequence": 7,
         "hoursPerKm": "0.743",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -12436,56 +12436,56 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "1.21",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "STR-61RS",
         "machineName": "STR-61RS",
         "sequence": 2,
         "hoursPerKm": "1.307",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "EX-CCVT1",
         "machineName": "EX-CCVT1",
         "sequence": 3,
         "hoursPerKm": "1.345",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "TAPE-02",
         "machineName": "TAPE-02",
         "sequence": 4,
         "hoursPerKm": "1.613",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "DT-3600C",
         "machineName": "DT-3600C",
         "sequence": 5,
         "hoursPerKm": "3.307",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 6,
         "hoursPerKm": "2.43",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-3600C",
         "machineName": "DT-3600C",
         "sequence": 7,
         "hoursPerKm": "4.274",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 8,
         "hoursPerKm": "3.034",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -12633,49 +12633,49 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "1.21",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "STR-61RS",
         "machineName": "STR-61RS",
         "sequence": 2,
         "hoursPerKm": "0.939",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "EX-150M1",
         "machineName": "EX-150M1",
         "sequence": 3,
         "hoursPerKm": "1.218",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "DT3000P1",
         "machineName": "DT3000P1",
         "sequence": 4,
         "hoursPerKm": "3.307",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M3",
         "machineName": "EX-150M3",
         "sequence": 5,
         "hoursPerKm": "2.126",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT3000P1",
         "machineName": "DT3000P1",
         "sequence": 6,
         "hoursPerKm": "2.48",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M1",
         "machineName": "EX-150M1",
         "sequence": 7,
         "hoursPerKm": "3.175",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -12823,56 +12823,56 @@
         "machineName": "RBD-TWD2",
         "sequence": 1,
         "hoursPerKm": "1.102",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "BNRS1600",
         "machineName": "BNRS1600",
         "sequence": 2,
         "hoursPerKm": "0.205",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "EX-CCVT2",
         "machineName": "EX-CCVT2",
         "sequence": 3,
         "hoursPerKm": "0.557",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "TAPE-01",
         "machineName": "TAPE-01",
         "sequence": 4,
         "hoursPerKm": "1.286",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "DT-3000P",
         "machineName": "DT-3000P",
         "sequence": 5,
         "hoursPerKm": "1.302",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 6,
         "hoursPerKm": "0.868",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-3000P",
         "machineName": "DT-3000P",
         "sequence": 7,
         "hoursPerKm": "1.481",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 8,
         "hoursPerKm": "0.926",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -13020,49 +13020,49 @@
         "machineName": "RBD-TWD2",
         "sequence": 1,
         "hoursPerKm": "1.102",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "BNRS1600",
         "machineName": "BNRS1600",
         "sequence": 2,
         "hoursPerKm": "0.229",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "EX-90R1",
         "machineName": "EX-90R1",
         "sequence": 3,
         "hoursPerKm": "0.257",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "DT-2000P",
         "machineName": "DT-2000P",
         "sequence": 4,
         "hoursPerKm": "1.48",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-100M2",
         "machineName": "EX-100M2",
         "sequence": 5,
         "hoursPerKm": "0.623",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-2000P",
         "machineName": "DT-2000P",
         "sequence": 6,
         "hoursPerKm": "1.452",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-100M2",
         "machineName": "EX-100M2",
         "sequence": 7,
         "hoursPerKm": "0.977",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -13210,56 +13210,56 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "1.006",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "BNRS1600",
         "machineName": "BNRS1600",
         "sequence": 2,
         "hoursPerKm": "0.176",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "EX-CCVT2",
         "machineName": "EX-CCVT2",
         "sequence": 3,
         "hoursPerKm": "1.014",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "TAPE-01",
         "machineName": "TAPE-01",
         "sequence": 4,
         "hoursPerKm": "1.403",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "DT-3000P",
         "machineName": "DT-3000P",
         "sequence": 5,
         "hoursPerKm": "1.559",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 6,
         "hoursPerKm": "1.063",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-3000P",
         "machineName": "DT-3000P",
         "sequence": 7,
         "hoursPerKm": "1.701",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 8,
         "hoursPerKm": "1.361",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -13407,49 +13407,49 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "2.179",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "BNRS1600",
         "machineName": "BNRS1600",
         "sequence": 2,
         "hoursPerKm": "0.176",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "EX-90R1",
         "machineName": "EX-90R1",
         "sequence": 3,
         "hoursPerKm": "0.329",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "DT-2000P",
         "machineName": "DT-2000P",
         "sequence": 4,
         "hoursPerKm": "1.148",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-100M2",
         "machineName": "EX-100M2",
         "sequence": 5,
         "hoursPerKm": "0.7",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-2000P",
         "machineName": "DT-2000P",
         "sequence": 6,
         "hoursPerKm": "1.648",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-120R1",
         "machineName": "EX-120R1",
         "sequence": 7,
         "hoursPerKm": "1.016",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -13591,56 +13591,56 @@
         "machineName": "RBD-TWD2",
         "sequence": 1,
         "hoursPerKm": "1.102",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "FWD-0001",
         "machineName": "FWD-0001",
         "sequence": 2,
         "hoursPerKm": "4.873",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "BNR-N007",
         "machineName": "BNR-N007",
         "sequence": 3,
         "hoursPerKm": "0.111",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "EX-60M1",
         "machineName": "EX-60M1",
         "sequence": 4,
         "hoursPerKm": "0.062",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "BNR-L002",
         "machineName": "BNR-L002",
         "sequence": 5,
         "hoursPerKm": "0.772",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-90R1",
         "machineName": "EX-90R1",
         "sequence": 6,
         "hoursPerKm": "0.579",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "ARM-48BN",
         "machineName": "ARM-48BN",
         "sequence": 7,
         "hoursPerKm": "2.315",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-100M2",
         "machineName": "EX-100M2",
         "sequence": 8,
         "hoursPerKm": "0.676",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -13782,56 +13782,56 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "1.102",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "BNRS1600",
         "machineName": "BNRS1600",
         "sequence": 2,
         "hoursPerKm": "0.205",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "EX-CCVT2",
         "machineName": "EX-CCVT2",
         "sequence": 3,
         "hoursPerKm": "1.148",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "TAPE-01",
         "machineName": "TAPE-01",
         "sequence": 4,
         "hoursPerKm": "1.452",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "DT-3000P",
         "machineName": "DT-3000P",
         "sequence": 5,
         "hoursPerKm": "1.867",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 6,
         "hoursPerKm": "1.063",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-3000P",
         "machineName": "DT-3000P",
         "sequence": 7,
         "hoursPerKm": "1.701",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 8,
         "hoursPerKm": "1.546",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -13979,49 +13979,49 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "1.102",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "BNRS1600",
         "machineName": "BNRS1600",
         "sequence": 2,
         "hoursPerKm": "0.161",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "EX-90R1",
         "machineName": "EX-90R1",
         "sequence": 3,
         "hoursPerKm": "0.412",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "DT-3000P",
         "machineName": "DT-3000P",
         "sequence": 4,
         "hoursPerKm": "1.743",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M3",
         "machineName": "EX-150M3",
         "sequence": 5,
         "hoursPerKm": "0.766",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-3000P",
         "machineName": "DT-3000P",
         "sequence": 6,
         "hoursPerKm": "1.613",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M3",
         "machineName": "EX-150M3",
         "sequence": 7,
         "hoursPerKm": "1.447",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -14163,56 +14163,56 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "1.102",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "BNRS1600",
         "machineName": "BNRS1600",
         "sequence": 2,
         "hoursPerKm": "0.205",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "EX-CCVT2",
         "machineName": "EX-CCVT2",
         "sequence": 3,
         "hoursPerKm": "0.727",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "TAPE-01",
         "machineName": "TAPE-01",
         "sequence": 4,
         "hoursPerKm": "1.403",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "DT-3000P",
         "machineName": "DT-3000P",
         "sequence": 5,
         "hoursPerKm": "1.481",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 6,
         "hoursPerKm": "0.992",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-3000P",
         "machineName": "DT-3000P",
         "sequence": 7,
         "hoursPerKm": "1.587",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 8,
         "hoursPerKm": "1.176",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -14354,56 +14354,56 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "1.21",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "STR-37RS",
         "machineName": "STR-37RS",
         "sequence": 2,
         "hoursPerKm": "0.871",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "EX-CCVT2",
         "machineName": "EX-CCVT2",
         "sequence": 3,
         "hoursPerKm": "2.145",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "TAPE-01",
         "machineName": "TAPE-01",
         "sequence": 4,
         "hoursPerKm": "2.315",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "DT-3000P",
         "machineName": "DT-3000P",
         "sequence": 5,
         "hoursPerKm": "2.849",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 6,
         "hoursPerKm": "1.526",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-3000P",
         "machineName": "DT-3000P",
         "sequence": 7,
         "hoursPerKm": "2.818",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 8,
         "hoursPerKm": "2.035",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -14551,56 +14551,56 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "1.21",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "STR-37RS",
         "machineName": "STR-37RS",
         "sequence": 2,
         "hoursPerKm": "0.871",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "EX-CCVT2",
         "machineName": "EX-CCVT2",
         "sequence": 3,
         "hoursPerKm": "0.824",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "TAPE-01",
         "machineName": "TAPE-01",
         "sequence": 4,
         "hoursPerKm": "1.503",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "DT-3000P",
         "machineName": "DT-3000P",
         "sequence": 5,
         "hoursPerKm": "1.481",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 6,
         "hoursPerKm": "1.111",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-3000P",
         "machineName": "DT-3000P",
         "sequence": 7,
         "hoursPerKm": "1.701",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M2",
         "machineName": "EX-150M2",
         "sequence": 8,
         "hoursPerKm": "1.27",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -14748,49 +14748,49 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "1.21",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "BNRS1600",
         "machineName": "BNRS1600",
         "sequence": 2,
         "hoursPerKm": "0.138",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "EX-90R1",
         "machineName": "EX-90R1",
         "sequence": 3,
         "hoursPerKm": "0.494",
-        "cores": 3
+        "cores": "3"
       },
       {
         "machineKey": "DT-3000P",
         "machineName": "DT-3000P",
         "sequence": 4,
         "hoursPerKm": "1.807",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M3",
         "machineName": "EX-150M3",
         "sequence": 5,
         "hoursPerKm": "0.907",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-3000P",
         "machineName": "DT-3000P",
         "sequence": 6,
         "hoursPerKm": "1.417",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M1",
         "machineName": "EX-150M1",
         "sequence": 7,
         "hoursPerKm": "1.157",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -14932,56 +14932,56 @@
         "machineName": "RBD-TWD2",
         "sequence": 1,
         "hoursPerKm": "1.102",
-        "cores": 4
+        "cores": "4"
       },
       {
         "machineKey": "FWD-0001",
         "machineName": "FWD-0001",
         "sequence": 2,
         "hoursPerKm": "2.058",
-        "cores": 4
+        "cores": "4"
       },
       {
         "machineKey": "BNR-N001",
         "machineName": "BNR-N001",
         "sequence": 3,
         "hoursPerKm": "0.13",
-        "cores": 4
+        "cores": "4"
       },
       {
         "machineKey": "EX-60M1",
         "machineName": "EX-60M1",
         "sequence": 4,
         "hoursPerKm": "0.044",
-        "cores": 4
+        "cores": "4"
       },
       {
         "machineKey": "BNR-L002",
         "machineName": "BNR-L002",
         "sequence": 5,
         "hoursPerKm": "0.772",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-90R1",
         "machineName": "EX-90R1",
         "sequence": 6,
         "hoursPerKm": "0.579",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "ARM-48BN",
         "machineName": "ARM-48BN",
         "sequence": 7,
         "hoursPerKm": "2.315",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-100M2",
         "machineName": "EX-100M2",
         "sequence": 8,
         "hoursPerKm": "0.676",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -15123,56 +15123,56 @@
         "machineName": "RBD-TWD2",
         "sequence": 1,
         "hoursPerKm": "1.102",
-        "cores": 4
+        "cores": "4"
       },
       {
         "machineKey": "FWD-0001",
         "machineName": "FWD-0001",
         "sequence": 2,
         "hoursPerKm": "2.437",
-        "cores": 4
+        "cores": "4"
       },
       {
         "machineKey": "BNR-N007",
         "machineName": "BNR-N007",
         "sequence": 3,
         "hoursPerKm": "0.139",
-        "cores": 4
+        "cores": "4"
       },
       {
         "machineKey": "EX-60M1",
         "machineName": "EX-60M1",
         "sequence": 4,
         "hoursPerKm": "0.051",
-        "cores": 4
+        "cores": "4"
       },
       {
         "machineKey": "BNR-L002",
         "machineName": "BNR-L002",
         "sequence": 5,
         "hoursPerKm": "0.772",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-90R1",
         "machineName": "EX-90R1",
         "sequence": 6,
         "hoursPerKm": "0.579",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "ARM-48BN",
         "machineName": "ARM-48BN",
         "sequence": 7,
         "hoursPerKm": "2.315",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-100M2",
         "machineName": "EX-100M2",
         "sequence": 8,
         "hoursPerKm": "0.676",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -15332,70 +15332,70 @@
         "machineName": "RBD-TWD2",
         "sequence": 1,
         "hoursPerKm": "1.102",
-        "cores": 49.9199981689453
+        "cores": "49.9199981689453"
       },
       {
         "machineKey": "FWD-0001",
         "machineName": "FWD-0001",
         "sequence": 2,
         "hoursPerKm": "1.157",
-        "cores": 49.9199981689453
+        "cores": "49.9199981689453"
       },
       {
         "machineKey": "BNR-N001",
         "machineName": "BNR-N001",
         "sequence": 3,
         "hoursPerKm": "0.156",
-        "cores": 49.9199981689453
+        "cores": "49.9199981689453"
       },
       {
         "machineKey": "VTP-A001",
         "machineName": "VTP-A001",
         "sequence": 4,
         "hoursPerKm": "3.157",
-        "cores": 49.9199981689453
+        "cores": "49.9199981689453"
       },
       {
         "machineKey": "FWD-0001",
         "machineName": "FWD-0001",
         "sequence": 5,
         "hoursPerKm": "0.926",
-        "cores": 4.5
+        "cores": "4.5"
       },
       {
         "machineKey": "EX-60M1",
         "machineName": "EX-60M1",
         "sequence": 6,
         "hoursPerKm": "0.039",
-        "cores": 49.9199981689453
+        "cores": "49.9199981689453"
       },
       {
         "machineKey": "STR-61RS",
         "machineName": "STR-61RS",
         "sequence": 7,
         "hoursPerKm": "4.085",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-120R1",
         "machineName": "EX-120R1",
         "sequence": 8,
         "hoursPerKm": "1.042",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-2000P",
         "machineName": "DT-2000P",
         "sequence": 9,
         "hoursPerKm": "2.116",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M3",
         "machineName": "EX-150M3",
         "sequence": 10,
         "hoursPerKm": "1.235",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -15555,70 +15555,70 @@
         "machineName": "RBD-TWD2",
         "sequence": 1,
         "hoursPerKm": "1.102",
-        "cores": 49.9199981689453
+        "cores": "49.9199981689453"
       },
       {
         "machineKey": "FWD-0001",
         "machineName": "FWD-0001",
         "sequence": 2,
         "hoursPerKm": "2.058",
-        "cores": 49.9199981689453
+        "cores": "49.9199981689453"
       },
       {
         "machineKey": "BNR-N001",
         "machineName": "BNR-N001",
         "sequence": 3,
         "hoursPerKm": "0.13",
-        "cores": 49.9199981689453
+        "cores": "49.9199981689453"
       },
       {
         "machineKey": "VTP-A001",
         "machineName": "VTP-A001",
         "sequence": 4,
         "hoursPerKm": "2.437",
-        "cores": 49.9199981689453
+        "cores": "49.9199981689453"
       },
       {
         "machineKey": "FWD-0001",
         "machineName": "FWD-0001",
         "sequence": 5,
         "hoursPerKm": "0.926",
-        "cores": 4.5
+        "cores": "4.5"
       },
       {
         "machineKey": "EX-60M1",
         "machineName": "EX-60M1",
         "sequence": 6,
         "hoursPerKm": "0.044",
-        "cores": 49.9199981689453
+        "cores": "49.9199981689453"
       },
       {
         "machineKey": "STR-61RS",
         "machineName": "STR-61RS",
         "sequence": 7,
         "hoursPerKm": "4.085",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M3",
         "machineName": "EX-150M3",
         "sequence": 8,
         "hoursPerKm": "1.111",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-3000P",
         "machineName": "DT-3000P",
         "sequence": 9,
         "hoursPerKm": "2.646",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M3",
         "machineName": "EX-150M3",
         "sequence": 10,
         "hoursPerKm": "1.235",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -15772,63 +15772,63 @@
         "machineName": "RBD-TWD2",
         "sequence": 1,
         "hoursPerKm": "1.102",
-        "cores": 49.9199981689453
+        "cores": "49.9199981689453"
       },
       {
         "machineKey": "FWD-0001",
         "machineName": "FWD-0001",
         "sequence": 2,
         "hoursPerKm": "2.058",
-        "cores": 49.9199981689453
+        "cores": "49.9199981689453"
       },
       {
         "machineKey": "BNR-N001",
         "machineName": "BNR-N001",
         "sequence": 3,
         "hoursPerKm": "0.13",
-        "cores": 49.9199981689453
+        "cores": "49.9199981689453"
       },
       {
         "machineKey": "FWD-0001",
         "machineName": "FWD-0001",
         "sequence": 4,
         "hoursPerKm": "0.926",
-        "cores": 4.5
+        "cores": "4.5"
       },
       {
         "machineKey": "EX-60M1",
         "machineName": "EX-60M1",
         "sequence": 5,
         "hoursPerKm": "0.044",
-        "cores": 49.9199981689453
+        "cores": "49.9199981689453"
       },
       {
         "machineKey": "STR-61RS",
         "machineName": "STR-61RS",
         "sequence": 6,
         "hoursPerKm": "4.085",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-120R1",
         "machineName": "EX-120R1",
         "sequence": 7,
         "hoursPerKm": "1.042",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-3000P",
         "machineName": "DT-3000P",
         "sequence": 8,
         "hoursPerKm": "2.48",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M3",
         "machineName": "EX-150M3",
         "sequence": 9,
         "hoursPerKm": "1.235",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -15982,49 +15982,49 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "0.723",
-        "cores": 4
+        "cores": "4"
       },
       {
         "machineKey": "BNR-L001",
         "machineName": "BNR-L001",
         "sequence": 2,
         "hoursPerKm": "0.217",
-        "cores": 4
+        "cores": "4"
       },
       {
         "machineKey": "EX-60M1",
         "machineName": "EX-60M1",
         "sequence": 3,
         "hoursPerKm": "0.154",
-        "cores": 4
+        "cores": "4"
       },
       {
         "machineKey": "ST-2000P",
         "machineName": "ST-2000P",
         "sequence": 4,
         "hoursPerKm": "0.686",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-90R1",
         "machineName": "EX-90R1",
         "sequence": 5,
         "hoursPerKm": "0.592",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "ST-2000P",
         "machineName": "ST-2000P",
         "sequence": 6,
         "hoursPerKm": "0.846",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-90R1",
         "machineName": "EX-90R1",
         "sequence": 7,
         "hoursPerKm": "0.98",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -16178,49 +16178,49 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "2.572",
-        "cores": 4
+        "cores": "4"
       },
       {
         "machineKey": "STR-37RS",
         "machineName": "STR-37RS",
         "sequence": 2,
         "hoursPerKm": "0.7",
-        "cores": 4
+        "cores": "4"
       },
       {
         "machineKey": "EX-150M1",
         "machineName": "EX-150M1",
         "sequence": 3,
         "hoursPerKm": "0.592",
-        "cores": 4
+        "cores": "4"
       },
       {
         "machineKey": "DT3000P1",
         "machineName": "DT3000P1",
         "sequence": 4,
         "hoursPerKm": "1.709",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M3",
         "machineName": "EX-150M3",
         "sequence": 5,
         "hoursPerKm": "1.389",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT3000P1",
         "machineName": "DT3000P1",
         "sequence": 6,
         "hoursPerKm": "1.79",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M1",
         "machineName": "EX-150M1",
         "sequence": 7,
         "hoursPerKm": "1.86",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -16374,49 +16374,49 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "0.827",
-        "cores": 4
+        "cores": "4"
       },
       {
         "machineKey": "BNRS1600",
         "machineName": "BNRS1600",
         "sequence": 2,
         "hoursPerKm": "0.289",
-        "cores": 4
+        "cores": "4"
       },
       {
         "machineKey": "EX-90R1",
         "machineName": "EX-90R1",
         "sequence": 3,
         "hoursPerKm": "0.193",
-        "cores": 4
+        "cores": "4"
       },
       {
         "machineKey": "ST-2000P",
         "machineName": "ST-2000P",
         "sequence": 4,
         "hoursPerKm": "0.701",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-90R1",
         "machineName": "EX-90R1",
         "sequence": 5,
         "hoursPerKm": "0.592",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-2000P",
         "machineName": "DT-2000P",
         "sequence": 6,
         "hoursPerKm": "0.827",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-120R1",
         "machineName": "EX-120R1",
         "sequence": 7,
         "hoursPerKm": "0.7",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -16570,49 +16570,49 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "1.21",
-        "cores": 4
+        "cores": "4"
       },
       {
         "machineKey": "STR-37RS",
         "machineName": "STR-37RS",
         "sequence": 2,
         "hoursPerKm": "0.809",
-        "cores": 4
+        "cores": "4"
       },
       {
         "machineKey": "EX-150M1",
         "machineName": "EX-150M1",
         "sequence": 3,
         "hoursPerKm": "0.592",
-        "cores": 4
+        "cores": "4"
       },
       {
         "machineKey": "DT3000P1",
         "machineName": "DT3000P1",
         "sequence": 4,
         "hoursPerKm": "1.852",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M3",
         "machineName": "EX-150M3",
         "sequence": 5,
         "hoursPerKm": "1.543",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT3000P1",
         "machineName": "DT3000P1",
         "sequence": 6,
         "hoursPerKm": "2.035",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M1",
         "machineName": "EX-150M1",
         "sequence": 7,
         "hoursPerKm": "2.126",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -16766,49 +16766,49 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "2.179",
-        "cores": 4
+        "cores": "4"
       },
       {
         "machineKey": "STR-61RS",
         "machineName": "STR-61RS",
         "sequence": 2,
         "hoursPerKm": "0.809",
-        "cores": 4
+        "cores": "4"
       },
       {
         "machineKey": "EX-150M1",
         "machineName": "EX-150M1",
         "sequence": 3,
         "hoursPerKm": "0.7",
-        "cores": 4
+        "cores": "4"
       },
       {
         "machineKey": "DT-3000P1",
         "machineName": "DT-3000P1",
         "sequence": 4,
         "hoursPerKm": "2.646",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M1",
         "machineName": "EX-150M1",
         "sequence": 5,
         "hoursPerKm": "1.86",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT3000P1",
         "machineName": "DT3000P1",
         "sequence": 6,
         "hoursPerKm": "2.205",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M1",
         "machineName": "EX-150M1",
         "sequence": 7,
         "hoursPerKm": "2.646",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -16962,49 +16962,49 @@
         "machineName": "RBD-TWD2",
         "sequence": 1,
         "hoursPerKm": "1.102",
-        "cores": 4
+        "cores": "4"
       },
       {
         "machineKey": "BNRS1600",
         "machineName": "BNRS1600",
         "sequence": 2,
         "hoursPerKm": "0.229",
-        "cores": 4
+        "cores": "4"
       },
       {
         "machineKey": "EX-90R1",
         "machineName": "EX-90R1",
         "sequence": 3,
         "hoursPerKm": "0.231",
-        "cores": 4
+        "cores": "4"
       },
       {
         "machineKey": "DT-2000P",
         "machineName": "DT-2000P",
         "sequence": 4,
         "hoursPerKm": "0.809",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-100M2",
         "machineName": "EX-100M2",
         "sequence": 5,
         "hoursPerKm": "0.592",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-2000P",
         "machineName": "DT-2000P",
         "sequence": 6,
         "hoursPerKm": "1.452",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-100M2",
         "machineName": "EX-100M2",
         "sequence": 7,
         "hoursPerKm": "0.77",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -17158,49 +17158,49 @@
         "machineName": "RBD-TWD2",
         "sequence": 1,
         "hoursPerKm": "1.102",
-        "cores": 4
+        "cores": "4"
       },
       {
         "machineKey": "BNRS1600",
         "machineName": "BNRS1600",
         "sequence": 2,
         "hoursPerKm": "0.229",
-        "cores": 4
+        "cores": "4"
       },
       {
         "machineKey": "EX-90R1",
         "machineName": "EX-90R1",
         "sequence": 3,
         "hoursPerKm": "0.257",
-        "cores": 4
+        "cores": "4"
       },
       {
         "machineKey": "DT-2000P",
         "machineName": "DT-2000P",
         "sequence": 4,
         "hoursPerKm": "1.48",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-100M2",
         "machineName": "EX-100M2",
         "sequence": 5,
         "hoursPerKm": "0.645",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-2000P",
         "machineName": "DT-2000P",
         "sequence": 6,
         "hoursPerKm": "1.452",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-100M2",
         "machineName": "EX-100M2",
         "sequence": 7,
         "hoursPerKm": "0.977",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -17354,49 +17354,49 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "2.179",
-        "cores": 4
+        "cores": "4"
       },
       {
         "machineKey": "BNRS1600",
         "machineName": "BNRS1600",
         "sequence": 2,
         "hoursPerKm": "0.176",
-        "cores": 4
+        "cores": "4"
       },
       {
         "machineKey": "EX-90R1",
         "machineName": "EX-90R1",
         "sequence": 3,
         "hoursPerKm": "0.329",
-        "cores": 4
+        "cores": "4"
       },
       {
         "machineKey": "DT-2000P",
         "machineName": "DT-2000P",
         "sequence": 4,
         "hoursPerKm": "1.743",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-100M2",
         "machineName": "EX-100M2",
         "sequence": 5,
         "hoursPerKm": "0.7",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-2000P",
         "machineName": "DT-2000P",
         "sequence": 6,
         "hoursPerKm": "1.708",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-120R1",
         "machineName": "EX-120R1",
         "sequence": 7,
         "hoursPerKm": "1.042",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -17538,56 +17538,56 @@
         "machineName": "RBD-TWD2",
         "sequence": 1,
         "hoursPerKm": "1.102",
-        "cores": 4
+        "cores": "4"
       },
       {
         "machineKey": "FWD-0001",
         "machineName": "FWD-0001",
         "sequence": 2,
         "hoursPerKm": "4.873",
-        "cores": 4
+        "cores": "4"
       },
       {
         "machineKey": "BNR-N007",
         "machineName": "BNR-N007",
         "sequence": 3,
         "hoursPerKm": "0.111",
-        "cores": 4
+        "cores": "4"
       },
       {
         "machineKey": "EX-60M1",
         "machineName": "EX-60M1",
         "sequence": 4,
         "hoursPerKm": "0.062",
-        "cores": 4
+        "cores": "4"
       },
       {
         "machineKey": "BNR-L002",
         "machineName": "BNR-L002",
         "sequence": 5,
         "hoursPerKm": "0.772",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-90R1",
         "machineName": "EX-90R1",
         "sequence": 6,
         "hoursPerKm": "0.579",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "ST-2000P",
         "machineName": "ST-2000P",
         "sequence": 7,
         "hoursPerKm": "0.911",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-90R1",
         "machineName": "EX-90R1",
         "sequence": 8,
         "hoursPerKm": "0.676",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -17741,49 +17741,49 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "1.21",
-        "cores": 4
+        "cores": "4"
       },
       {
         "machineKey": "BNRS1600",
         "machineName": "BNRS1600",
         "sequence": 2,
         "hoursPerKm": "0.436",
-        "cores": 4
+        "cores": "4"
       },
       {
         "machineKey": "EX-120R1",
         "machineName": "EX-120R1",
         "sequence": 3,
         "hoursPerKm": "0.494",
-        "cores": 4
+        "cores": "4"
       },
       {
         "machineKey": "DT-3000P",
         "machineName": "DT-3000P",
         "sequence": 4,
         "hoursPerKm": "1.355",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M3",
         "machineName": "EX-150M3",
         "sequence": 5,
         "hoursPerKm": "0.93",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "DT-3000P",
         "machineName": "DT-3000P",
         "sequence": 6,
         "hoursPerKm": "1.867",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-150M1",
         "machineName": "EX-150M1",
         "sequence": 7,
         "hoursPerKm": "1.157",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -17961,56 +17961,56 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "0.01",
-        "cores": 20.3999996185303
+        "cores": "20.3999996185303"
       },
       {
         "machineKey": "FWD-0001",
         "machineName": "FWD-0001",
         "sequence": 2,
         "hoursPerKm": "0.926",
-        "cores": 27.4499988555908
+        "cores": "27.4499988555908"
       },
       {
         "machineKey": "EX-60M1",
         "machineName": "EX-60M1",
         "sequence": 3,
         "hoursPerKm": "0.039",
-        "cores": 10.1999998092651
+        "cores": "10.1999998092651"
       },
       {
         "machineKey": "BNR-L004",
         "machineName": "BNR-L004",
         "sequence": 4,
         "hoursPerKm": "0.617",
-        "cores": 5.09999990463257
+        "cores": "5.09999990463257"
       },
       {
         "machineKey": "BNR-L002",
         "machineName": "BNR-L002",
         "sequence": 5,
         "hoursPerKm": "2.042",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-90R1",
         "machineName": "EX-90R1",
         "sequence": 6,
         "hoursPerKm": "0.926",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "ARM-48BN",
         "machineName": "ARM-48BN",
         "sequence": 7,
         "hoursPerKm": "1.929",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-120R1",
         "machineName": "EX-120R1",
         "sequence": 8,
         "hoursPerKm": "1.157",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -18176,63 +18176,63 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "0.01",
-        "cores": 20.3999996185303
+        "cores": "20.3999996185303"
       },
       {
         "machineKey": "VTP-A001",
         "machineName": "VTP-A001",
         "sequence": 2,
         "hoursPerKm": "2.437",
-        "cores": 10.1999998092651
+        "cores": "10.1999998092651"
       },
       {
         "machineKey": "FWD-0001",
         "machineName": "FWD-0001",
         "sequence": 3,
         "hoursPerKm": "0.926",
-        "cores": 27.4499988555908
+        "cores": "27.4499988555908"
       },
       {
         "machineKey": "EX-60M1",
         "machineName": "EX-60M1",
         "sequence": 4,
         "hoursPerKm": "0.039",
-        "cores": 10.1999998092651
+        "cores": "10.1999998092651"
       },
       {
         "machineKey": "BNR-L004",
         "machineName": "BNR-L004",
         "sequence": 5,
         "hoursPerKm": "0.617",
-        "cores": 5.09999990463257
+        "cores": "5.09999990463257"
       },
       {
         "machineKey": "BNR-L002",
         "machineName": "BNR-L002",
         "sequence": 6,
         "hoursPerKm": "2.042",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-90R1",
         "machineName": "EX-90R1",
         "sequence": 7,
         "hoursPerKm": "0.926",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "ARM-48BN",
         "machineName": "ARM-48BN",
         "sequence": 8,
         "hoursPerKm": "1.929",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-120R1",
         "machineName": "EX-120R1",
         "sequence": 9,
         "hoursPerKm": "1.157",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -18344,35 +18344,35 @@
         "machineName": "RBD-TWD2",
         "sequence": 1,
         "hoursPerKm": "1.102",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "FWD-0001",
         "machineName": "FWD-0001",
         "sequence": 2,
         "hoursPerKm": "4.873",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "BNR-N007",
         "machineName": "BNR-N007",
         "sequence": 3,
         "hoursPerKm": "0.111",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-100M1",
         "machineName": "EX-100M1",
         "sequence": 4,
         "hoursPerKm": "0.058",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "CLR-PS02",
         "machineName": "CLR-PS02",
         "sequence": 5,
         "hoursPerKm": "0.018",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -18502,56 +18502,56 @@
         "machineName": "RBD-TWD2",
         "sequence": 1,
         "hoursPerKm": "1.102",
-        "cores": 7.07000017166138
+        "cores": "7.07000017166138"
       },
       {
         "machineKey": "FWD-0001",
         "machineName": "FWD-0001",
         "sequence": 2,
         "hoursPerKm": "2.058",
-        "cores": 7.07000017166138
+        "cores": "7.07000017166138"
       },
       {
         "machineKey": "BNR-N001",
         "machineName": "BNR-N001",
         "sequence": 3,
         "hoursPerKm": "0.13",
-        "cores": 7.07000017166138
+        "cores": "7.07000017166138"
       },
       {
         "machineKey": "EX-60M1",
         "machineName": "EX-60M1",
         "sequence": 4,
         "hoursPerKm": "0.044",
-        "cores": 7.07000017166138
+        "cores": "7.07000017166138"
       },
       {
         "machineKey": "ST-2000P",
         "machineName": "ST-2000P",
         "sequence": 5,
         "hoursPerKm": "0.772",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-120R1",
         "machineName": "EX-120R1",
         "sequence": 6,
         "hoursPerKm": "0.726",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "ST-2000P",
         "machineName": "ST-2000P",
         "sequence": 7,
         "hoursPerKm": "2.315",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "EX-120R1",
         "machineName": "EX-120R1",
         "sequence": 8,
         "hoursPerKm": "1.052",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [
@@ -18645,21 +18645,21 @@
         "machineName": "RBD-TWD1",
         "sequence": 1,
         "hoursPerKm": "1.21",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "STR-37RS",
         "machineName": "STR-37RS",
         "sequence": 2,
         "hoursPerKm": "0.871",
-        "cores": 1
+        "cores": "1"
       },
       {
         "machineKey": "CRW-MP01",
         "machineName": "CRW-MP01",
         "sequence": 3,
         "hoursPerKm": "0.514",
-        "cores": 1
+        "cores": "1"
       }
     ],
     "overheads": [

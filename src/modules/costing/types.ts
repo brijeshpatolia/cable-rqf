@@ -52,12 +52,14 @@ export interface MachineOp {
   readonly sequence: number;
   readonly hoursPerKm: Hours;
   /**
-   * Cores this stage runs over, held per operation rather than taken from the
-   * product. The source sheets carry it on the operation line, and it is not
-   * always the product's core count — a stage can run once over a laid-up
-   * cable while an earlier stage ran once per core.
+   * The multiplier this stage runs at, held per operation.
+   *
+   * The source sheets call this column "Cores", but it is NOT an integer core
+   * count: 117 of the library's 728 operation rows are fractional, ranging to
+   * 97.2. It is a process multiplier — passes, or effective cores — and it is
+   * carried as a Decimal because rounding it to an integer changes the cost.
    */
-  readonly cores: number;
+  readonly cores: Decimal;
 }
 
 export interface OverheadLine {
@@ -193,7 +195,7 @@ export interface MachineCostLine {
   readonly machineName: string;
   readonly sequence: number;
   readonly hours: Hours;
-  readonly cores: number;
+  readonly cores: Decimal;
   readonly rate: OMRPerHour;
   readonly cost: OMRPerKm;
   readonly source: RateSource;

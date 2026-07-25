@@ -88,7 +88,7 @@ export function CostBreakdownView({
           <thead>
             <tr>
               <Th align="left">Stage</Th>
-              <Th>Cores</Th>
+              <Th>×</Th>
               <Th>Hours</Th>
               <Th>Rate</Th>
               <Th>Cost</Th>
@@ -105,7 +105,7 @@ export function CostBreakdownView({
                   </Provenance>
                 </Td>
                 <Td>
-                  <span className="numeric">{o.cores}</span>
+                  <NumericCell value={o.cores} decimals={2} />
                 </Td>
                 <Td>
                   <NumericCell value={o.hours} kind="hours" unit="h" />
