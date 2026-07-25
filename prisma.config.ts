@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { defineConfig, env } from 'prisma/config';
+import { defineConfig } from 'prisma/config';
 
 /**
  * Prisma 7 configuration.
@@ -18,6 +18,9 @@ export default defineConfig({
     path: 'prisma/migrations',
   },
   datasource: {
-    url: env('DIRECT_URL'),
+    // Read directly rather than through prisma/config's `env`, which throws
+    // when the variable is absent. `generate` needs no database; only
+    // `migrate` does, and that fails with a clear message of its own.
+    url: process.env['DIRECT_URL'] ?? '',
   },
 });
