@@ -10,7 +10,7 @@ import { NumericCell } from '@/ui/components/NumericCell';
 import { Panel } from '@/ui/components/Panel';
 import type { Decimal } from '@/core/decimal';
 
-export const metadata = { title: 'Rate Desk — Nuhas Oman' };
+export const metadata = { title: 'Rate Desk — Cable Quoting' };
 
 /**
  * Rate Desk — the Rate Owner's home.

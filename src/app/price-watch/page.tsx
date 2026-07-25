@@ -12,7 +12,7 @@ import { NumericCell } from '@/ui/components/NumericCell';
 import { Panel } from '@/ui/components/Panel';
 import { StatusDot } from '@/ui/components/StatusDot';
 
-export const metadata = { title: 'Price Watch — Nuhas Oman' };
+export const metadata = { title: 'Price Watch — Cable Quoting' };
 
 /**
  * Live Price Watch.

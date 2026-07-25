@@ -85,7 +85,7 @@ export function CopperBlock({
           }}
         >
           Formula assumed: LME × FX ÷ 1000 + drawing premium. Pending
-          confirmation by Nuhas.
+          confirmation by the rate owner.
         </div>
       ) : null}
     </div>
