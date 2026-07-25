@@ -66,13 +66,57 @@ export default async function RateDeskPage() {
 
   const describes = new Map(master.map((m) => [m.code, m.description]));
 
+  /*
+    Cells are rendered here, on the server, and handed to the client component
+    already formed. `RateTable` only filters and lays out — it never sees a
+    number. Formatting stays where `NumericCell` lives, and decimal.js stays
+    out of the browser bundle.
+  */
   const view = (r: EffectiveRow<Decimal>): RateRowView => ({
     rateId: r.rateId,
     key: r.key,
     description: describes.get(r.key) ?? '',
-    value: r.value.toString(),
-    validFrom: r.validFrom.toISOString(),
-    validTo: r.validTo === null ? null : r.validTo.toISOString(),
+    inForce: r.validTo === null,
+    cells: [
+      <span key="k" className="numeric" style={leftNumeric}>
+        {r.key}
+      </span>,
+      <span key="d" style={{ color: 'var(--color-ink-secondary)' }}>
+        {describes.get(r.key) ?? ''}
+      </span>,
+      <NumericCell key="v" value={r.value} kind="unitRate" />,
+      <span
+        key="f"
+        className="numeric"
+        style={{ ...leftNumeric, color: 'var(--color-ink-secondary)' }}
+      >
+        {formatDate(r.validFrom)}
+      </span>,
+      r.validTo === null ? (
+        // Not a match tier, so it carries no status colour (DESIGN_SYSTEM.md rule 2).
+        <span key="t" style={{ color: 'var(--color-ink-secondary)' }}>
+          In force
+        </span>
+      ) : (
+        <span
+          key="t"
+          className="numeric"
+          style={{ ...leftNumeric, color: 'var(--color-ink-tertiary)' }}
+        >
+          {formatDate(r.validTo)}
+        </span>
+      ),
+      <span
+        key="i"
+        className="numeric"
+        style={{
+          color: 'var(--color-ink-tertiary)',
+          fontSize: 'var(--text-micro)',
+        }}
+      >
+        {shortId(r.rateId)}
+      </span>,
+    ],
   });
 
   return (
@@ -323,4 +367,14 @@ function Count({ n, status = false }: { readonly n: number; readonly status?: bo
       {n}
     </span>
   );
+}
+
+const leftNumeric: React.CSSProperties = { textAlign: 'left', display: 'block' };
+
+/**
+ * Enough of the row's id to tie a rate to its audit entry, without a 36-
+ * character uuid wrapping over four lines. The full value is one query away.
+ */
+function shortId(id: string): string {
+  return id.length > 12 ? `#${id.slice(0, 8)}` : `#${id}`;
 }

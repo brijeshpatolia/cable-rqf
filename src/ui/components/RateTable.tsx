@@ -1,32 +1,43 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { dec } from '@/core/decimal';
-import { formatDate } from '@/core/format';
+import { useMemo, useState, type ReactNode } from 'react';
 import { DataTable, type Column } from './DataTable';
-import { NumericCell } from './NumericCell';
 
 /**
- * One rate row, flattened for the client boundary.
+ * One rate row, ready to display.
  *
- * `value` crosses as a string and becomes a `Decimal` again on arrival rather
- * than as pre-formatted text. Formatting is `NumericCell`'s job and nothing
- * else's — a number formatted upstream would escape the alignment and decimal
- * rules that make two rate columns comparable at a glance.
+ * `cells` arrive already rendered by the server. That is deliberate: number
+ * formatting is `NumericCell`'s job and nothing else's, and `NumericCell`
+ * takes a `Decimal`. Sending the raw values here instead would drag decimal.js
+ * into the browser — 14 kB of arbitrary-precision arithmetic shipped so a
+ * search box can hide rows. The fields above `cells` are the ones this
+ * component actually needs: what to match on, and what to key by.
  */
 export interface RateRowView {
   readonly rateId: string;
   readonly key: string;
   readonly description: string;
-  readonly value: string;
-  readonly validFrom: string;
-  readonly validTo: string | null;
+  readonly inForce: boolean;
+  readonly cells: readonly ReactNode[];
 }
+
+/** Headers and widths, in the order `cells` supplies them. */
+const COLUMNS: readonly { readonly header: string; readonly width?: number }[] = [
+  { header: 'Rate' },
+  { header: 'Description' },
+  { header: '', width: 110 },
+  { header: 'Effective from', width: 130 },
+  { header: 'Until', width: 130 },
+  { header: 'Row', width: 92 },
+];
+
+/** The unit column, whose header is the only one that varies. */
+const UNIT_COLUMN = 2;
 
 /**
  * The rate tables, searchable.
  *
- * The desk holds 168 rows and grows every time a code is added. Rendered flat,
+ * The desk holds 167 rows and grows every time a code is added. Rendered flat,
  * finding `CC2RF07` meant scrolling several thousand pixels past rows that
  * were never in question, and the superseded history of every code sat between
  * the ones actually in force.
@@ -52,7 +63,7 @@ export function RateTable({
     () =>
       rows.filter(
         (r) =>
-          (history || r.validTo === null) &&
+          (history || r.inForce) &&
           (needle === '' ||
             r.key.toLowerCase().includes(needle) ||
             r.description.toLowerCase().includes(needle)),
@@ -60,7 +71,21 @@ export function RateTable({
     [rows, needle, history],
   );
 
-  const superseded = rows.length - rows.filter((r) => r.validTo === null).length;
+  const columns = useMemo<readonly Column<RateRowView>[]>(
+    () =>
+      COLUMNS.map((c, i) => ({
+        key: String(i),
+        header: i === UNIT_COLUMN ? unit : c.header,
+        ...(i === UNIT_COLUMN || i === COLUMNS.length - 1
+          ? { align: 'right' as const }
+          : {}),
+        ...(c.width === undefined ? {} : { width: c.width }),
+        render: (r: RateRowView) => r.cells[i],
+      })),
+    [unit],
+  );
+
+  const superseded = rows.length - rows.filter((r) => r.inForce).length;
 
   return (
     <div>
@@ -115,12 +140,12 @@ export function RateTable({
             whiteSpace: 'nowrap',
           }}
         >
-          {shown.length} of {rows.length}
+          {shown.length} of {history ? rows.length : rows.length - superseded}
         </span>
       </div>
 
       <DataTable
-        columns={columns(unit)}
+        columns={columns}
         rows={shown}
         rowKey={(r) => r.rateId}
         // Bounded so the desk stays one screen however many codes the master
@@ -135,97 +160,4 @@ export function RateTable({
       />
     </div>
   );
-}
-
-function columns(unit: string): readonly Column<RateRowView>[] {
-  return [
-    {
-      key: 'key',
-      header: 'Rate',
-      render: (r) => (
-        <span className="numeric" style={{ textAlign: 'left', display: 'block' }}>
-          {r.key}
-        </span>
-      ),
-    },
-    {
-      key: 'description',
-      header: 'Description',
-      // The code alone says nothing to anyone who has not memorised the
-      // master. The description is what makes the row searchable by meaning.
-      render: (r) => (
-        <span style={{ color: 'var(--color-ink-secondary)' }}>{r.description}</span>
-      ),
-    },
-    {
-      key: 'value',
-      header: unit,
-      align: 'right',
-      width: 110,
-      render: (r) => <NumericCell value={dec(r.value)} kind="unitRate" />,
-    },
-    {
-      key: 'from',
-      header: 'Effective from',
-      width: 130,
-      render: (r) => (
-        <span
-          className="numeric"
-          style={{
-            color: 'var(--color-ink-secondary)',
-            textAlign: 'left',
-            display: 'block',
-          }}
-        >
-          {formatDate(new Date(r.validFrom))}
-        </span>
-      ),
-    },
-    {
-      key: 'to',
-      header: 'Until',
-      width: 130,
-      render: (r) =>
-        r.validTo === null ? (
-          // Not a match tier, so it carries no status colour (DESIGN_SYSTEM.md rule 2).
-          <span style={{ color: 'var(--color-ink-secondary)' }}>In force</span>
-        ) : (
-          <span
-            className="numeric"
-            style={{
-              color: 'var(--color-ink-tertiary)',
-              textAlign: 'left',
-              display: 'block',
-            }}
-          >
-            {formatDate(new Date(r.validTo))}
-          </span>
-        ),
-    },
-    {
-      key: 'id',
-      header: 'Row',
-      align: 'right',
-      width: 92,
-      render: (r) => (
-        <span
-          className="numeric"
-          style={{
-            color: 'var(--color-ink-tertiary)',
-            fontSize: 'var(--text-micro)',
-          }}
-        >
-          {shortId(r.rateId)}
-        </span>
-      ),
-    },
-  ];
-}
-
-/**
- * Enough of the row's id to tie a rate to its audit entry, without a 36-
- * character uuid wrapping over four lines. The full value is one query away.
- */
-function shortId(id: string): string {
-  return id.length > 12 ? `#${id.slice(0, 8)}` : `#${id}`;
 }
