@@ -1,0 +1,14 @@
+{
+  "productId": "C07C24E2XLLWLKNB",
+  "sourceSheet": "24x1.5 - C07C24E2XLLWLKNB",
+  "expected": {
+    "materialsSubtotal": "1928.82491964744",
+    "operationsSubtotal": "240.435729557615",
+    "overheadsSubtotal": "72.7019990980625",
+    "tooling": "10",
+    "costPerKm": "2251.96264830311",
+    "costPerMetre": "2.25196264830311",
+    "quotePerMetre": "2.58975704554858",
+    "sourceCostPerMetre": "2.25195971978227"
+  }
+}

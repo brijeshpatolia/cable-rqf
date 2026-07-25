@@ -1,0 +1,240 @@
+[
+  {
+    "code": "ARM-48BN",
+    "stage": "Armouring",
+    "rate": "4.3539",
+    "observations": 14,
+    "variancePercent": "0.019"
+  },
+  {
+    "code": "BNR-L001",
+    "stage": "Bunching",
+    "rate": "4.129",
+    "observations": 3,
+    "variancePercent": "0"
+  },
+  {
+    "code": "BNR-L002",
+    "stage": "Bunching",
+    "rate": "4.1332",
+    "observations": 10,
+    "variancePercent": "0.029"
+  },
+  {
+    "code": "BNR-L004",
+    "stage": "Bunching",
+    "rate": "2.4859",
+    "observations": 14,
+    "variancePercent": "0.095"
+  },
+  {
+    "code": "BNR-N001",
+    "stage": "Bunching",
+    "rate": "1.716",
+    "observations": 16,
+    "variancePercent": "0.149"
+  },
+  {
+    "code": "BNR-N007",
+    "stage": "Bunching",
+    "rate": "1.7156",
+    "observations": 6,
+    "variancePercent": "0.451"
+  },
+  {
+    "code": "BNRS1600",
+    "stage": "Bunching",
+    "rate": "4.1336",
+    "observations": 25,
+    "variancePercent": "0.161"
+  },
+  {
+    "code": "CLR-PS02",
+    "stage": "Coiler",
+    "rate": "5.1042",
+    "observations": 2,
+    "variancePercent": "0.272"
+  },
+  {
+    "code": "CRW-MP01",
+    "stage": "Crosswinding",
+    "rate": "4.4599",
+    "observations": 2,
+    "variancePercent": "0.053"
+  },
+  {
+    "code": "CRW-MP02",
+    "stage": "Crosswinding",
+    "rate": "4.4609",
+    "observations": 1,
+    "variancePercent": "0"
+  },
+  {
+    "code": "DT-2000P",
+    "stage": "Drum twister / laying up",
+    "rate": "12.2442",
+    "observations": 25,
+    "variancePercent": "0.009"
+  },
+  {
+    "code": "DT-3000P",
+    "stage": "Drum twister / laying up",
+    "rate": "16.82",
+    "observations": 32,
+    "variancePercent": "0.006"
+  },
+  {
+    "code": "DT-3000P1",
+    "stage": "Drum twister / laying up",
+    "rate": "16.8199",
+    "observations": 3,
+    "variancePercent": "0.002"
+  },
+  {
+    "code": "DT-3600C",
+    "stage": "Drum twister / laying up",
+    "rate": "16.82",
+    "observations": 28,
+    "variancePercent": "0.004"
+  },
+  {
+    "code": "DT3000P1",
+    "stage": "Drum twister / laying up",
+    "rate": "16.82",
+    "observations": 18,
+    "variancePercent": "0.005"
+  },
+  {
+    "code": "EX-100M1",
+    "stage": "Extrusion",
+    "rate": "13.1447",
+    "observations": 2,
+    "variancePercent": "0.103"
+  },
+  {
+    "code": "EX-100M2",
+    "stage": "Extrusion",
+    "rate": "13.1531",
+    "observations": 16,
+    "variancePercent": "0.016"
+  },
+  {
+    "code": "EX-120R1",
+    "stage": "Extrusion",
+    "rate": "12.3201",
+    "observations": 37,
+    "variancePercent": "0.014"
+  },
+  {
+    "code": "EX-150M1",
+    "stage": "Extrusion",
+    "rate": "18.7972",
+    "observations": 27,
+    "variancePercent": "0.007"
+  },
+  {
+    "code": "EX-150M2",
+    "stage": "Extrusion",
+    "rate": "18.797",
+    "observations": 60,
+    "variancePercent": "0.006"
+  },
+  {
+    "code": "EX-150M3",
+    "stage": "Extrusion",
+    "rate": "18.7974",
+    "observations": 23,
+    "variancePercent": "0.01"
+  },
+  {
+    "code": "EX-60M1",
+    "stage": "Extrusion",
+    "rate": "8.4956",
+    "observations": 37,
+    "variancePercent": "0.267"
+  },
+  {
+    "code": "EX-90R1",
+    "stage": "Extrusion",
+    "rate": "10.9057",
+    "observations": 38,
+    "variancePercent": "0.069"
+  },
+  {
+    "code": "EX-CCVT1",
+    "stage": "Extrusion",
+    "rate": "37.161",
+    "observations": 8,
+    "variancePercent": "0.002"
+  },
+  {
+    "code": "EX-CCVT2",
+    "stage": "Extrusion",
+    "rate": "37.1611",
+    "observations": 22,
+    "variancePercent": "0.006"
+  },
+  {
+    "code": "FWD-0001",
+    "stage": "Forwarding / rewind",
+    "rate": "0",
+    "observations": 46,
+    "variancePercent": "0"
+  },
+  {
+    "code": "RBD-TWD1",
+    "stage": "Rod breakdown",
+    "rate": "0",
+    "observations": 71,
+    "variancePercent": "0"
+  },
+  {
+    "code": "RBD-TWD2",
+    "stage": "Rod breakdown",
+    "rate": "0",
+    "observations": 28,
+    "variancePercent": "0"
+  },
+  {
+    "code": "ST-2000P",
+    "stage": "Stranding",
+    "rate": "20.293",
+    "observations": 15,
+    "variancePercent": "0.008"
+  },
+  {
+    "code": "STR-37RS",
+    "stage": "Stranding",
+    "rate": "15.0115",
+    "observations": 32,
+    "variancePercent": "0.007"
+  },
+  {
+    "code": "STR-61RS",
+    "stage": "Stranding",
+    "rate": "15.0109",
+    "observations": 21,
+    "variancePercent": "0.01"
+  },
+  {
+    "code": "TAPE-01",
+    "stage": "Taping",
+    "rate": "5.3171",
+    "observations": 21,
+    "variancePercent": "0.019"
+  },
+  {
+    "code": "TAPE-02",
+    "stage": "Taping",
+    "rate": "5.317",
+    "observations": 14,
+    "variancePercent": "0.021"
+  },
+  {
+    "code": "VTP-A001",
+    "stage": "Vertical taping",
+    "rate": "1.771",
+    "observations": 11,
+    "variancePercent": "0.003"
+  }
+]

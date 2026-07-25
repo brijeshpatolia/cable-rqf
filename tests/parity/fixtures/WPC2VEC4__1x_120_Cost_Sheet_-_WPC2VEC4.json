@@ -1,0 +1,14 @@
+{
+  "productId": "WPC2VEC4",
+  "sourceSheet": "1x 120 Cost Sheet - WPC2VEC4",
+  "expected": {
+    "materialsSubtotal": "2142.78989295544",
+    "operationsSubtotal": "16.1918486",
+    "overheadsSubtotal": "86.7269995659589",
+    "tooling": "0.0329999998211861",
+    "costPerKm": "2245.74174112122",
+    "costPerMetre": "2.24574174112122",
+    "quotePerMetre": "2.58260300228941",
+    "sourceCostPerMetre": "2.24574192906853"
+  }
+}

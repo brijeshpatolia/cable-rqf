@@ -1,0 +1,14 @@
+{
+  "productId": "P19CS3Q2XLVWVKNN",
+  "sourceSheet": "3x150 Cost Sheet - P19CS3Q2XLVWVKNN",
+  "expected": {
+    "materialsSubtotal": "8815.57655801625",
+    "operationsSubtotal": "178.718185",
+    "overheadsSubtotal": "375.291998505592",
+    "tooling": "1",
+    "costPerKm": "9370.58674152184",
+    "costPerMetre": "9.37058674152184",
+    "quotePerMetre": "10.7761747527501",
+    "sourceCostPerMetre": "9.37058569172575"
+  }
+}

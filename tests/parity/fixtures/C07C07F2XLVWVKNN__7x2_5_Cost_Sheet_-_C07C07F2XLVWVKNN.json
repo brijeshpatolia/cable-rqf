@@ -1,0 +1,14 @@
+{
+  "productId": "C07C07F2XLVWVKNN",
+  "sourceSheet": "7x2.5 Cost Sheet - C07C07F2XLVWVKNN",
+  "expected": {
+    "materialsSubtotal": "560.968118330873",
+    "operationsSubtotal": "88.7696157504624",
+    "overheadsSubtotal": "36.0480002760887",
+    "tooling": "10",
+    "costPerKm": "695.785734357424",
+    "costPerMetre": "0.695785734357424",
+    "quotePerMetre": "0.800153594511037",
+    "sourceCostPerMetre": "0.695787910270782"
+  }
+}

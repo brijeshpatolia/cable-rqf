@@ -1,0 +1,14 @@
+{
+  "productId": "P07CS3L2XLVWVKNN",
+  "sourceSheet": "3x35 P07CS3L2XLVWVKNN",
+  "expected": {
+    "materialsSubtotal": "2211.07683953507",
+    "operationsSubtotal": "68.1930323",
+    "overheadsSubtotal": "97.9739998877049",
+    "tooling": "1.5",
+    "costPerKm": "2378.74387172278",
+    "costPerMetre": "2.37874387172278",
+    "quotePerMetre": "2.73555545248119",
+    "sourceCostPerMetre": "2.37874487044715"
+  }
+}

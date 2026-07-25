@@ -1,0 +1,14 @@
+{
+  "productId": "P07CR3H2XLVWVKNN",
+  "sourceSheet": "3x6 - P07CR3H2XLVWVKNN",
+  "expected": {
+    "materialsSubtotal": "535.82191981365",
+    "operationsSubtotal": "30.6274812",
+    "overheadsSubtotal": "24.3169997483492",
+    "tooling": "2",
+    "costPerKm": "592.766400761999",
+    "costPerMetre": "0.592766400761999",
+    "quotePerMetre": "0.681681360876299",
+    "sourceCostPerMetre": "0.592765920269617"
+  }
+}

@@ -35,8 +35,14 @@ export interface BomLine {
   readonly materialName: string;
   /** Consumption before scrap. */
   readonly consumption: KgPerKm;
-  /** Scrap allowance, as a percentage added to consumption. */
-  readonly scrapPercent: Percent;
+  /**
+   * Scrap allowance as an absolute quantity, not a percentage.
+   *
+   * This is how the source sheets hold it ("Scrap qty is stored per BOM line
+   * from the source sheets"), and storing it as entered is what lets the
+   * parity harness reproduce them exactly. A percentage would round.
+   */
+  readonly scrap: KgPerKm;
 }
 
 export interface MachineOp {
@@ -46,11 +52,12 @@ export interface MachineOp {
   readonly sequence: number;
   readonly hoursPerKm: Hours;
   /**
-   * Machine time scales with cores for stranding and insulation stages, and
-   * doesn't for sheathing or armouring. The spec's `hours × cores × rate`
-   * holds only where this is true.
+   * Cores this stage runs over, held per operation rather than taken from the
+   * product. The source sheets carry it on the operation line, and it is not
+   * always the product's core count — a stage can run once over a laid-up
+   * cable while an earlier stage ran once per core.
    */
-  readonly scalesWithCores: boolean;
+  readonly cores: number;
 }
 
 export interface OverheadLine {
@@ -74,10 +81,25 @@ export interface Product {
   readonly bom: readonly BomLine[];
   readonly operations: readonly MachineOp[];
   readonly overheads: readonly OverheadLine[];
+  /**
+   * Tooling is its own roll-up component in the source sheets, not one of the
+   * 8 overhead lines: cost/km = raw material + operations + overheads + tooling.
+   */
+  readonly toolingPerKm: OMRPerKm;
+  /** The source cost sheet this product was imported from. Provenance. */
+  readonly sourceSheet?: string;
 }
 
 export interface MaterialRate {
+  /** The fixed rate, for materials that aren't LME-linked. */
   readonly rate: OMRPerKg;
+  /** Copper codes reprice off the LME; everything else holds its rate. */
+  readonly lmeLinked: boolean;
+  /**
+   * Drawing premium over LME metal value, held per material code — a thinner
+   * conductor costs more per kilogram to draw. Set only on LME-linked codes.
+   */
+  readonly drawingPremium?: OMRPerKg;
   readonly source: RateSource;
 }
 
@@ -109,13 +131,17 @@ export interface ResolvedRateSet {
 export interface CopperRate {
   readonly lme: USDPerTonne;
   readonly fx: OMRPerUSD;
-  /** Per-size table, not a constant — a 1.5mm² wire draws harder than 300mm². */
-  readonly drawingPremiumBySize: ReadonlyMap<string, OMRPerKg>;
   readonly source: RateSource;
 }
 
 export interface CommercialTerms {
+  /** Applied to manufactured cost: quote = cost × (1 + margin). */
   readonly marginPercent: Percent;
+  /**
+   * Pass-through costs, added after margin rather than marked up. The source
+   * sheets carry none of these — they stop at cost and margin — so parity runs
+   * with all three at zero.
+   */
   readonly drumCost: OMRPerKm;
   readonly packingCost: OMRPerKm;
   readonly freightCost: OMRPerKm;
@@ -125,24 +151,19 @@ export interface Quantity {
   readonly metres: Metre;
 }
 
-/** Material keys the copper driver applies to. */
-export const COPPER_MATERIAL_KEYS: ReadonlySet<string> = new Set([
-  'CU_ROD',
-  'CU_CONDUCTOR',
-  'CU_WIRE',
-]);
-
 // ── Output: the breakdown tree ──────────────────────────────────────────
 
 export interface MaterialCostLine {
   readonly materialKey: string;
   readonly materialName: string;
   readonly consumption: KgPerKm;
-  readonly scrapPercent: Percent;
-  /** Consumption after scrap — the quantity actually costed. */
+  readonly scrap: KgPerKm;
+  /** Consumption plus scrap — the quantity actually costed. */
   readonly effectiveConsumption: KgPerKm;
   readonly rate: OMRPerKg;
   readonly cost: OMRPerKm;
+  /** True when this line's rate came off the live LME. */
+  readonly lmeLinked: boolean;
   readonly source: RateSource;
 }
 
@@ -151,6 +172,7 @@ export interface MachineCostLine {
   readonly machineName: string;
   readonly sequence: number;
   readonly hours: Hours;
+  readonly cores: number;
   readonly rate: OMRPerHour;
   readonly cost: OMRPerKm;
   readonly source: RateSource;
@@ -190,6 +212,8 @@ export interface CostBreakdown {
 
   readonly overheads: readonly OverheadCostLine[];
   readonly overheadsSubtotal: OMRPerKm;
+
+  readonly tooling: OMRPerKm;
 
   readonly costPerKm: OMRPerKm;
   readonly costPerMetre: OMRPerMetre;

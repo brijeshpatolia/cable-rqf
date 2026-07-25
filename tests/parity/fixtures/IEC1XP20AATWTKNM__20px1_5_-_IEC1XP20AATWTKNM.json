@@ -1,0 +1,14 @@
+{
+  "productId": "IEC1XP20AATWTKNM",
+  "sourceSheet": "20px1.5 - IEC1XP20AATWTKNM",
+  "expected": {
+    "materialsSubtotal": "3345.66728436236",
+    "operationsSubtotal": "324.791539890673",
+    "overheadsSubtotal": "110.631999075413",
+    "tooling": "10",
+    "costPerKm": "3791.09082332845",
+    "costPerMetre": "3.79109082332845",
+    "quotePerMetre": "4.35975444682771",
+    "sourceCostPerMetre": "3.79108310084386"
+  }
+}

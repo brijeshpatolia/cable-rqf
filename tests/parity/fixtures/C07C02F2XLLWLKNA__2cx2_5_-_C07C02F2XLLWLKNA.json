@@ -1,0 +1,14 @@
+{
+  "productId": "C07C02F2XLLWLKNA",
+  "sourceSheet": "2cx2.5 - C07C02F2XLLWLKNA",
+  "expected": {
+    "materialsSubtotal": "285.935409504501",
+    "operationsSubtotal": "32.5770839583077",
+    "overheadsSubtotal": "14.5660003200173",
+    "tooling": "10",
+    "costPerKm": "343.078493782826",
+    "costPerMetre": "0.343078493782826",
+    "quotePerMetre": "0.39454026785025",
+    "sourceCostPerMetre": "0.343077380042823"
+  }
+}

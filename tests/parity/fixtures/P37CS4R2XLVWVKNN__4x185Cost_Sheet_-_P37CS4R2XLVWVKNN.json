@@ -1,0 +1,14 @@
+{
+  "productId": "P37CS4R2XLVWVKNN",
+  "sourceSheet": "4x185Cost Sheet - P37CS4R2XLVWVKNN",
+  "expected": {
+    "materialsSubtotal": "14163.1811421386",
+    "operationsSubtotal": "227.435559",
+    "overheadsSubtotal": "596.631000518799",
+    "tooling": "1",
+    "costPerKm": "14988.2477016574",
+    "costPerMetre": "14.9882477016574",
+    "quotePerMetre": "17.2364848569061",
+    "sourceCostPerMetre": "14.9882473594856"
+  }
+}

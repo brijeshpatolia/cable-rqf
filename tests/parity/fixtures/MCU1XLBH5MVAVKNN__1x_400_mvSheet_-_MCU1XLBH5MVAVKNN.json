@@ -1,0 +1,14 @@
+{
+  "productId": "MCU1XLBH5MVAVKNN",
+  "sourceSheet": "1x 400 mvSheet - MCU1XLBH5MVAVKNN",
+  "expected": {
+    "materialsSubtotal": "8332.69808285068",
+    "operationsSubtotal": "346.9025426",
+    "overheadsSubtotal": "383.093990683556",
+    "tooling": "5",
+    "costPerKm": "9067.69461613423",
+    "costPerMetre": "9.06769461613423",
+    "quotePerMetre": "10.4278488085544",
+    "sourceCostPerMetre": "9.06769619210247"
+  }
+}

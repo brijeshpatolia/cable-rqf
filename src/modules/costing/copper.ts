@@ -1,7 +1,6 @@
-import { type Decimal, dec, ZERO } from '@/core/decimal';
-import { type Result, costError, err, ok } from '@/core/result';
+import { dec } from '@/core/decimal';
 import { omrPerKg, type OMRPerKg } from '@/core/units';
-import type { CopperRate } from './types';
+import type { CopperRate, MaterialRate } from './types';
 
 /**
  * The copper driver, isolated in one module with one test file — so a
@@ -10,41 +9,42 @@ import type { CopperRate } from './types';
  *
  *     OMR/kg = LME (USD/t) × FX (OMR/USD) ÷ 1000 + drawing premium (OMR/kg)
  *
- * The ÷ 1000 converts tonnes to kilograms. The drawing premium is a per-size
- * table: drawing 1.5mm² wire costs more per kilogram than 300mm².
+ * The ÷ 1000 converts tonnes to kilograms. The drawing premium is held per
+ * *material code*, not per size: the source workbook carries 39 LME-linked
+ * copper codes, each with its own premium in the range 0.1026–0.1401 OMR/kg,
+ * falling as conductor size rises.
  *
- * ASSUMED, PENDING CONFIRMATION — reverse-engineered from the sheets. The UI
- * shows this caveat under the copper block until Nuhas confirms it, at which
- * point the flag below is cleared.
+ * ASSUMED, PENDING CONFIRMATION. The workbook's own README states the premium
+ * was derived by subtracting LME metal value from the rate in the source
+ * sheets, and asks for the decomposition to be confirmed before quoting from
+ * it. The UI carries that caveat until the flag below is cleared.
  */
 export const COPPER_FORMULA_CONFIRMED = false;
 
-/** The spec's stated default. Effective-dated in the database; this is a seed. */
+/** The workbook's stated assumption: the Omani rial peg. */
 export const DEFAULT_FX = '0.3845';
+
+/** Every source sheet was costed at this LME (workbook README, assumption 2). */
+export const SOURCE_SHEET_LME = '4850';
 
 const KG_PER_TONNE = dec(1000);
 
-export function copperRatePerKg(
-  copper: CopperRate,
-  sizeKey: string,
-): Result<OMRPerKg> {
-  const premium: Decimal = copper.drawingPremiumBySize.get(sizeKey) ?? ZERO;
-
-  if (!copper.drawingPremiumBySize.has(sizeKey)) {
-    return err(
-      costError(
-        'MISSING_RATE',
-        `No drawing premium held for size ${sizeKey}. Copper cannot be priced without it.`,
-        sizeKey,
-      ),
-    );
-  }
-
-  const base = copper.lme.times(copper.fx).dividedBy(KG_PER_TONNE);
-  return ok(omrPerKg(base.plus(premium)));
+/** LME metal value alone, before any drawing premium. */
+export function copperMetalValue(copper: CopperRate): OMRPerKg {
+  return omrPerKg(copper.lme.times(copper.fx).dividedBy(KG_PER_TONNE));
 }
 
-/** The size key used to look up a drawing premium. `50` → `"50"`, `1.5` → `"1.5"`. */
-export function sizeKeyOf(sizeMm2: Decimal): string {
-  return sizeMm2.toString();
+/**
+ * The rate for a material as of the given copper driver.
+ *
+ * An LME-linked material is repriced live; everything else reads the fixed
+ * rate it was imported with. This is the whole point of the app — a copper
+ * move reflows every product that contains copper, and nothing else moves.
+ */
+export function effectiveMaterialRate(
+  material: MaterialRate,
+  copper: CopperRate,
+): OMRPerKg {
+  if (!material.lmeLinked) return material.rate;
+  return omrPerKg(copperMetalValue(copper).plus(material.drawingPremium ?? 0));
 }

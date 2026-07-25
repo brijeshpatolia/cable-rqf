@@ -1,0 +1,14 @@
+{
+  "productId": "WKC2VEC4NSL",
+  "sourceSheet": "1 x 25 Cost Sheet - WKC2VEC4NSL",
+  "expected": {
+    "materialsSubtotal": "461.577415919462",
+    "operationsSubtotal": "2.991149",
+    "overheadsSubtotal": "18.0360002815723",
+    "tooling": "0.0329999998211861",
+    "costPerKm": "482.637565200856",
+    "costPerMetre": "0.482637565200856",
+    "quotePerMetre": "0.555033199980984",
+    "sourceCostPerMetre": "0.482636423352111"
+  }
+}

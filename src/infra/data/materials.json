@@ -1,0 +1,1066 @@
+[
+  {
+    "code": "ABPT025",
+    "description": "AL-BACKED POLYESTER TAPE 25 MM",
+    "uom": "KG",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "1.83595955371857"
+  },
+  {
+    "code": "ABPT030",
+    "description": "AL-BACKED POLYESTER TAPE 30 MM",
+    "uom": "KG",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "1.83595955371857"
+  },
+  {
+    "code": "ABPT035",
+    "description": "AL-BACKED POLYESTER TAPE 35 MM",
+    "uom": "KG",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "1.83595955371857"
+  },
+  {
+    "code": "ABPT040",
+    "description": "AL-BACKED POLYESTER TAPE 40 MM",
+    "uom": "KG",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "1.83595955371857"
+  },
+  {
+    "code": "ABPT050",
+    "description": "AL-BACKED POLYESTER TAPE 50 MM",
+    "uom": "KG",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "1.83595955371857"
+  },
+  {
+    "code": "ATC180RD",
+    "description": "TCA180RD - ANNEALED TINNED COPPER WIRE SIZE- 1.80MM (RE-DRAW)",
+    "uom": "kg",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "2.86922955513001"
+  },
+  {
+    "code": "AWA160",
+    "description": "AL  ARMOUR  WIRE 1.60 MM DIA",
+    "uom": "kg",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.967333495616913"
+  },
+  {
+    "code": "AWA200",
+    "description": "AL  ARMOUR  WIRE 2.00 MM DIA",
+    "uom": "kg",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.967333495616913"
+  },
+  {
+    "code": "AWA250",
+    "description": "AL  ARMOUR  WIRE 2.50 MM DIA",
+    "uom": "kg",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.967333495616913"
+  },
+  {
+    "code": "CC1E",
+    "description": "Cu - 1.5 mm2 - Cl 1 - Round",
+    "uom": "kg",
+    "lmeLinked": true,
+    "drawingPremium": "0.115741",
+    "rate": "1.980566"
+  },
+  {
+    "code": "CC1F",
+    "description": "Cu - 2.5 mm2 - Cl 1 - Round",
+    "uom": "kg",
+    "lmeLinked": true,
+    "drawingPremium": "0.108407",
+    "rate": "1.973232"
+  },
+  {
+    "code": "CC2RE07",
+    "description": "Cu - 1.5 mm2 - Cl 2 - Round",
+    "uom": "kg",
+    "lmeLinked": true,
+    "drawingPremium": "0.125777",
+    "rate": "1.990602"
+  },
+  {
+    "code": "CC2RF07",
+    "description": "Cu - 2.5 mm2 - Cl 2 - Round",
+    "uom": "kg",
+    "lmeLinked": true,
+    "drawingPremium": "0.133111",
+    "rate": "1.997936"
+  },
+  {
+    "code": "CC2RG07",
+    "description": "Cu - 4 mm2 - Cl 2 - Round",
+    "uom": "kg",
+    "lmeLinked": true,
+    "drawingPremium": "0.138901",
+    "rate": "2.003726"
+  },
+  {
+    "code": "CC2RH07",
+    "description": "Cu - 6 mm2 - Cl 2 - Round",
+    "uom": "kg",
+    "lmeLinked": true,
+    "drawingPremium": "0.140059",
+    "rate": "2.004884"
+  },
+  {
+    "code": "CC2RI07",
+    "description": "Cu - 10 mm2 - Cl 2 - Round",
+    "uom": "kg",
+    "lmeLinked": true,
+    "drawingPremium": "0.116127",
+    "rate": "1.980952"
+  },
+  {
+    "code": "CC2RJ07",
+    "description": "Cu - 16 mm2 - Cl 2 - Round",
+    "uom": "kg",
+    "lmeLinked": true,
+    "drawingPremium": "0.108407",
+    "rate": "1.973232"
+  },
+  {
+    "code": "CC2RK07",
+    "description": "Cu - 25 mm2 - Cl 2 - Round",
+    "uom": "kg",
+    "lmeLinked": true,
+    "drawingPremium": "0.106091",
+    "rate": "1.970916"
+  },
+  {
+    "code": "CC2RL07",
+    "description": "Cu - 35 mm2 - Cl 2 - Round",
+    "uom": "kg",
+    "lmeLinked": true,
+    "drawingPremium": "0.104547",
+    "rate": "1.969372"
+  },
+  {
+    "code": "CC2RM07",
+    "description": "Cu - 50 mm2 - Cl 2 - Round",
+    "uom": "kg",
+    "lmeLinked": true,
+    "drawingPremium": "0.103389",
+    "rate": "1.968214"
+  },
+  {
+    "code": "CC2RM19",
+    "description": "Cu - 50 mm2 - Cl 2 - Round (19 strands for MV cables)",
+    "uom": "kg",
+    "lmeLinked": true,
+    "drawingPremium": "0.110337",
+    "rate": "1.975162"
+  },
+  {
+    "code": "CC2RN19",
+    "description": "Cu - 70 mm2 - Cl 2 - Round",
+    "uom": "kg",
+    "lmeLinked": true,
+    "drawingPremium": "0.106091",
+    "rate": "1.970916"
+  },
+  {
+    "code": "CC2RO19",
+    "description": "Cu - 95 mm2 - Cl 2 - Round",
+    "uom": "kg",
+    "lmeLinked": true,
+    "drawingPremium": "0.104547",
+    "rate": "1.969372"
+  },
+  {
+    "code": "CC2RP19",
+    "description": "Cu - 120 mm2 - Cl 2 - Round",
+    "uom": "kg",
+    "lmeLinked": true,
+    "drawingPremium": "0.103389",
+    "rate": "1.968214"
+  },
+  {
+    "code": "CC2RQ19",
+    "description": "Cu - 150 mm2 - Cl 2 - Round",
+    "uom": "kg",
+    "lmeLinked": true,
+    "drawingPremium": "0.103389",
+    "rate": "1.968214"
+  },
+  {
+    "code": "CC2RQ37",
+    "description": "Cu - 150 mm2 - Cl 2 - Round (37 strands for MV cables)",
+    "uom": "kg",
+    "lmeLinked": true,
+    "drawingPremium": "0.106091",
+    "rate": "1.970916"
+  },
+  {
+    "code": "CC2RR37",
+    "description": "Cu - 185 mm2 - Cl 2 - Round",
+    "uom": "kg",
+    "lmeLinked": true,
+    "drawingPremium": "0.104547",
+    "rate": "1.969372"
+  },
+  {
+    "code": "CC2RS37",
+    "description": "Cu - 240 mm2 - Cl 2 - Round",
+    "uom": "kg",
+    "lmeLinked": true,
+    "drawingPremium": "0.103389",
+    "rate": "1.968214"
+  },
+  {
+    "code": "CC2RT61",
+    "description": "Cu - 300 mm2 - Cl 2 - Round",
+    "uom": "kg",
+    "lmeLinked": true,
+    "drawingPremium": "0.104547",
+    "rate": "1.969372"
+  },
+  {
+    "code": "CC2RU61",
+    "description": "Cu - 400 mm2 - Cl 2 - Round",
+    "uom": "kg",
+    "lmeLinked": true,
+    "drawingPremium": "0.103003",
+    "rate": "1.967828"
+  },
+  {
+    "code": "CC2RW61",
+    "description": "Cu - 630 mm2 - Cl 2 - Round",
+    "uom": "kg",
+    "lmeLinked": true,
+    "drawingPremium": "0.102617",
+    "rate": "1.967442"
+  },
+  {
+    "code": "CC2S3K07",
+    "description": "Cu - 25 mm2 - Cl 2 - 120° Sec",
+    "uom": "kg",
+    "lmeLinked": true,
+    "drawingPremium": "0.106091",
+    "rate": "1.970916"
+  },
+  {
+    "code": "CC2S3L07",
+    "description": "Cu - 35 mm2 - Cl 2 - 120° Sec",
+    "uom": "kg",
+    "lmeLinked": true,
+    "drawingPremium": "0.104547",
+    "rate": "1.969372"
+  },
+  {
+    "code": "CC2S3M07",
+    "description": "Cu - 50 mm2 - Cl 2 - 120° Sec",
+    "uom": "kg",
+    "lmeLinked": true,
+    "drawingPremium": "0.103389",
+    "rate": "1.968214"
+  },
+  {
+    "code": "CC2S3N19",
+    "description": "Cu - 70 mm2 - Cl 2 - 120° Sec",
+    "uom": "kg",
+    "lmeLinked": true,
+    "drawingPremium": "0.106091",
+    "rate": "1.970916"
+  },
+  {
+    "code": "CC2S3O19",
+    "description": "Cu - 95 mm2 - Cl 2 - 120° Sec",
+    "uom": "kg",
+    "lmeLinked": true,
+    "drawingPremium": "0.104547",
+    "rate": "1.969372"
+  },
+  {
+    "code": "CC2S3P19",
+    "description": "Cu - 120 mm2 - Cl 2 - 120° Sec",
+    "uom": "kg",
+    "lmeLinked": true,
+    "drawingPremium": "0.103003",
+    "rate": "1.967828"
+  },
+  {
+    "code": "CC2S3Q19",
+    "description": "Cu - 150 mm2 - Cl 2 - 120° Sec",
+    "uom": "kg",
+    "lmeLinked": true,
+    "drawingPremium": "0.103389",
+    "rate": "1.968214"
+  },
+  {
+    "code": "CC2S3R37",
+    "description": "Cu - 185 mm2 - Cl 2 - 120° Sec",
+    "uom": "kg",
+    "lmeLinked": true,
+    "drawingPremium": "0.104547",
+    "rate": "1.969372"
+  },
+  {
+    "code": "CC2S3S37",
+    "description": "Cu - 240 mm2 - Cl 2 - 120° Sec",
+    "uom": "kg",
+    "lmeLinked": true,
+    "drawingPremium": "0.103003",
+    "rate": "1.967828"
+  },
+  {
+    "code": "CC2S3T61",
+    "description": "Cu - 300 mm2 - Cl 2 - 120° Sec",
+    "uom": "kg",
+    "lmeLinked": true,
+    "drawingPremium": "0.104547",
+    "rate": "1.969372"
+  },
+  {
+    "code": "CC2S4K07",
+    "description": "Cu - 25 mm2 - Cl 2 - 90° Sec",
+    "uom": "kg",
+    "lmeLinked": true,
+    "drawingPremium": "0.106091",
+    "rate": "1.970916"
+  },
+  {
+    "code": "CC2S4L07",
+    "description": "Cu - 35 mm2 - Cl 2 - 90° Sec",
+    "uom": "kg",
+    "lmeLinked": true,
+    "drawingPremium": "0.104547",
+    "rate": "1.969372"
+  },
+  {
+    "code": "CC2S4M07",
+    "description": "Cu - 50 mm2 - Cl 2 - 90° Sec",
+    "uom": "kg",
+    "lmeLinked": true,
+    "drawingPremium": "0.103389",
+    "rate": "1.968214"
+  },
+  {
+    "code": "CC2S4O19",
+    "description": "Cu - 95 mm2 - Cl 2 - 90° Sec",
+    "uom": "kg",
+    "lmeLinked": true,
+    "drawingPremium": "0.104547",
+    "rate": "1.969372"
+  },
+  {
+    "code": "CC2S4Q19",
+    "description": "Cu - 150 mm2 - Cl 2 - 90° Sec",
+    "uom": "kg",
+    "lmeLinked": true,
+    "drawingPremium": "0.103389",
+    "rate": "1.968214"
+  },
+  {
+    "code": "CC2S4R37",
+    "description": "Cu - 185 mm2 - Cl 2 - 90° Sec",
+    "uom": "kg",
+    "lmeLinked": true,
+    "drawingPremium": "0.104547",
+    "rate": "1.969372"
+  },
+  {
+    "code": "CC2S4S37",
+    "description": "Cu - 240 mm2 - Cl 2 - 90° Sec",
+    "uom": "kg",
+    "lmeLinked": true,
+    "drawingPremium": "0.103003",
+    "rate": "1.967828"
+  },
+  {
+    "code": "CUT3005",
+    "description": "COPPER TAPE 30 X 0.05 MM",
+    "uom": "kg",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "3.00841188430786"
+  },
+  {
+    "code": "CUT4005",
+    "description": "Copper Tape 40 X 0.05 MM",
+    "uom": "kg",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "3.00841188430786"
+  },
+  {
+    "code": "CUT5005",
+    "description": "COPPER TAPE 50 X 0.05 MM",
+    "uom": "kg",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "3.00841188430786"
+  },
+  {
+    "code": "ECAPH010",
+    "description": "END CAP HEAT SHRINKABLE 10 MM",
+    "uom": "NOS",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.100000001490116"
+  },
+  {
+    "code": "ECAPH020",
+    "description": "ECAPH20 - HEAT SHRINKABLE END CAP",
+    "uom": "NOS",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.124766282737255"
+  },
+  {
+    "code": "ECAPH030",
+    "description": "END CAP HEAT SHRINKABLE 30 MM",
+    "uom": "NOS",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.124766282737255"
+  },
+  {
+    "code": "ECAPH040",
+    "description": "END CAP HEAT SHRINKABLE 40 MM",
+    "uom": "NOS",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.124766282737255"
+  },
+  {
+    "code": "ECAPH060",
+    "description": "END CAP HEAT SHRINKABLE 60 MM",
+    "uom": "NOS",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.255849838256836"
+  },
+  {
+    "code": "ECAPH080",
+    "description": "END CAP HEAT SHRINKABLE 80 MM",
+    "uom": "NOS",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.39300000667572"
+  },
+  {
+    "code": "ECAPH100",
+    "description": "END CAP HEAT SHRINKABLE 100 MM",
+    "uom": "NOS",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.39300000667572"
+  },
+  {
+    "code": "ECAPH120",
+    "description": "END CAP HEAT SHRINKABLE 130 MM",
+    "uom": "NOS",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.548813700675964"
+  },
+  {
+    "code": "HSF300MM",
+    "description": "Heat Shrink Film 300 MM (60micron)",
+    "uom": "KG",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.675000011920929"
+  },
+  {
+    "code": "HSF350MM",
+    "description": "Heat Shrink Film 350 MM (60micron)",
+    "uom": "KG",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.675000011920929"
+  },
+  {
+    "code": "HSF350MMP25",
+    "description": "Heat Shrink Film 350 MM (60micron)(PRINTED) FOR 2.5SQMM",
+    "uom": "KG",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.675000011920929"
+  },
+  {
+    "code": "HSF425MMP60",
+    "description": "Heat Shrink Film 425 MM (60micron)(PRINTED) FOR 6.0SQMM",
+    "uom": "KG",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.675000011920929"
+  },
+  {
+    "code": "LLDPE",
+    "description": "BLACK LLDPE SHEET (WIDTH - 1050 MM)",
+    "uom": "KG",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.568400025367737"
+  },
+  {
+    "code": "LSFMBBK",
+    "description": "LSF MB BLACK FOR SHEATH",
+    "uom": "kg",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "2.39035940170288"
+  },
+  {
+    "code": "LSFSHBKTS1",
+    "description": "LSF COMPOUND BLACK  LTS1",
+    "uom": "kg",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.769918501377106"
+  },
+  {
+    "code": "MCT0610",
+    "description": "MICA TAPE 6MM WIDTH X 0.1MM THICK",
+    "uom": "kg",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "5.34994649887085"
+  },
+  {
+    "code": "MCT610",
+    "description": "MICA TAPE 6MM WIDTH X 0.1MM THICK",
+    "uom": "kg",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "5.34994649887085"
+  },
+  {
+    "code": "PAL1100X1000",
+    "description": "Pallet 1100 X 1000",
+    "uom": "NOS",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "3.43300008773804"
+  },
+  {
+    "code": "PPBT25025",
+    "description": "POLY BINDER TAPE 25X0.025 mm",
+    "uom": "kg",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.750177025794983"
+  },
+  {
+    "code": "PPBT30025",
+    "description": "POLY BINDER TAPE 30X0.025mm",
+    "uom": "kg",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.750177025794983"
+  },
+  {
+    "code": "PPBT3010",
+    "description": "Polyster Tape 30X0.1 mm",
+    "uom": "kg",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.750177025794983"
+  },
+  {
+    "code": "PPBT35025",
+    "description": "POLY BINDER TAPE 35X0.025 mm",
+    "uom": "kg",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.750177025794983"
+  },
+  {
+    "code": "PPBT40025",
+    "description": "POLY BINDER TAPE 40X0.025 mm",
+    "uom": "kg",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.750177025794983"
+  },
+  {
+    "code": "PPBT50025",
+    "description": "POLY BINDER TAPE 50X0.025 mm",
+    "uom": "kg",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.750177025794983"
+  },
+  {
+    "code": "PPBT5010",
+    "description": "POLY BINDER TAPE 50X0.1 mm",
+    "uom": "kg",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.750177025794983"
+  },
+  {
+    "code": "PPBT60025",
+    "description": "POLY BINDER TAPE 60X0.025 mm",
+    "uom": "kg",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.750177025794983"
+  },
+  {
+    "code": "PPBT80025",
+    "description": "POLY BINDER TAPE 80X0.025 mm",
+    "uom": "kg",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.750177025794983"
+  },
+  {
+    "code": "PPF20",
+    "description": "PP FILLER 20000 DENIERS",
+    "uom": "kg",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.379036813974381"
+  },
+  {
+    "code": "PPF200",
+    "description": "PP FILLER 200000 DENIERS",
+    "uom": "kg",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.379036813974381"
+  },
+  {
+    "code": "PPF40",
+    "description": "PP FILLER 40000 DENIERS.",
+    "uom": "kg",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.379036813974381"
+  },
+  {
+    "code": "PPFBT3010",
+    "description": "PP BINDER TAPE FOAMED 30X0.1 mm",
+    "uom": "kg",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.742858171463013"
+  },
+  {
+    "code": "PPFBT4010",
+    "description": "PP BINDER TAPE FOAMED 40X0.1 mm",
+    "uom": "kg",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.742858171463013"
+  },
+  {
+    "code": "PPFBT5010",
+    "description": "PP BINDER TAPE FOAMED 50X0.1 mm",
+    "uom": "kg",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.742858171463013"
+  },
+  {
+    "code": "PPFBT7010",
+    "description": "PP BINDER TAPE FOAMED 70X0.1 mm",
+    "uom": "kg",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.742858171463013"
+  },
+  {
+    "code": "PVCMBBK",
+    "description": "PVC MB BLACK",
+    "uom": "kg",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "1.45200002193451"
+  },
+  {
+    "code": "PVCMBGR",
+    "description": "PVC MB GREEN",
+    "uom": "KG",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "1.45200002193451"
+  },
+  {
+    "code": "PVCMBRUV",
+    "description": "PVC Color Master Batch RED UV",
+    "uom": "KG",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "2.69143271446228"
+  },
+  {
+    "code": "PVCMBY",
+    "description": "PVC MB YELLOW",
+    "uom": "KG",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "1.45200002193451"
+  },
+  {
+    "code": "PVCS9",
+    "description": "PVC TYPE 9 COMPOUND BLACK",
+    "uom": "kg",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.363999992609024"
+  },
+  {
+    "code": "PVCS9N",
+    "description": "PVC TYPE 9 COMPOUND NATURAL",
+    "uom": "kg",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.389023095369339"
+  },
+  {
+    "code": "PVCSFRRT",
+    "description": "PVC-FRRT NATURAL",
+    "uom": "KG",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.648000001907349"
+  },
+  {
+    "code": "PVCSST2",
+    "description": "PVC TYPE-ST2 BLACK",
+    "uom": "kg",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.420493960380554"
+  },
+  {
+    "code": "PVCTI1",
+    "description": "PVC TI-1 NATURAL",
+    "uom": "KG",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.402726590633392"
+  },
+  {
+    "code": "SCBT4010",
+    "description": "SEMI-CONDUCTING TAPE 40x.10 mm",
+    "uom": "sq.m",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.493537485599518"
+  },
+  {
+    "code": "SD18001000940",
+    "description": "SD1800 X 1000 X 940 MM",
+    "uom": "NOS",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "90.4160690307617"
+  },
+  {
+    "code": "SD200010001100G",
+    "description": "SD2000 X 1000 X 1100 MM  (Guide)",
+    "uom": "NOS",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "114.500701904297"
+  },
+  {
+    "code": "SD205012001200G",
+    "description": "SD2050 X 1200 X 1200 MM (Guide)",
+    "uom": "NOS",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "131.083557128906"
+  },
+  {
+    "code": "SD220013001300G",
+    "description": "SD2200 X 1300 X 1300 MM (Guide)",
+    "uom": "NOS",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "162"
+  },
+  {
+    "code": "SD240012001400G",
+    "description": "SD2400 X 1200 X 1400 MM  (Guide)",
+    "uom": "NOS",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "185"
+  },
+  {
+    "code": "SD280017001600G",
+    "description": "SD2800 X 1700 X 1600 MM (Guide)",
+    "uom": "NOS",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "263"
+  },
+  {
+    "code": "STRETCHFILMROLL",
+    "description": "STRETCH FILM ROLL",
+    "uom": "KG",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.747224986553192"
+  },
+  {
+    "code": "SWA090",
+    "description": "GS ARMOUR WIRE 0.90 MM DIA",
+    "uom": "kg",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.487615048885345"
+  },
+  {
+    "code": "SWA125",
+    "description": "GS ARMOUR WIRE 1.25 MM DIA",
+    "uom": "kg",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.452080339193344"
+  },
+  {
+    "code": "SWA160",
+    "description": "GS ARMOUR WIRE 1.60 MM DIA",
+    "uom": "kg",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.388907551765442"
+  },
+  {
+    "code": "SWA200",
+    "description": "GS ARMOUR WIRE 2.00 MM DIA",
+    "uom": "kg",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.386933386325836"
+  },
+  {
+    "code": "SWA250",
+    "description": "GS ARMOUR WIRE 2.50 MM DIA",
+    "uom": "kg",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.367191910743713"
+  },
+  {
+    "code": "SWA315",
+    "description": "GS ARMOUR WIRE 3.15 MM DIA",
+    "uom": "kg",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.363243609666824"
+  },
+  {
+    "code": "WD1000500575",
+    "description": "WD1000 X 500 X 575 MM",
+    "uom": "NOS",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "17.5683555603027"
+  },
+  {
+    "code": "WD1100600900",
+    "description": "WD1100 X 600 X 900 MM",
+    "uom": "NOS",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "31.1947288513184"
+  },
+  {
+    "code": "WD1200600900",
+    "description": "WD1200 X 600 X 900 MM",
+    "uom": "NOS",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "31.1947288513184"
+  },
+  {
+    "code": "WD1400700900",
+    "description": "WD1400 X 700 X 900 MM",
+    "uom": "NOS",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "40.09814453125"
+  },
+  {
+    "code": "WD1600800900",
+    "description": "WD1600 X 800 X 900 MM",
+    "uom": "NOS",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "57.848518371582"
+  },
+  {
+    "code": "WD700450575",
+    "description": "WD700 X 450 X 575 MM",
+    "uom": "NOS",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "8.88367462158203"
+  },
+  {
+    "code": "WD800450575",
+    "description": "WD800 X 450 X 575 MM",
+    "uom": "NOS",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "11.2344932556152"
+  },
+  {
+    "code": "WD900450575",
+    "description": "WD900 X 450 X 575 MM",
+    "uom": "NOS",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "17.5683555603027"
+  },
+  {
+    "code": "WRP1080",
+    "description": "DRUM WRAPPER 1080 MM",
+    "uom": "m",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "1.40752077102661"
+  },
+  {
+    "code": "WRP1180",
+    "description": "DRUM WRAPPER 1180 MM",
+    "uom": "m",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "1.40752077102661"
+  },
+  {
+    "code": "WRP1280",
+    "description": "DRUM WRAPPER 1280 MM",
+    "uom": "m",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "1.40752077102661"
+  },
+  {
+    "code": "WRP1380",
+    "description": "DRUM WRAPPER 1380 MM",
+    "uom": "m",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "1.40752077102661"
+  },
+  {
+    "code": "WRP1580",
+    "description": "DRUM WRAPPER 1580 MM",
+    "uom": "m",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "1.40752077102661"
+  },
+  {
+    "code": "WRP570",
+    "description": "DRUM WRAPPER 570 MM",
+    "uom": "m",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "1.40752077102661"
+  },
+  {
+    "code": "WRP890",
+    "description": "DRUM WRAPPER 890 MM",
+    "uom": "m",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "1.40752077102661"
+  },
+  {
+    "code": "WRP940",
+    "description": "DRUM WRAPPER 940 MM",
+    "uom": "m",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "1.40752077102661"
+  },
+  {
+    "code": "XINS",
+    "description": "XLPE COMPOUND MV CABLE",
+    "uom": "kg",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.600000023841858"
+  },
+  {
+    "code": "XMBBK",
+    "description": "XLPE MB BLACK",
+    "uom": "kg",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "1.6441433429718"
+  },
+  {
+    "code": "XMBBLU",
+    "description": "XLPE MB  BLUE",
+    "uom": "kg",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "1.6441433429718"
+  },
+  {
+    "code": "XMBRED",
+    "description": "XLPE MB  RED",
+    "uom": "kg",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "1.6441433429718"
+  },
+  {
+    "code": "XMBWH",
+    "description": "XLPE MB  WHITE",
+    "uom": "kg",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "1.6441433429718"
+  },
+  {
+    "code": "XMBYEL",
+    "description": "XLPE MB  YELLOW",
+    "uom": "kg",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "1.6441433429718"
+  },
+  {
+    "code": "XSAUCAT",
+    "description": "XLPE CATALYST",
+    "uom": "kg",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "1.35229277610779"
+  },
+  {
+    "code": "XSAUINS",
+    "description": "LT XLPE COMPOUND",
+    "uom": "kg",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.596000015735626"
+  },
+  {
+    "code": "XSCBON",
+    "description": "XLPE SC BONDED COMPOUND",
+    "uom": "kg",
+    "lmeLinked": false,
+    "drawingPremium": null,
+    "rate": "0.821246385574341"
+  }
+]

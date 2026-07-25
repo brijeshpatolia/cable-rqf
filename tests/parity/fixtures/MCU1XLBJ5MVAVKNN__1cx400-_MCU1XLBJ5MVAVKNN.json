@@ -1,0 +1,14 @@
+{
+  "productId": "MCU1XLBJ5MVAVKNN",
+  "sourceSheet": "1cx400- MCU1XLBJ5MVAVKNN",
+  "expected": {
+    "materialsSubtotal": "8879.0960179682",
+    "operationsSubtotal": "359.8560111",
+    "overheadsSubtotal": "396.13499557972",
+    "tooling": "5",
+    "costPerKm": "9640.08702464792",
+    "costPerMetre": "9.64008702464792",
+    "quotePerMetre": "11.0861000783451",
+    "sourceCostPerMetre": "9.64009013211616"
+  }
+}

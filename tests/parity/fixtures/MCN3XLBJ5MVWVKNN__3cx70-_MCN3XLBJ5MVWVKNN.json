@@ -1,0 +1,14 @@
+{
+  "productId": "MCN3XLBJ5MVWVKNN",
+  "sourceSheet": "3cx70- MCN3XLBJ5MVWVKNN",
+  "expected": {
+    "materialsSubtotal": "7969.74430671642",
+    "operationsSubtotal": "399.8702648",
+    "overheadsSubtotal": "315.079003095627",
+    "tooling": "5",
+    "costPerKm": "8689.69357461204",
+    "costPerMetre": "8.68969357461204",
+    "quotePerMetre": "9.99314761080385",
+    "sourceCostPerMetre": "8.68969236834029"
+  }
+}

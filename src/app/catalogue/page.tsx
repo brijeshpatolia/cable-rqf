@@ -1,21 +1,20 @@
 import { metres } from '@/core/units';
+import { SOURCE_TERMS } from '@/infra/data';
 import { repositories } from '@/infra/memory/repository';
 import { NOW } from '@/infra/memory/seed';
 import { computeCost } from '@/modules/costing/engine';
-import type { CommercialTerms } from '@/modules/costing/types';
-import { percent, omrPerKm } from '@/core/units';
 import { DataTable } from '@/ui/components/DataTable';
 import { NumericCell } from '@/ui/components/NumericCell';
 import { Panel } from '@/ui/components/Panel';
 
 export const metadata = { title: 'Catalogue — Nuhas Oman' };
 
-const TERMS: CommercialTerms = {
-  marginPercent: percent(24),
-  drumCost: omrPerKm(84),
-  packingCost: omrPerKm(26),
-  freightCost: omrPerKm(112),
-};
+/**
+ * Nuhas's own quoting terms, from the cost master's Drivers sheet: margin on
+ * cost, nothing else. Drum, packing, and freight are not in the source data
+ * and are not invented here.
+ */
+const TERMS = SOURCE_TERMS;
 
 /**
  * Product Catalogue.

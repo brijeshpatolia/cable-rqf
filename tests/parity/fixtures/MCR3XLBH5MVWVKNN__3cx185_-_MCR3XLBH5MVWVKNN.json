@@ -1,0 +1,14 @@
+{
+  "productId": "MCR3XLBH5MVWVKNN",
+  "sourceSheet": "3cx185 - MCR3XLBH5MVWVKNN",
+  "expected": {
+    "materialsSubtotal": "13411.6090969626",
+    "operationsSubtotal": "426.2220245",
+    "overheadsSubtotal": "555.862005949021",
+    "tooling": "5",
+    "costPerKm": "14398.6931274117",
+    "costPerMetre": "14.3986931274117",
+    "quotePerMetre": "16.5584970965234",
+    "sourceCostPerMetre": "14.3986932655328"
+  }
+}

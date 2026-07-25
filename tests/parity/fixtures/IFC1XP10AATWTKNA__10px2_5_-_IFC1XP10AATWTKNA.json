@@ -1,0 +1,14 @@
+{
+  "productId": "IFC1XP10AATWTKNA",
+  "sourceSheet": "10px2.5 - IFC1XP10AATWTKNA",
+  "expected": {
+    "materialsSubtotal": "1853.74291975829",
+    "operationsSubtotal": "121.398380276447",
+    "overheadsSubtotal": "75.4239999055862",
+    "tooling": "10",
+    "costPerKm": "2060.56529994032",
+    "costPerMetre": "2.06056529994032",
+    "quotePerMetre": "2.36965009493137",
+    "sourceCostPerMetre": "2.06056993249982"
+  }
+}

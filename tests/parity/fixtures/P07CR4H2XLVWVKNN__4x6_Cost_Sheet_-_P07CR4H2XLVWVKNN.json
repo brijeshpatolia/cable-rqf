@@ -1,0 +1,14 @@
+{
+  "productId": "P07CR4H2XLVWVKNN",
+  "sourceSheet": "4x6 Cost Sheet - P07CR4H2XLVWVKNN",
+  "expected": {
+    "materialsSubtotal": "687.818835599979",
+    "operationsSubtotal": "38.2330421",
+    "overheadsSubtotal": "29.7439998537302",
+    "tooling": "2",
+    "costPerKm": "757.795877553709",
+    "costPerMetre": "0.757795877553709",
+    "quotePerMetre": "0.871465259186766",
+    "sourceCostPerMetre": "0.757794836397201"
+  }
+}

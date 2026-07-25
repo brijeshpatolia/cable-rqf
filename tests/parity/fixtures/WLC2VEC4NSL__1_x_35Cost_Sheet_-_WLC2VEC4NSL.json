@@ -1,0 +1,14 @@
+{
+  "productId": "WLC2VEC4NSL",
+  "sourceSheet": "1 x 35Cost Sheet - WLC2VEC4NSL",
+  "expected": {
+    "materialsSubtotal": "634.94497218906",
+    "operationsSubtotal": "2.9521881",
+    "overheadsSubtotal": "24.7659999579191",
+    "tooling": "0.0329999998211861",
+    "costPerKm": "662.6961602468",
+    "costPerMetre": "0.6626961602468",
+    "quotePerMetre": "0.76210058428382",
+    "sourceCostPerMetre": "0.662695982488259"
+  }
+}

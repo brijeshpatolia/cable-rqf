@@ -1,0 +1,14 @@
+{
+  "productId": "MCM3XLBH5MVWVKNN",
+  "sourceSheet": "3x50 15kvCost Sheet - MCM3XLBH5MVWVKNN",
+  "expected": {
+    "materialsSubtotal": "4744.23729328152",
+    "operationsSubtotal": "238.0034089",
+    "overheadsSubtotal": "195.20899784565",
+    "tooling": "5",
+    "costPerKm": "5182.44970002717",
+    "costPerMetre": "5.18244970002717",
+    "quotePerMetre": "5.95981715503125",
+    "sourceCostPerMetre": "5.18244832721655"
+  }
+}

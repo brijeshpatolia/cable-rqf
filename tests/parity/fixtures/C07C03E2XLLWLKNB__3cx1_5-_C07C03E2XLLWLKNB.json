@@ -1,0 +1,14 @@
+{
+  "productId": "C07C03E2XLLWLKNB",
+  "sourceSheet": "3cx1.5- C07C03E2XLLWLKNB",
+  "expected": {
+    "materialsSubtotal": "422.004638825922",
+    "operationsSubtotal": "51.0194134649006",
+    "overheadsSubtotal": "18.701999925077",
+    "tooling": "10",
+    "costPerKm": "501.7260522159",
+    "costPerMetre": "0.5017260522159",
+    "quotePerMetre": "0.576984960048285",
+    "sourceCostPerMetre": "0.501726339222896"
+  }
+}
