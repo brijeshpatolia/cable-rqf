@@ -26,9 +26,18 @@ const source = (id: string, table: string) => ({
 const product: Product = {
   id: 'TEST-1',
   designation: '4C × 50mm² Cu XLPE SWA PVC 0.6/1kV',
-  cores: 4,
-  sizeMm2: dec(50),
   family: 'LV Power',
+  spec: {
+    cores: 4,
+    sizeMm2: dec(50),
+    conductor: 'Cu',
+    insulation: 'XLPE',
+    screen: '',
+    armour: 'SWA',
+    sheath: 'PVC',
+    voltage: '1kV',
+    standard: 'IEC 60502-1',
+  },
   toolingPerKm: omrPerKm('0.033'),
   bom: [
     {

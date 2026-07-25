@@ -71,12 +71,33 @@ export interface OverheadLine {
   readonly amount: OMRPerKm;
 }
 
-export interface Product {
-  readonly id: string;
-  readonly designation: string;
+/**
+ * The nine fields that identify a cable.
+ *
+ * This is the canonical key matching compares against — an RFQ line is
+ * normalised into this shape, and a library product exposes it directly.
+ * Every value is a canonical term from the vocabulary, never a customer's
+ * wording.
+ */
+export interface CableSpec {
   readonly cores: number;
   /** mm² — the nominal conductor cross-section. */
   readonly sizeMm2: Decimal;
+  readonly conductor: string;
+  readonly insulation: string;
+  /** Empty when the cable carries no screen. */
+  readonly screen: string;
+  /** Empty when unarmoured. */
+  readonly armour: string;
+  readonly sheath: string;
+  readonly voltage: string;
+  readonly standard: string;
+}
+
+export interface Product {
+  readonly id: string;
+  readonly designation: string;
+  readonly spec: CableSpec;
   readonly family: string;
   readonly bom: readonly BomLine[];
   readonly operations: readonly MachineOp[];

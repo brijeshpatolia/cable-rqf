@@ -81,10 +81,10 @@ export default async function ProductDetailPage({
               </span>
             </Field>
             <Field label="Cores">
-              <NumericCell value={dec(product.cores)} decimals={0} />
+              <NumericCell value={dec(product.spec.cores)} decimals={0} />
             </Field>
             <Field label="Size">
-              <NumericCell value={product.sizeMm2} decimals={1} unit="mm²" />
+              <NumericCell value={product.spec.sizeMm2} decimals={1} unit="mm²" />
             </Field>
             <Field label="Family">
               <span style={{ color: 'var(--color-ink-secondary)' }}>

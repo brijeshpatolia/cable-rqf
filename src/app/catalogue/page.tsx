@@ -102,7 +102,7 @@ export default async function CataloguePage() {
               align: 'right',
               width: 70,
               render: ({ product }) => (
-                <span className="numeric">{product.cores}</span>
+                <span className="numeric">{product.spec.cores}</span>
               ),
             },
             {
@@ -111,7 +111,7 @@ export default async function CataloguePage() {
               align: 'right',
               width: 90,
               render: ({ product }) => (
-                <NumericCell value={product.sizeMm2} decimals={1} unit="mm²" />
+                <NumericCell value={product.spec.sizeMm2} decimals={1} unit="mm²" />
               ),
             },
             {
