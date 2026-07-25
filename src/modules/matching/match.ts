@@ -247,6 +247,20 @@ export function matchLine(
   return { tier: 'partial', reason, nearest };
 }
 
+/**
+ * How a product differs from what the line asked for.
+ *
+ * Exported so the review screen can name the differences on a line an engineer
+ * chose a product for — the whole value of a chosen line is that the app still
+ * says out loud what was swapped, rather than quietly pricing something else.
+ */
+export function differencesBetween(
+  line: ExtractedLine,
+  product: Product,
+): readonly AxisDifference[] {
+  return differencesAgainst(specOf(line), product);
+}
+
 /** Whether a tier may carry a price at all. Partial and No-match never can. */
 export function isPriceable(
   result: MatchResult,

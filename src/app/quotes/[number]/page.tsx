@@ -2,7 +2,13 @@ import { notFound } from 'next/navigation';
 import { formatDate, formatInstant, formatNumber } from '@/core/format';
 import { now } from '@/infra/clock';
 import { quoteStore } from '@/infra/repositories';
-import { copperMassOf, isExpired, totalOf } from '@/modules/quoting';
+import {
+  copperMassIsPartial,
+  copperMassOf,
+  handPricedCount,
+  isExpired,
+  totalOf,
+} from '@/modules/quoting';
 import { CostBreakdownView } from '@/ui/components/CostBreakdownView';
 import { ExpandableRow } from '@/ui/components/ExpandableRow';
 import { NumericCell } from '@/ui/components/NumericCell';
@@ -110,9 +116,20 @@ export default async function QuotePage({
                       <span className="block truncate">{line.designation}</span>
                       <span
                         className="numeric block"
-                        style={{ color: 'var(--color-ink-tertiary)', fontSize: 'var(--text-micro)', textAlign: 'left' }}
+                        style={{
+                          color:
+                            line.decision === null
+                              ? 'var(--color-ink-tertiary)'
+                              : 'var(--color-status-review)',
+                          fontSize: 'var(--text-micro)',
+                          textAlign: 'left',
+                        }}
                       >
-                        {line.productCode}
+                        {line.decision === null
+                          ? line.productCode
+                          : line.breakdown === null
+                            ? 'M · priced by hand'
+                            : `M · ${line.productCode}`}
                       </span>
                     </span>
                     <span style={{ width: 110, textAlign: 'right' }}>
@@ -127,11 +144,66 @@ export default async function QuotePage({
                   </span>
                 }
               >
-                {/*
-                  The frozen snapshot, not a recomputation. This is what the
-                  price was actually built from on the day it was struck.
-                */}
-                <CostBreakdownView breakdown={line.breakdown} />
+                {line.breakdown === null ? (
+                  /*
+                    No build-up, because none exists. A hand-priced line is the
+                    one figure on a quote no machine can explain, so what shows
+                    here is the explanation a person gave — which is exactly
+                    why the reason was required before the price was accepted.
+                  */
+                  <div style={{ padding: '8px 0' }}>
+                    <div className="label">Priced by hand</div>
+                    <p
+                      className="mt-1"
+                      style={{
+                        color: 'var(--color-ink-secondary)',
+                        fontSize: 'var(--text-micro)',
+                        lineHeight: 'var(--text-micro--line-height)',
+                        maxWidth: 660,
+                      }}
+                    >
+                      {line.decision?.by} set this rate on{' '}
+                      {line.decision === null ? '' : formatDate(line.decision.at)} —{' '}
+                      {line.decision?.reason}
+                    </p>
+                    <p
+                      className="mt-2"
+                      style={{
+                        color: 'var(--color-ink-tertiary)',
+                        fontSize: 'var(--text-micro)',
+                        maxWidth: 660,
+                      }}
+                    >
+                      There is no cost build-up for this line and none was
+                      invented. Its copper is excluded from the quote&rsquo;s
+                      copper content and from the price watch&rsquo;s exposure.
+                    </p>
+                  </div>
+                ) : (
+                  /*
+                    The frozen snapshot, not a recomputation. This is what the
+                    price was actually built from on the day it was struck.
+                  */
+                  <>
+                    {line.decision === null ? null : (
+                      <p
+                        style={{
+                          color: 'var(--color-status-review)',
+                          fontSize: 'var(--text-micro)',
+                          lineHeight: 'var(--text-micro--line-height)',
+                          maxWidth: 660,
+                          paddingBottom: 8,
+                        }}
+                      >
+                        {line.decision.unitRate === null
+                          ? `${line.decision.by} chose this product`
+                          : `${line.decision.by} set this rate`}{' '}
+                        on {formatDate(line.decision.at)} — {line.decision.reason}
+                      </p>
+                    )}
+                    <CostBreakdownView breakdown={line.breakdown} />
+                  </>
+                )}
               </ExpandableRow>
             ))}
           </Panel>
@@ -164,7 +236,13 @@ export default async function QuotePage({
               <Field label="FX">
                 <NumericCell value={quote.fxStruck} kind="fx" unit="OMR/USD" />
               </Field>
-              <Field label="Copper content">
+              <Field
+                label={
+                  copperMassIsPartial(quote.lines)
+                    ? 'Copper content (at least)'
+                    : 'Copper content'
+                }
+              >
                 <NumericCell value={copperMassOf(quote.lines)} decimals={1} unit="kg" />
               </Field>
             </div>
@@ -179,6 +257,23 @@ export default async function QuotePage({
               This quote was struck on copper at {formatNumber(quote.lmeStruck, 2)}.
               Every figure above can be expanded to the rate row it came from.
             </p>
+            {copperMassIsPartial(quote.lines) ? (
+              <p
+                className="mt-2"
+                style={{
+                  color: 'var(--color-status-review)',
+                  fontSize: 'var(--text-micro)',
+                  lineHeight: 'var(--text-micro--line-height)',
+                }}
+              >
+                {handPricedCount(quote.lines)} line
+                {handPricedCount(quote.lines) === 1 ? '' : 's'} priced by hand.
+                Nobody costed {handPricedCount(quote.lines) === 1 ? 'its' : 'their'}{' '}
+                copper, so the figure above is a floor rather than a total — and
+                the price watch understates this quote&rsquo;s exposure by the
+                same amount.
+              </p>
+            ) : null}
           </Panel>
 
           {quote.terms !== null && quote.terms !== '' ? (

@@ -10,7 +10,14 @@ import { renderQuotePdf } from '@/infra/documents/quote-pdf';
 import { renderQuoteXlsx } from '@/infra/documents/quote-xlsx';
 import type { Actor } from '@/modules/auth';
 import { computeCost } from '@/modules/costing';
-import { assembleQuote, copperMassOf, totalOf } from '@/modules/quoting';
+import {
+  type DraftLine,
+  assembleQuote,
+  copperMassIsPartial,
+  copperMassOf,
+  handPricedCount,
+  totalOf,
+} from '@/modules/quoting';
 
 /**
  * The claim this file exists to test: **a quote can still be explained months
@@ -54,7 +61,7 @@ describe.skipIf(url === undefined)('a quote, written and read back', () => {
 
     // Two products with quite different bills of material, so the walk is
     // exercised on more than one shape of breakdown.
-    const lines = [products[0]!, products[40]!].map((product, i) => {
+    const lines: DraftLine[] = [products[0]!, products[40]!].map((product, i) => {
       const quantity = { metres: metres(i === 0 ? '12000' : '3500') };
       const result = computeCost(product, quantity, rates, SOURCE_TERMS);
       if (!result.ok) throw new Error(result.error.message);
@@ -65,13 +72,36 @@ describe.skipIf(url === undefined)('a quote, written and read back', () => {
         designation: product.designation,
         quantityMetres: quantity.metres,
         breakdown: result.value,
+        decision: null,
       };
+    });
+
+    // A third line nobody costed, so the round trip is tested on the harder
+    // case too: a price with no build-up behind it.
+    lines.push({
+      requestText: '3C x 50mm2 aluminium XLPE SWA PVC 1kV',
+      productCode: '',
+      sourceSheet: '',
+      designation: '3C x 50mm2 aluminium XLPE SWA PVC 1kV',
+      quantityMetres: metres('4000'),
+      breakdown: null,
+      decision: {
+        unitRate: dec('7.5'),
+        reason: 'Quoted off the 2025 aluminium job.',
+        by: 'Round Trip',
+        at: new Date('2026-07-25T09:00:00Z'),
+      },
     });
 
     const assembled = assembleQuote({
       customer: 'Round Trip Trading LLC',
       lines,
       unpricedCount: 0,
+      strike: {
+        lme: rates.copper.lme,
+        fx: rates.copper.fx,
+        marginPercent: SOURCE_TERMS.marginPercent,
+      },
       pricedAt: new Date('2026-07-25T09:00:00Z'),
       terms: 'Ex-works Sohar, 60 days.',
       actor,
@@ -108,11 +138,12 @@ describe.skipIf(url === undefined)('a quote, written and read back', () => {
     if (quote === undefined) return;
 
     expect(quote.customer).toBe('Round Trip Trading LLC');
-    expect(quote.lines).toHaveLength(2);
+    expect(quote.lines).toHaveLength(3);
     expect(quote.terms).toBe('Ex-works Sohar, 60 days.');
 
     for (const line of quote.lines) {
       const b = line.breakdown;
+      if (b === null) continue;
 
       // Decimals, not strings that happen to print the same.
       expect(b.costPerKm.toFixed).toBeInstanceOf(Function);
@@ -150,6 +181,27 @@ describe.skipIf(url === undefined)('a quote, written and read back', () => {
 
     expect(totalOf(quote.lines).greaterThan(0)).toBe(true);
     expect(copperMassOf(quote.lines).greaterThan(0)).toBe(true);
+  });
+
+  it('keeps a hand-priced line hand-priced, with its reason attached', async () => {
+    const quote = await repo.byNumber(number);
+    if (quote === undefined) throw new Error('expected the quote');
+
+    const manual = quote.lines.find((l) => l.breakdown === null);
+    expect(manual).toBeDefined();
+    if (manual === undefined) return;
+
+    // The absence survived. Had the round trip invented a zero-filled tree,
+    // this line would come back claiming a costing nobody performed.
+    expect(manual.breakdown).toBeNull();
+    expect(manual.decision?.unitRate?.toString()).toBe('7.5');
+    expect(manual.decision?.reason).toContain('aluminium job');
+    expect(manual.decision?.by).toBe('Round Trip');
+    expect(manual.lineTotal.toFixed(2)).toBe('30000.00');
+
+    expect(handPricedCount(quote.lines)).toBe(1);
+    // And the copper figure knows it is a floor rather than a total.
+    expect(copperMassIsPartial(quote.lines)).toBe(true);
   });
 
   it('appears on the price watch with its copper exposure', async () => {

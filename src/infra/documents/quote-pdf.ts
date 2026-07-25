@@ -1,6 +1,12 @@
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from 'pdf-lib';
 import { format, formatDate, formatInstant, formatNumber } from '@/core/format';
-import { copperMassOf, totalOf, type Quote } from '@/modules/quoting';
+import {
+  copperMassIsPartial,
+  copperMassOf,
+  handPricedCount,
+  totalOf,
+  type Quote,
+} from '@/modules/quoting';
 
 /**
  * The quote, as a PDF.
@@ -157,13 +163,20 @@ export async function renderQuotePdf(quote: Quote): Promise<Uint8Array> {
       });
     });
 
-    page.drawText(line.productCode, {
-      x: COL.description,
-      y: y - 2 - wrapped.length * 10,
-      size: 7,
-      font: fonts.mono,
-      color: MUTED,
-    });
+    // A hand-priced line names itself as one on the document. The customer
+    // does not need the reason, but "priced to order" is honest where a
+    // product code would be a claim about a catalogue item that was never
+    // costed for this line.
+    page.drawText(
+      line.breakdown === null ? 'Priced to order' : line.productCode,
+      {
+        x: COL.description,
+        y: y - 2 - wrapped.length * 10,
+        size: 7,
+        font: fonts.mono,
+        color: MUTED,
+      },
+    );
 
     right(page, `${formatNumber(line.quantityMetres, 0)} m`, COL.quantity, y - 2, fonts.mono, 8.5);
     right(page, format(line.unitRate, 'quotedRate'), COL.rate, y - 2, fonts.mono, 8.5);
@@ -204,12 +217,25 @@ export async function renderQuotePdf(quote: Quote): Promise<Uint8Array> {
    */
   const strike = [
     `Struck on LME ${formatNumber(quote.lmeStruck, 2)} USD/t · FX ${quote.fxStruck.toFixed(4)} OMR/USD`,
-    `Copper content ${formatNumber(copperMassOf(quote.lines), 1)} kg · this price lapses ${formatDate(quote.validUntil)}`,
+    // "at least" when some lines were priced by hand: nobody costed their
+    // copper, so the figure is a floor, not a total. Printing it as a total
+    // would understate the exposure on the one document that outlives us.
+    `Copper content ${copperMassIsPartial(quote.lines) ? 'at least ' : ''}` +
+      `${formatNumber(copperMassOf(quote.lines), 1)} kg · this price lapses ${formatDate(quote.validUntil)}`,
     // Said plainly, because the customer will multiply the two columns and
     // find they disagree in the last baisa. The amount is the offer.
     'Amounts are calculated on the unrounded unit rate; the rate shown is rounded to 4 places.',
     'Prices are subject to the copper market. A lapsed quote is re-priced on request.',
   ];
+
+  const byHand = handPricedCount(quote.lines);
+  if (byHand > 0) {
+    strike.splice(
+      2,
+      0,
+      `${byHand} line${byHand === 1 ? '' : 's'} priced to order — copper content above excludes ${byHand === 1 ? 'it' : 'them'}.`,
+    );
+  }
   for (const text of strike) {
     page.drawText(text, { x: MARGIN, y, size: 7, font: fonts.mono, color: MUTED });
     y -= 9;

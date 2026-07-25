@@ -17,6 +17,26 @@ import type { CostBreakdown } from '@/modules/costing';
 
 export type QuoteStatus = 'draft' | 'approved' | 'sent' | 'lapsed';
 
+/**
+ * A human's decision about a line, carried onto the quote.
+ *
+ * Two shapes, one record. `unitRate` set means somebody replaced the price;
+ * `unitRate` null means somebody named the product and let the engine cost it.
+ * Both are decisions a person made rather than the app, and the spec requires
+ * that fact to persist onto the quote and into history — so a quote can answer
+ * "who decided this line, and why" without going back to the job.
+ *
+ * The `reason` is not optional and not decorative. A decided line is the one
+ * figure on a quote no machine can explain, so the explanation travels with it.
+ */
+export interface Decision {
+  /** Null when a person chose the product but left the pricing to the engine. */
+  readonly unitRate: Decimal | null;
+  readonly reason: string;
+  readonly by: string;
+  readonly at: Date;
+}
+
 export interface QuoteLine {
   readonly position: number;
   /** What the customer asked for, verbatim. */
@@ -27,7 +47,18 @@ export interface QuoteLine {
   readonly quantityMetres: Decimal;
   readonly unitRate: Decimal;
   readonly lineTotal: OMR;
-  readonly breakdown: CostBreakdown;
+  /**
+   * Null when the line was priced by hand off the library.
+   *
+   * This is deliberately not a synthetic zero-filled breakdown. A line nobody
+   * costed has no materials, no machine time and no copper mass, and inventing
+   * a tree of zeros would put those claims on an auditable document. `null`
+   * plus a stated `override` is the truth; the screens and both exports render
+   * it as "priced by hand" rather than as a build-up.
+   */
+  readonly breakdown: CostBreakdown | null;
+  /** Present when a human, not the app, settled this line. */
+  readonly decision: Decision | null;
 }
 
 export interface Quote {
@@ -61,13 +92,37 @@ export function totalOf(lines: readonly QuoteLine[]): OMR {
   return omr(sum(lines.map((l) => l.lineTotal)));
 }
 
-/** Total copper across the quote — what a price move actually acts on. */
+/**
+ * Total copper across the quote — what a price move actually acts on.
+ *
+ * Hand-priced lines contribute nothing, because nobody costed their copper.
+ * That means the figure is a **lower bound** on a quote carrying overrides,
+ * and `handPricedCount` is what lets a screen say so rather than presenting an
+ * understatement as a total.
+ */
 export function copperMassOf(lines: readonly QuoteLine[]): Decimal {
   return lines.reduce<Decimal>(
     (acc, l) =>
-      acc.plus(l.breakdown.copperMassPerKm.times(l.quantityMetres).dividedBy(1000)),
+      l.breakdown === null
+        ? acc
+        : acc.plus(l.breakdown.copperMassPerKm.times(l.quantityMetres).dividedBy(1000)),
     ZERO,
   );
+}
+
+/** Lines whose price a person set outright. These carry no build-up. */
+export function handPricedCount(lines: readonly QuoteLine[]): number {
+  return lines.filter((l) => l.decision?.unitRate != null).length;
+}
+
+/** Lines a person settled at all — a hand price or a named product. */
+export function decidedCount(lines: readonly QuoteLine[]): number {
+  return lines.filter((l) => l.decision !== null).length;
+}
+
+/** True when the copper figure understates the quote's real exposure. */
+export function copperMassIsPartial(lines: readonly QuoteLine[]): boolean {
+  return lines.some((l) => l.breakdown === null);
 }
 
 export function isExpired(quote: Quote, at: Date): boolean {
@@ -91,7 +146,23 @@ export interface DraftLine {
   readonly sourceSheet: string;
   readonly designation: string;
   readonly quantityMetres: Decimal;
-  readonly breakdown: CostBreakdown;
+  /** Null for a line priced by hand. */
+  readonly breakdown: CostBreakdown | null;
+  readonly decision: Decision | null;
+}
+
+/**
+ * The copper the whole job was resolved against.
+ *
+ * Passed in rather than read off the first line's breakdown. Line one may be
+ * hand-priced and carry no breakdown at all, and a quote whose stamped strike
+ * depended on the order its lines happened to arrive in would be a quote that
+ * cannot be reconstructed.
+ */
+export interface Strike {
+  readonly lme: Decimal;
+  readonly fx: Decimal;
+  readonly marginPercent: Decimal;
 }
 
 export interface AssembleRequest {
@@ -99,6 +170,7 @@ export interface AssembleRequest {
   readonly lines: readonly DraftLine[];
   /** Lines the engineer could not price. A quote cannot carry them. */
   readonly unpricedCount: number;
+  readonly strike: Strike;
   readonly pricedAt: Date;
   readonly validityDays?: number;
   readonly terms?: string | null;
@@ -148,19 +220,38 @@ export function assembleQuote(
     });
   }
 
-  const first = request.lines[0]!.breakdown;
+  const missing = request.lines.filter(
+    (l) => l.breakdown === null && l.decision?.unitRate == null,
+  );
+  if (missing.length > 0) {
+    return err({
+      code: 'UNPRICED_LINES',
+      message:
+        `${missing.length} line${missing.length === 1 ? '' : 's'} ` +
+        'reached assembly with neither a cost build-up nor a hand price. ' +
+        'That is a bug, not a decision — nothing is quoted from it.',
+    });
+  }
+
   const validityDays = request.validityDays ?? DEFAULT_VALIDITY_DAYS;
 
-  const lines = request.lines.map((l) => ({
-    requestText: l.requestText,
-    productCode: l.productCode,
-    sourceSheet: l.sourceSheet,
-    designation: l.designation,
-    quantityMetres: l.quantityMetres,
-    unitRate: l.breakdown.unitRate,
-    lineTotal: l.breakdown.lineTotal,
-    breakdown: l.breakdown,
-  }));
+  const lines = request.lines.map((l) => {
+    // A stated rate wins where there is one: a person looked at the engine's
+    // number and decided a different one was right. A decision without a rate
+    // is a choice of product, and the engine still does the arithmetic.
+    const unitRate = l.decision?.unitRate ?? l.breakdown!.unitRate;
+    return {
+      requestText: l.requestText,
+      productCode: l.productCode,
+      sourceSheet: l.sourceSheet,
+      designation: l.designation,
+      quantityMetres: l.quantityMetres,
+      unitRate,
+      lineTotal: omr(unitRate.times(l.quantityMetres)),
+      breakdown: l.breakdown,
+      decision: l.decision,
+    };
+  });
 
   return ok({
     customer: request.customer.trim(),
@@ -171,9 +262,9 @@ export function assembleQuote(
     ),
     // Every line in one quote is struck on the same rate resolution, so the
     // strike is a property of the quote rather than of each line.
-    lmeStruck: first.strike.lme,
-    fxStruck: first.strike.fx,
-    marginPercent: first.commercial.marginPercent,
+    lmeStruck: request.strike.lme,
+    fxStruck: request.strike.fx,
+    marginPercent: request.strike.marginPercent,
     lines,
     total: omr(sum(lines.map((l) => l.lineTotal))),
   });

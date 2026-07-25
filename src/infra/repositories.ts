@@ -5,7 +5,10 @@ import type {
   RateRepository,
 } from '@/modules/rates';
 import { DbProductRepository, DbRateRepository } from './db/repository';
+import { DbJobRepository } from './db/job-repository';
 import { DbQuoteRepository } from './db/quote-repository';
+import { DbSubstitutionRepository } from './db/substitution-repository';
+import { DbVocabularyRepository } from './db/vocabulary-repository';
 import { DbRateWriter } from './db/write-repository';
 import {
   MemoryAuditRepository,
@@ -64,6 +67,19 @@ export const rateWriter = new DbRateWriter();
  * configured.
  */
 export const quoteStore = new DbQuoteRepository();
+
+/**
+ * The three stores behind the human-in-the-loop path.
+ *
+ * Named separately from `repositories` for the same reason `quoteStore` is:
+ * they have no in-memory counterpart and should not pretend to. A learned word
+ * or a declared substitution that evaporates on restart is worse than a screen
+ * that says the database is not configured — the whole value of both is that
+ * somebody's decision persisted.
+ */
+export const jobStore = new DbJobRepository();
+export const vocabularyStore = new DbVocabularyRepository();
+export const substitutionStore = new DbSubstitutionRepository();
 
 /** True when the app is reading real data rather than the seeded stand-in. */
 export const isDatabaseBacked = !useMemory;

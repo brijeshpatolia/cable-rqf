@@ -1,6 +1,11 @@
 import * as XLSX from 'xlsx';
 import { PRECISION } from '@/core/format';
-import { copperMassOf, totalOf, type Quote } from '@/modules/quoting';
+import {
+  copperMassIsPartial,
+  copperMassOf,
+  totalOf,
+  type Quote,
+} from '@/modules/quoting';
 
 /**
  * The quote, as a workbook.
@@ -63,7 +68,12 @@ export function renderQuoteXlsx(quote: Quote): Uint8Array {
     // else still says what copper it was built on.
     ['Struck on LME (USD/t)', cell(quote.lmeStruck, PRECISION.lme)],
     ['FX (OMR/USD)', cell(quote.fxStruck, PRECISION.fx)],
-    ['Copper content (kg)', cell(copperMassOf(quote.lines), 1)],
+    [
+      copperMassIsPartial(quote.lines)
+        ? 'Copper content (kg, at least — excludes lines priced to order)'
+        : 'Copper content (kg)',
+      cell(copperMassOf(quote.lines), 1),
+    ],
     [],
     // The same note the PDF carries: the amount is the offer, and it is built
     // on the unrounded rate.
@@ -93,6 +103,21 @@ export function renderQuoteXlsx(quote: Quote): Uint8Array {
   for (const line of quote.lines) {
     const n = line.position + 1;
     const b = line.breakdown;
+
+    // A hand-priced line has no build-up, so it gets the one row that is true
+    // of it: the rate, who set it, and why. Padding it out with zeros would
+    // make the auditable sheet the least honest thing in the workbook.
+    if (b === null) {
+      buildup.push(
+        [
+          n, line.productCode || '—', 'Hand-priced', line.decision?.reason ?? '',
+          null, null, cell(line.unitRate, PRECISION.quotedRate), null,
+          line.decision?.by ?? '', line.decision?.at ?? null,
+        ],
+        [],
+      );
+      continue;
+    }
 
     for (const m of b.materials) {
       buildup.push([

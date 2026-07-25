@@ -41,13 +41,39 @@ function draft(index = 0, qty = '12000'): DraftLine {
     designation: product.designation,
     quantityMetres: dec(qty),
     breakdown: result.value,
+    decision: null,
   };
 }
+
+/** A line nobody costed, priced by an engineer's judgement alone. */
+function handPriced(rate = '7.5', qty = '4000'): DraftLine {
+  return {
+    requestText: '3C x 50mm2 aluminium XLPE SWA PVC 1kV',
+    productCode: '',
+    sourceSheet: '',
+    designation: '3C x 50mm2 aluminium XLPE SWA PVC 1kV',
+    quantityMetres: dec(qty),
+    breakdown: null,
+    decision: {
+      unitRate: dec(rate),
+      reason: 'Quoted from the 2025 aluminium job, plus 4% on copper drawing.',
+      by: ACTOR.name,
+      at: AT,
+    },
+  };
+}
+
+const STRIKE = {
+  lme: SOURCE_LME,
+  fx: dec('0.3845'),
+  marginPercent: dec('15'),
+};
 
 const request = (over: Partial<Parameters<typeof assembleQuote>[0]> = {}) => ({
   customer: 'Muscat Electricals LLC',
   lines: [draft(0), draft(1)],
   unpricedCount: 0,
+  strike: STRIKE,
   pricedAt: AT,
   actor: ACTOR,
   ...over,
@@ -95,6 +121,95 @@ describe('assembleQuote', () => {
     expect(days).toBe(DEFAULT_VALIDITY_DAYS);
   });
 
+  it('carries a hand-priced line, with no invented build-up', () => {
+    const result = assembleQuote(request({ lines: [draft(0), handPriced()] }));
+    if (!result.ok) throw new Error(result.error.message);
+
+    const manual = result.value.lines[1]!;
+    // The absence is the point: no zero-filled tree pretending to be a costing.
+    expect(manual.breakdown).toBeNull();
+    expect(manual.decision?.reason).toContain('aluminium job');
+    expect(manual.unitRate.toString()).toBe('7.5');
+    expect(manual.lineTotal.toFixed(2)).toBe('30000.00');
+  });
+
+  it('records a chosen product as a decision, with no rate of its own', () => {
+    // The other half of the M marker: an engineer who named the product made a
+    // decision too, and the quote has to remember that after the job closes.
+    const chosen = draft(0);
+    const result = assembleQuote(
+      request({
+        lines: [
+          {
+            ...chosen,
+            decision: {
+              unitRate: null,
+              reason: 'Customer confirmed 3-core is acceptable.',
+              by: ACTOR.name,
+              at: AT,
+            },
+          },
+        ],
+      }),
+    );
+    if (!result.ok) throw new Error(result.error.message);
+
+    const line = result.value.lines[0]!;
+    expect(line.decision).not.toBeNull();
+    expect(line.decision?.unitRate).toBeNull();
+    // The engine's own number stands, because nobody replaced it.
+    expect(line.unitRate.toString()).toBe(chosen.breakdown!.unitRate.toString());
+  });
+
+  it('lets an override replace the engine on a line that was costed', () => {
+    const costed = draft(0);
+    const engineRate = costed.breakdown!.unitRate;
+    const result = assembleQuote(
+      request({
+        lines: [
+          {
+            ...costed,
+            decision: {
+              unitRate: engineRate.plus(1),
+              reason: 'Matching a competitor on a strategic account.',
+              by: ACTOR.name,
+              at: AT,
+            },
+          },
+        ],
+      }),
+    );
+    if (!result.ok) throw new Error(result.error.message);
+
+    const line = result.value.lines[0]!;
+    // The build-up survives — it still explains the *cost*. The override
+    // explains the *price*, and the two are different questions.
+    expect(line.breakdown).not.toBeNull();
+    expect(line.unitRate.toString()).toBe(engineRate.plus(1).toString());
+    expect(line.lineTotal.toFixed(6)).toBe(
+      engineRate.plus(1).times(dec('12000')).toFixed(6),
+    );
+  });
+
+  it('refuses a line carrying neither a build-up nor a hand price', () => {
+    const result = assembleQuote(
+      request({
+        lines: [{ ...draft(0), breakdown: null, decision: null }],
+      }),
+    );
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.code).toBe('UNPRICED_LINES');
+  });
+
+  it('stamps the strike even when the first line was priced by hand', () => {
+    // The bug this prevents: reading the strike off lines[0].breakdown makes a
+    // quote's provenance depend on the order its lines arrived in.
+    const result = assembleQuote(request({ lines: [handPriced(), draft(0)] }));
+    if (!result.ok) throw new Error(result.error.message);
+    expect(result.value.lmeStruck.toString()).toBe(SOURCE_LME.toString());
+    expect(result.value.marginPercent.toString()).toBe('15');
+  });
+
   it('totals to the sum of its lines, without rounding on the way', () => {
     const result = assembleQuote(request());
     if (!result.ok) throw new Error('expected ok');
@@ -120,7 +235,7 @@ describe('a quote as a promise', () => {
       createdAt: AT,
       approvedAt: AT,
       lines: result.value.lines.map((l, i) => ({ ...l, position: i })),
-    };
+    } satisfies Parameters<typeof isExpired>[0];
 
     expect(isExpired(quote, AT)).toBe(false);
     expect(isExpired(quote, new Date('2026-09-01T00:00:00Z'))).toBe(true);

@@ -59,8 +59,12 @@ model AppUser {
   disabledAt DateTime? @map("disabled_at") @db.Timestamptz(6)
   createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  auditEvents AuditEvent[]
-  quotes      Quote[]
+  auditEvents       AuditEvent[]
+  quotes            Quote[]
+  jobs              Job[]
+  jobDecisions      JobLine[]
+  vocabularyTerms   VocabularyTerm[]
+  substitutionRules SubstitutionRule[]
 
   @@map("app_user")
 }
@@ -302,6 +306,7 @@ model Quote {
   approvedAt  DateTime? @map("approved_at") @db.Timestamptz(6)
 
   lines QuoteLine[]
+  job   Job?
 
   @@index([status, createdAt(sort: Desc)])
   @@index([customer])
@@ -329,9 +334,214 @@ model QuoteLine {
 
   /// The complete CostBreakdown, frozen at approval. Every material, every
   /// machine stage, every rate row it drew from.
-  costSnapshot Json @map("cost_snapshot")
+  ///
+  /// **Null when the line was priced by hand.** Deliberately not a zero-filled
+  /// tree: a line nobody costed has no materials, no machine time and no
+  /// copper mass, and inventing those would put false claims on an auditable
+  /// document. The absence, plus the override below, is the truth.
+  costSnapshot Json? @map("cost_snapshot")
+
+  /// Set when a person, not the app, settled this line.
+  ///
+  /// A rate means they replaced the price outright; a decision with no rate
+  /// means they named the product and left the costing to the engine. Both are
+  /// human decisions, and the spec requires that fact to persist onto the
+  /// quote — so the mono `M` marker on a quote line is a property of the
+  /// record, not a guess a screen makes.
+  ///
+  /// The reason is not optional in practice: a CHECK constraint refuses a
+  /// decision without one.
+  overrideRate   Decimal?  @map("override_rate") @db.Decimal
+  decisionReason String?   @map("decision_reason")
+  decisionBy     String?   @map("decision_by")
+  decisionAt     DateTime? @map("decision_at") @db.Timestamptz(6)
 
   @@unique([quoteId, position])
   @@index([quoteId])
   @@map("quote_line")
+}
+
+// ─── Jobs ────────────────────────────────────────────────────────────────
+//
+// A job is an RFQ under review. It holds the customer's text and *the
+// decisions a human made about it* — not the prices. Prices are recomputed on
+// every render from the rates in force, so a draft job left open over a copper
+// move reprices rather than going stale, and freezing happens exactly once, at
+// approval, into the quote.
+//
+// That split is the reason a decision is worth storing at all: "price line 4
+// as product X, because the customer confirmed it" stays true across a
+// repricing. "Line 4 is 6.030" does not.
+
+enum JobStatus {
+  /// Being reviewed. Lines still open, decisions still being made.
+  review
+  /// Turned into a quote. The job is now history.
+  approved
+  /// Closed without quoting.
+  abandoned
+}
+
+enum JobSource {
+  paste
+  upload
+  email
+}
+
+model Job {
+  id String @id @default(uuid()) @db.Uuid
+
+  /// Human-facing, sequential per year: J-2026-0042.
+  reference String    @unique
+  status    JobStatus @default(review)
+
+  customer String?
+  /// Free text destined for the quote if this job is approved.
+  terms    String?
+
+  source     JobSource @default(paste)
+  /// Filename, mail subject, or "pasted" — where the text came from.
+  sourceName String?   @map("source_name")
+
+  /// The RFQ exactly as received. Re-parsed on every render, never mutated by
+  /// the app — an engineer's corrections live on the lines, not in the text.
+  rawText String @map("raw_text")
+
+  createdById String?  @map("created_by_id") @db.Uuid
+  createdBy   AppUser? @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  /// `@default(now())` as well as `@updatedAt`: the latter is applied by the
+  /// client, so without it any statement that does not go through Prisma —
+  /// a migration backfill, a psql fix, the seed — fails on a NOT NULL.
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  /// Set when the job became a quote.
+  quoteId String? @unique @map("quote_id") @db.Uuid
+  quote   Quote?  @relation(fields: [quoteId], references: [id], onDelete: SetNull)
+
+  lines JobLine[]
+
+  @@index([status, createdAt(sort: Desc)])
+  @@index([customer])
+  @@map("job")
+}
+
+/// One decision, about one line, by one person.
+///
+/// A row exists only where a human has actually decided something — a job with
+/// no open lines has no `job_line` rows at all. The position is the line's
+/// index in `raw_text`, which is why the text is immutable: renumbering it
+/// would silently reassign every decision.
+model JobLine {
+  id    String @id @default(uuid()) @db.Uuid
+  jobId String @map("job_id") @db.Uuid
+  job   Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  position Int
+
+  /// A price set by hand. Requires `decisionReason`.
+  overrideRate Decimal? @map("override_rate") @db.Decimal
+
+  /// "Price this line as product X." Requires `decisionReason`.
+  chosenProductCode String? @map("chosen_product_code")
+  chosenSourceSheet String? @map("chosen_source_sheet")
+
+  /// Why. Never optional in practice — the CHECK constraint in the migration
+  /// refuses a decision without one.
+  decisionReason String? @map("decision_reason")
+
+  decidedById String?  @map("decided_by_id") @db.Uuid
+  decidedBy   AppUser? @relation(fields: [decidedById], references: [id], onDelete: Restrict)
+  decidedAt   DateTime? @map("decided_at") @db.Timestamptz(6)
+
+  @@unique([jobId, position])
+  @@index([jobId])
+  @@map("job_line")
+}
+
+// ─── Vocabulary ──────────────────────────────────────────────────────────
+//
+// The terms shipped with the app live in code, because they are exactly the
+// canonical values the imported library uses and changing one would break
+// matching. Everything *learned* lives here. The spec's promise is that the
+// app "stops asking after the first months", and a constant compiled into the
+// bundle cannot keep it.
+
+model VocabularyTerm {
+  id String @id @default(uuid()) @db.Uuid
+
+  /// Nuhas's own term, as held in the product library.
+  canonical String
+  /// conductor | insulation | screen | armour | sheath | voltage | standard
+  axis      String
+
+  createdById String?  @map("created_by_id") @db.Uuid
+  createdBy   AppUser? @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  synonyms VocabularySynonym[]
+
+  /// Redundant with the primary key, and required: it is the target of the
+  /// composite foreign key that pins each synonym's axis to its term's.
+  @@unique([id, axis])
+  @@unique([axis, canonical])
+  @@map("vocabulary_term")
+}
+
+model VocabularySynonym {
+  id     String         @id @default(uuid()) @db.Uuid
+  termId String         @map("term_id") @db.Uuid
+  term   VocabularyTerm @relation(fields: [termId], references: [id], onDelete: Cascade)
+
+  /// Denormalised from the term, because uniqueness has to be enforced per
+  /// axis and a Postgres index expression cannot reach into another table. A
+  /// composite foreign key on (term_id, axis) in the migration makes it
+  /// impossible for this to disagree with the term it belongs to.
+  axis String
+
+  /// Folded on write: lower-cased, punctuation stripped, whitespace collapsed.
+  phrase String
+
+  /// How often a customer has written it, and when it was last seen. This is
+  /// what makes "learned this month" a measurement rather than an anecdote.
+  timesSeen  Int       @default(0) @map("times_seen")
+  lastSeenAt DateTime? @map("last_seen_at") @db.Timestamptz(6)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  /// One phrase means one thing on one axis. Without this, teaching the app
+  /// that "XLPO" is a sheath and separately that it is an insulation would
+  /// make every line containing it ambiguous, and the parser would silently
+  /// pick whichever row came back first.
+  @@unique([axis, phrase])
+  @@index([termId])
+  @@map("vocabulary_synonym")
+}
+
+/// A substitution the Rate Owner has declared safe.
+///
+/// Ships empty. A permissive allowlist is how wrong prices get out, so each
+/// row is a judgement someone made and signed for, and retiring one closes it
+/// rather than deleting it — a quote struck on a rule has to stay explainable
+/// after the rule is withdrawn.
+model SubstitutionRule {
+  id String @id @default(uuid()) @db.Uuid
+
+  axis     String
+  /// The term the library holds.
+  fromTerm String @map("from_term")
+  /// The term a customer asked for.
+  toTerm   String @map("to_term")
+
+  /// Why this substitution is safe. Shown on every line priced through it.
+  rationale String
+
+  createdById String?  @map("created_by_id") @db.Uuid
+  createdBy   AppUser? @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  /// Null means in force.
+  retiredAt   DateTime? @map("retired_at") @db.Timestamptz(6)
+
+  @@index([axis])
+  @@map("substitution_rule")
 }

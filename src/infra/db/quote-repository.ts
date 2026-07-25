@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client';
+import { Prisma, type PrismaClient } from '@prisma/client';
 import { dec } from '@/core/decimal';
 import { omr, usdPerTonne } from '@/core/units';
 import type { Actor } from '@/modules/auth';
@@ -51,6 +51,10 @@ interface LineRow {
   readonly unit_rate: string;
   readonly line_total: string;
   readonly cost_snapshot: unknown;
+  readonly override_rate: string | null;
+  readonly decision_reason: string | null;
+  readonly decision_by: string | null;
+  readonly decision_at: Date | null;
 }
 
 interface OpenQuoteRow {
@@ -163,7 +167,21 @@ function hydrate(q: QuoteRow, lines: readonly LineRow[]): Quote {
           quantityMetres: dec(l.quantity_metres),
           unitRate: dec(l.unit_rate),
           lineTotal: omr(l.line_total),
-          breakdown: reviveBreakdown(l.cost_snapshot),
+          // A null snapshot is not a missing one — it is a line an engineer
+          // priced by hand, and the override beside it is the explanation.
+          breakdown:
+            l.cost_snapshot === null ? null : reviveBreakdown(l.cost_snapshot),
+          // A decision with no rate is a product an engineer chose; a decision
+          // with one is a price they set. Both are people, not the app.
+          decision:
+            l.decision_at === null
+              ? null
+              : {
+                  unitRate: l.override_rate === null ? null : dec(l.override_rate),
+                  reason: l.decision_reason ?? '',
+                  by: l.decision_by ?? '',
+                  at: l.decision_at,
+                },
         }),
       ),
   };
@@ -180,7 +198,8 @@ const SELECT_LINES = `
   SELECT quote_id::text, position, request_text, product_code, source_sheet,
          designation, quantity_metres::text AS quantity_metres,
          unit_rate::text AS unit_rate, line_total::text AS line_total,
-         cost_snapshot
+         cost_snapshot, override_rate::text AS override_rate,
+         decision_reason, decision_by, decision_at
     FROM quote_line`;
 
 export class DbQuoteRepository implements QuoteRepository {
@@ -267,7 +286,7 @@ export class DbQuoteRepository implements QuoteRepository {
   async approve(
     assembled: AssembledQuote,
     actor: Actor,
-  ): Promise<{ readonly number: string }> {
+  ): Promise<{ readonly number: string; readonly id: string }> {
     return this.db.$transaction(async (tx) => {
       const year = assembled.pricedAt.getUTCFullYear();
       const counted = await tx.$queryRaw<{ count: bigint }[]>`
@@ -302,9 +321,21 @@ export class DbQuoteRepository implements QuoteRepository {
           quantityMetres: l.quantityMetres.toString(),
           unitRate: l.unitRate.toString(),
           lineTotal: l.lineTotal.toString(),
-          costSnapshot: JSON.parse(JSON.stringify(l.breakdown)) as object,
+          // `Prisma.DbNull`, not `null`: for a nullable Json column Prisma
+          // distinguishes "SQL NULL" from "the JSON value null", and plain
+          // null is not accepted for either.
+          costSnapshot:
+            l.breakdown === null
+              ? Prisma.DbNull
+              : (JSON.parse(JSON.stringify(l.breakdown)) as Prisma.InputJsonValue),
+          overrideRate: l.decision?.unitRate?.toString() ?? null,
+          decisionReason: l.decision?.reason ?? null,
+          decisionBy: l.decision?.by ?? null,
+          decisionAt: l.decision?.at ?? null,
         })),
       });
+
+      const decided = assembled.lines.filter((l) => l.decision !== null).length;
 
       await tx.auditEvent.create({
         data: {
@@ -318,11 +349,12 @@ export class DbQuoteRepository implements QuoteRepository {
           // "what copper was this approved on" without opening the quote.
           reason:
             `${assembled.lines.length} lines, ${assembled.total.toFixed(2)} OMR, ` +
-            `struck on ${assembled.lmeStruck.toString()} USD/t`,
+            `struck on ${assembled.lmeStruck.toString()} USD/t` +
+            (decided === 0 ? '' : `, ${decided} settled by hand`),
         },
       });
 
-      return { number };
+      return { number, id: created.id };
     });
   }
 }

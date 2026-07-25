@@ -6,6 +6,7 @@ export {
   MATCH_AXES,
   SUBSTITUTION_RULES,
   axisLabel,
+  differencesBetween,
   isPriceable,
   matchLine,
   missingFields,
@@ -19,9 +20,33 @@ export type {
   SubstitutionRule,
   Tier,
 } from './match';
-export { byReviewOrder, isHeld, isPriced, reviewJob } from './review';
-export type { Job, ReviewLine, ReviewOptions } from './review';
+export {
+  byReviewOrder,
+  hasBreakdown,
+  isHeld,
+  isManual,
+  isPriced,
+  pricedValueOf,
+  reviewJob,
+} from './review';
+export type {
+  Job,
+  LineDecision,
+  LineStatus,
+  Override,
+  ProductChoice,
+  ReviewLine,
+  ReviewOptions,
+} from './review';
 export { deriveBounds, validate } from './validate';
 export type { Bounds, CheckCode, Range, Violation } from './validate';
-export { VOCABULARY, canonicalise, fold, phrasesFor } from './vocabulary';
-export type { Axis, Term, UnknownTerm } from './vocabulary';
+export {
+  BUILT_IN_DICTIONARY,
+  BUILT_IN_TERMS,
+  buildDictionary,
+  canonicalise,
+  fold,
+  mergeTerms,
+  phrasesFor,
+} from './vocabulary';
+export type { Axis, Dictionary, Term, UnknownTerm } from './vocabulary';

@@ -40,6 +40,22 @@ export function StatusDot({ tier, withLabel = true }: StatusDotProps) {
       ) : (
         <span className="sr-only">{def.label}</span>
       )}
+      {def.marker === undefined ? null : (
+        <span
+          className="numeric"
+          title="Decided by a person, not by the app"
+          style={{
+            color: def.colorVar,
+            fontSize: 'var(--text-micro)',
+            border: `1px solid ${def.colorVar}`,
+            borderRadius: 2,
+            padding: '0 3px',
+            lineHeight: '14px',
+          }}
+        >
+          {def.marker}
+        </span>
+      )}
     </span>
   );
 }
