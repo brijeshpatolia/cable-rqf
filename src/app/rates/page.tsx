@@ -10,7 +10,8 @@ import { copperMetalValue } from '@/modules/costing';
 import { sweep } from '@/modules/pricewatch';
 import type { EffectiveRow } from '@/modules/rates';
 import { CopperBlock } from '@/ui/components/CopperBlock';
-import { DataTable, type Column } from '@/ui/components/DataTable';
+import { DataTable } from '@/ui/components/DataTable';
+import { RateTable, type RateRowView } from '@/ui/components/RateTable';
 import { NumericCell } from '@/ui/components/NumericCell';
 import { Panel } from '@/ui/components/Panel';
 import type { Decimal } from '@/core/decimal';
@@ -48,18 +49,31 @@ export default async function RateDeskPage() {
   const mayEdit = can(actor, 'rate.edit');
 
   /*
-    The whole master, for the editor's picker.
+    The whole master, for the editor's picker and for the rate tables' labels.
 
     Previously the Rate Desk offered an edit box for one arbitrary "sample"
     code and one copper code — which meant 165 of the 167 rows were read-only,
     and adding a code was a spreadsheet job. That is the gap Sudhir's second
     finding names.
-  */
-  const master: readonly MasterRow[] = mayEdit
-    ? [...(await rateWriter.master())].sort((a, b) => a.code.localeCompare(b.code))
-    : [];
 
-  const inForce = (r: EffectiveRow<Decimal>) => r.validTo === null;
+    Read for everyone, not only the Rate Owner: a table of bare codes is
+    unreadable to anyone who has not memorised the master, and the description
+    is what makes a row findable by meaning rather than by scrolling.
+  */
+  const master: readonly MasterRow[] = [...(await rateWriter.master())].sort((a, b) =>
+    a.code.localeCompare(b.code),
+  );
+
+  const describes = new Map(master.map((m) => [m.code, m.description]));
+
+  const view = (r: EffectiveRow<Decimal>): RateRowView => ({
+    rateId: r.rateId,
+    key: r.key,
+    description: describes.get(r.key) ?? '',
+    value: r.value.toString(),
+    validFrom: r.validFrom.toISOString(),
+    validTo: r.validTo === null ? null : r.validTo.toISOString(),
+  });
 
   return (
     <div style={{ padding: 24 }} className="flex flex-col gap-6">
@@ -118,27 +132,19 @@ export default async function RateDeskPage() {
 
       <div className="flex gap-6">
         <div className="min-w-0 flex-1 flex flex-col gap-6">
-          <Panel
-            title="Material rates"
-            flush
-            aside={<Aside>{materialRows.filter(inForce).length} in force</Aside>}
-          >
-            <DataTable
-              columns={rateColumns('OMR/kg')}
-              rows={[...materialRows].sort(sortRows)}
-              rowKey={(r) => r.rateId}
+          {/* No count in the panel header: the table's own toolbar carries it,
+              and two numbers saying the same thing is just noise. */}
+          <Panel title="Material rates" flush>
+            <RateTable
+              unit="OMR/kg"
+              rows={[...materialRows].sort(sortRows).map(view)}
             />
           </Panel>
 
-          <Panel
-            title="Machine rates"
-            flush
-            aside={<Aside>{machineRows.filter(inForce).length} in force</Aside>}
-          >
-            <DataTable
-              columns={rateColumns('OMR/h')}
-              rows={[...machineRows].sort(sortRows)}
-              rowKey={(r) => r.rateId}
+          <Panel title="Machine rates" flush>
+            <RateTable
+              unit="OMR/h"
+              rows={[...machineRows].sort(sortRows).map(view)}
             />
           </Panel>
         </div>
@@ -282,86 +288,6 @@ export default async function RateDeskPage() {
   );
 }
 
-function rateColumns(unit: string): readonly Column<EffectiveRow<Decimal>>[] {
-  return [
-    {
-      key: 'key',
-      header: 'Rate',
-      render: (r) => (
-        <span className="numeric" style={{ textAlign: 'left', display: 'block' }}>
-          {r.key}
-        </span>
-      ),
-    },
-    {
-      key: 'value',
-      header: unit,
-      align: 'right',
-      width: 110,
-      render: (r) => <NumericCell value={r.value} kind="unitRate" />,
-    },
-    {
-      key: 'from',
-      header: 'Effective from',
-      width: 130,
-      render: (r) => (
-        <span
-          className="numeric"
-          style={{ color: 'var(--color-ink-secondary)', textAlign: 'left', display: 'block' }}
-        >
-          {formatDate(r.validFrom)}
-        </span>
-      ),
-    },
-    {
-      key: 'to',
-      header: 'Until',
-      width: 130,
-      render: (r) =>
-        r.validTo === null ? (
-          // Not a match tier, so it carries no status colour (DESIGN_SYSTEM.md rule 2).
-          <span style={{ color: 'var(--color-ink-secondary)' }}>In force</span>
-        ) : (
-          <span
-            className="numeric"
-            style={{
-              color: 'var(--color-ink-tertiary)',
-              textAlign: 'left',
-              display: 'block',
-            }}
-          >
-            {formatDate(r.validTo)}
-          </span>
-        ),
-    },
-    {
-      key: 'id',
-      header: 'Row',
-      align: 'right',
-      width: 92,
-      render: (r) => (
-        <span
-          className="numeric"
-          style={{
-            color: 'var(--color-ink-tertiary)',
-            fontSize: 'var(--text-micro)',
-          }}
-        >
-          {shortId(r.rateId)}
-        </span>
-      ),
-    },
-  ];
-}
-
-/**
- * Enough of the row's id to tie a rate to its audit entry, without a 36-
- * character uuid wrapping over four lines. The full value is one query away.
- */
-function shortId(id: string): string {
-  return id.length > 12 ? `#${id.slice(0, 8)}` : `#${id}`;
-}
-
 /** Closed rows sink below the ones in force; keys stay together. */
 function sortRows(a: EffectiveRow<Decimal>, b: EffectiveRow<Decimal>): number {
   if (a.key !== b.key) return a.key.localeCompare(b.key);
@@ -395,17 +321,6 @@ function Count({ n, status = false }: { readonly n: number; readonly status?: bo
       }}
     >
       {n}
-    </span>
-  );
-}
-
-function Aside({ children }: { readonly children: React.ReactNode }) {
-  return (
-    <span
-      className="numeric"
-      style={{ color: 'var(--color-ink-tertiary)', fontSize: 'var(--text-micro)' }}
-    >
-      {children}
     </span>
   );
 }

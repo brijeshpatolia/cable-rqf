@@ -15,6 +15,12 @@ interface DataTableProps<T> {
   readonly rowKey: (row: T) => string;
   readonly href?: (row: T) => string;
   readonly empty?: string;
+  /**
+   * Scroll the rows inside the panel past this height, instead of letting the
+   * page grow with the row count. The header stays put, because it is sticky
+   * to whichever box scrolls.
+   */
+  readonly maxHeight?: number;
 }
 
 /**
@@ -31,6 +37,7 @@ export function DataTable<T>({
   rowKey,
   href,
   empty = 'Nothing here.',
+  maxHeight,
 }: DataTableProps<T>) {
   if (rows.length === 0) {
     return (
@@ -47,7 +54,12 @@ export function DataTable<T>({
   }
 
   return (
-    <div style={{ overflowX: 'auto' }}>
+    <div
+      style={{
+        overflowX: 'auto',
+        ...(maxHeight === undefined ? {} : { maxHeight, overflowY: 'auto' }),
+      }}
+    >
       <table className="w-full" style={{ borderCollapse: 'collapse' }}>
         <thead>
           <tr>
