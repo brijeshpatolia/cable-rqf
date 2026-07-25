@@ -264,7 +264,7 @@ for (const r of productRows) {
       machineName: str(o['Machine_Code']),
       sequence: i + 1,
       hoursPerKm: required(o['Machine hours'], `hours for ${code}`),
-      cores: Number(num(o['Cores']) ?? 1),
+      cores: num(o['Cores']) ?? '1',
     })),
     overheads: overheads
       .filter((o) => str(o['Overhead line']) !== TOOLING_OVERHEAD_LINE)

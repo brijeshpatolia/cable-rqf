@@ -1,16 +1,18 @@
 import { formatDate, formatNumber } from '@/core/format';
-import { repositories } from '@/infra/memory/repository';
-import { NOW } from '@/infra/memory/seed';
+import { repositories } from '@/infra/repositories';
+import { now } from '@/infra/clock';
 import {
   DEFAULT_THRESHOLD_PERCENT,
   driftHeadline,
   sweep,
   type DriftResult,
-} from '@/modules/pricewatch/drift';
+} from '@/modules/pricewatch';
 import { DataTable } from '@/ui/components/DataTable';
 import { NumericCell } from '@/ui/components/NumericCell';
 import { Panel } from '@/ui/components/Panel';
 import { StatusDot } from '@/ui/components/StatusDot';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata = { title: 'Price Watch — Cable Quoting' };
 
@@ -22,13 +24,14 @@ export const metadata = { title: 'Price Watch — Cable Quoting' };
  * number is coloured — it's a delta, not a cost.
  */
 export default async function PriceWatchPage() {
+  const asOf = now();
   const { quotes, rates } = repositories;
   const [open, rateSet] = await Promise.all([
     quotes.open(),
-    rates.resolveAt(NOW),
+    rates.resolveAt(asOf),
   ]);
 
-  const s = sweep(open, rateSet.copper.lme, NOW);
+  const s = sweep(open, rateSet.copper.lme, asOf);
   const headline = driftHeadline(s);
 
   return (
@@ -109,12 +112,20 @@ export default async function PriceWatchPage() {
               header: 'Quote',
               width: 140,
               render: (r: DriftResult) => (
-                <span
+                // A flagged quote is one someone is about to act on, so the
+                // number goes straight to the quote rather than making them
+                // search for it.
+                <a
+                  href={`/quotes/${r.quote.number}`}
                   className="numeric"
-                  style={{ textAlign: 'left', display: 'block' }}
+                  style={{
+                    textAlign: 'left',
+                    display: 'block',
+                    color: 'var(--color-copper)',
+                  }}
                 >
-                  {r.quote.quoteId}
-                </span>
+                  {r.quote.number}
+                </a>
               ),
             },
             {
@@ -196,7 +207,7 @@ export default async function PriceWatchPage() {
             },
           ]}
           rows={s.results}
-          rowKey={(r) => r.quote.quoteId}
+          rowKey={(r) => r.quote.number}
           empty="No open quotes."
         />
       </Panel>

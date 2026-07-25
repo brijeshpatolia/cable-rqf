@@ -1,11 +1,13 @@
 import { metres } from '@/core/units';
 import { SOURCE_TERMS } from '@/infra/data';
-import { repositories } from '@/infra/memory/repository';
-import { NOW } from '@/infra/memory/seed';
-import { computeCost } from '@/modules/costing/engine';
+import { repositories } from '@/infra/repositories';
+import { now } from '@/infra/clock';
+import { computeCost } from '@/modules/costing';
 import { DataTable } from '@/ui/components/DataTable';
 import { NumericCell } from '@/ui/components/NumericCell';
 import { Panel } from '@/ui/components/Panel';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata = { title: 'Catalogue — Cable Quoting' };
 
@@ -24,10 +26,11 @@ const TERMS = SOURCE_TERMS;
  * this app, so this table is always current by construction.
  */
 export default async function CataloguePage() {
+  const asOf = now();
   const { products, rates } = repositories;
   const [list, rateSet] = await Promise.all([
     products.list(),
-    rates.resolveAt(NOW),
+    rates.resolveAt(asOf),
   ]);
 
   const priced = list.map((product) => {
@@ -51,6 +54,13 @@ export default async function CataloguePage() {
         >
           Catalogue
         </h1>
+        <a
+          href="/catalogue/new"
+          className="mt-2 inline-block"
+          style={{ color: 'var(--color-copper)', fontSize: 'var(--text-micro)' }}
+        >
+          Add a new item →
+        </a>
         <p className="mt-2" style={{ color: 'var(--color-ink-secondary)' }}>
           {list.length} costed products, priced on today&rsquo;s copper. Nothing
           here is a stored price — every figure is rebuilt from the rate tables
@@ -174,7 +184,10 @@ export default async function CataloguePage() {
             },
           ]}
           rows={priced}
-          rowKey={({ product }) => product.id}
+          // The library's natural key is (code, source sheet): two products
+          // genuinely share the item code `P07CS3M2XLVWVKNN`. Keyed on the code
+          // alone, React was free to drop or duplicate a catalogue row.
+          rowKey={({ product }) => `${product.id}\u0000${product.sourceSheet ?? ''}`}
           href={({ product }) => `/catalogue/${product.id}`}
         />
       </Panel>

@@ -185,7 +185,14 @@ const STANDARD: readonly Term[] = [
   },
 ];
 
-export const VOCABULARY: readonly Term[] = [
+/**
+ * The terms that ship with the app.
+ *
+ * These are exactly the canonical values present in the imported library plus
+ * the wordings already seen for them. Everything learned after go-live is
+ * stored, not compiled — see `buildDictionary`.
+ */
+export const BUILT_IN_TERMS: readonly Term[] = [
   ...CONDUCTOR,
   ...INSULATION,
   ...SCREEN,
@@ -205,39 +212,101 @@ export function fold(text: string): string {
     .trim();
 }
 
-const INDEX: ReadonlyMap<string, readonly Term[]> = (() => {
-  const map = new Map<string, Term[]>();
-  for (const term of VOCABULARY) {
+/**
+ * A dictionary the parser can consult.
+ *
+ * Built rather than imported, because the vocabulary has to grow: the spec's
+ * promise is that the app "stops asking after the first months", and it cannot
+ * keep that promise from a constant compiled into the bundle. A dictionary is
+ * the built-in terms plus everything the Rate Owner has taught it since, with
+ * the index computed once per build rather than once per line.
+ */
+export interface Dictionary {
+  readonly terms: readonly Term[];
+  /**
+   * The canonical term for a phrase on a given axis, or `undefined`.
+   *
+   * Axis-scoped because the same word means different things in different
+   * positions: "PVC" is an insulation and a sheath, and which one it is
+   * depends on where it appeared in the line, not on the word.
+   */
+  canonicalise(phrase: string, axis: Axis): string | undefined;
+  /** Every phrase recognised for an axis, longest first. */
+  phrasesFor(axis: Axis): readonly string[];
+}
+
+export function buildDictionary(terms: readonly Term[]): Dictionary {
+  const index = new Map<string, Term[]>();
+  for (const term of terms) {
     for (const synonym of [term.canonical, ...term.synonyms]) {
       const k = fold(synonym);
-      const list = map.get(k);
-      if (list === undefined) map.set(k, [term]);
+      const list = index.get(k);
+      if (list === undefined) index.set(k, [term]);
       else if (!list.includes(term)) list.push(term);
     }
   }
-  return map;
-})();
 
-/**
- * The canonical term for a phrase on a given axis, or `undefined`.
- *
- * Axis-scoped because the same word means different things in different
- * positions: "PVC" is an insulation and a sheath, and which one it is depends
- * on where it appeared in the line, not on the word.
- */
-export function canonicalise(phrase: string, axis: Axis): string | undefined {
-  const matches = INDEX.get(fold(phrase));
-  return matches?.find((t) => t.axis === axis)?.canonical;
+  const phrases = new Map<Axis, readonly string[]>();
+  const phrasesFor = (axis: Axis): readonly string[] => {
+    const cached = phrases.get(axis);
+    if (cached !== undefined) return cached;
+    const out = [
+      ...new Set(
+        terms
+          .filter((t) => t.axis === axis)
+          .flatMap((t) => [fold(t.canonical), ...t.synonyms.map(fold)]),
+      ),
+    ].sort((a, b) => b.length - a.length);
+    phrases.set(axis, out);
+    return out;
+  };
+
+  return {
+    terms,
+    canonicalise: (phrase, axis) =>
+      index.get(fold(phrase))?.find((t) => t.axis === axis)?.canonical,
+    phrasesFor,
+  };
 }
 
-/** Every phrase the dictionary recognises for an axis, longest first. */
-export function phrasesFor(axis: Axis): readonly string[] {
-  const out: string[] = [];
-  for (const term of VOCABULARY) {
-    if (term.axis !== axis) continue;
-    out.push(fold(term.canonical), ...term.synonyms.map(fold));
+/**
+ * Merges learned terms onto the built-ins.
+ *
+ * A learned synonym for an existing canonical joins that term rather than
+ * creating a second entry — otherwise the same cable would have two
+ * dictionary rows and the Rate Owner would have to maintain both.
+ */
+export function mergeTerms(
+  base: readonly Term[],
+  learned: readonly Term[],
+): readonly Term[] {
+  const out = base.map((t) => ({ ...t, synonyms: [...t.synonyms] }));
+  for (const term of learned) {
+    const existing = out.find(
+      (t) => t.axis === term.axis && fold(t.canonical) === fold(term.canonical),
+    );
+    if (existing === undefined) {
+      out.push({ ...term, synonyms: [...term.synonyms] });
+      continue;
+    }
+    for (const s of term.synonyms) {
+      if (!existing.synonyms.some((e) => fold(e) === fold(s))) {
+        existing.synonyms.push(s);
+      }
+    }
   }
-  return [...new Set(out)].sort((a, b) => b.length - a.length);
+  return out;
+}
+
+/** The dictionary with nothing learned yet. Tests and the parser default to it. */
+export const BUILT_IN_DICTIONARY: Dictionary = buildDictionary(BUILT_IN_TERMS);
+
+export function canonicalise(phrase: string, axis: Axis): string | undefined {
+  return BUILT_IN_DICTIONARY.canonicalise(phrase, axis);
+}
+
+export function phrasesFor(axis: Axis): readonly string[] {
+  return BUILT_IN_DICTIONARY.phrasesFor(axis);
 }
 
 /** An unfamiliar phrase — the job pauses on these rather than guessing. */

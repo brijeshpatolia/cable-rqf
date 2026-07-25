@@ -1,7 +1,7 @@
 import type { Decimal } from '@/core/decimal';
-import type { Product, ResolvedRateSet } from '@/modules/costing/types';
+import type { Product, ResolvedRateSet } from '@/modules/costing';
 import type { EffectiveRow } from './effective';
-import type { OpenQuote } from '@/modules/pricewatch/drift';
+import type { OpenQuote } from '@/modules/pricewatch';
 
 /**
  * Ports.

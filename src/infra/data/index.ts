@@ -16,7 +16,7 @@ import type {
   MaterialRate,
   Product,
   ResolvedRateSet,
-} from '@/modules/costing/types';
+} from '@/modules/costing';
 
 import driversJson from './drivers.json';
 import machinesJson from './machines.json';
@@ -78,7 +78,7 @@ interface RawProduct {
     machineName: string;
     sequence: number;
     hoursPerKm: string;
-    cores: number;
+    cores: string;
   }[];
   readonly overheads: readonly { key: string; name: string; amount: string }[];
 }
@@ -182,7 +182,7 @@ export function hydrateProduct(raw: RawProduct): Product {
       machineName: o.machineName,
       sequence: o.sequence,
       hoursPerKm: hours(o.hoursPerKm),
-      cores: o.cores,
+      cores: dec(o.cores),
     })),
     overheads: raw.overheads.map((o) => ({
       key: o.key,

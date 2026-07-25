@@ -38,7 +38,7 @@ Chosen for: dense data UI, exact decimal arithmetic, small team, and the ability
 | Framework | **Next.js (App Router) + TypeScript, strict** | Server components render dense tables without shipping the data twice; one deployable; Server Actions remove a hand-written API layer for internal tools |
 | Database | **PostgreSQL** | `NUMERIC` for exact money, range types and exclusion constraints for effective-dated rates, JSONB for frozen cost snapshots |
 | ORM | **Prisma** (or Drizzle) | Typed schema, migrations as reviewable SQL |
-| Money | **decimal.js** end to end, `NUMERIC(18,6)` in Postgres | Floats are disqualified. A 0.0001 OMR/m error over 40 km of cable is real money |
+| Money | **decimal.js** end to end, unconstrained `NUMERIC` in Postgres, read back via `::text` | Floats are disqualified. A 0.0001 OMR/m error over 40 km of cable is real money. A *fixed scale* is disqualified too — measured against the real cost master, `NUMERIC(18,6)` alters 53.7% of imported values |
 | UI | **Tailwind v4** with a token layer + **Radix primitives** (unstyled) | Radix gives keyboard and ARIA behaviour; all visuals come from our tokens, so nothing looks like a component library |
 | Tables | **TanStack Table + TanStack Virtual** | Headless. Expandable rows, column sizing, and virtualisation at 10k rows are solved problems |
 | Charts | None in v1 | The spec is right: this is a ledger, not a dashboard |
@@ -246,6 +246,82 @@ An engineer has used it to send a real quote to a real customer.
 
 ---
 
+## Phase 1.5 — Copper pricing basis *(added after Nuhas described how they actually price)*
+
+**Duration:** ~2 weeks · **Prerequisite:** the write path, and a sample of the copper purchase-order export
+
+### Why this exists
+
+The app currently assumes one copper basis: today's LME. That is not how Nuhas
+prices. They pre-book copper in quantity, and normally charge the **weighted
+average of what they actually paid**; a large order is priced at **live LME**
+instead, because it exceeds what is on the books.
+
+Both are legitimate. Neither is a rounding detail — copper is the majority of a
+cable's cost, so the basis chosen moves the whole quote.
+
+### Objective
+
+The engineer chooses, per quote, how copper is charged, and can see what the
+other basis would have given.
+
+### In scope
+
+- **Import the copper purchase ledger** from Nuhas's own export: quantity,
+  price paid, order date, and whether the lot is **delivered or still pending**
+- **Three bases**, selected per quote:
+  - **Booked average** — weighted mean of the lots in scope
+  - **Live LME** — as today
+  - **Blended** — the covered portion at booked average, the uncovered
+    remainder at live LME
+- Delivered-only versus delivered-plus-pending as a **visible toggle**, never a
+  buried assumption
+- Every quote records which basis it was struck on, alongside the LME stamp it
+  already carries
+
+### The blended basis, and why it is the sharper form of Nuhas's own rule
+
+"Big order → live price" is a proxy for *"this order needs more copper than I
+have booked."* Blending states that precisely: 40 t booked against a 65 t
+order prices 40 t at cost and 25 t at market. Same intent, no cliff edge at
+whatever counts as "big", and the engineer can see exactly where the line falls.
+
+### The question that must be answered before this is trustworthy
+
+**Does booked copper deplete as quotes are written against it?** If two quotes
+both price off the same 40 t, the same cheap copper has been sold twice and the
+second quote is understated. A booking ledger without allocation is a
+half-truth that drifts further from reality as the order book fills.
+
+Tracking consumption is materially more work — it makes the ledger stateful and
+raises questions about what happens when a quote lapses. It is called out here
+so the choice is deliberate rather than discovered later.
+
+### Effect on price watch
+
+Exposure stops being "LME has moved since you quoted" and becomes "what
+replacing this copper actually costs" — the number that decides whether an open
+quote is still worth honouring.
+
+### Acceptance criteria
+
+1. The purchase-order export imports with the same every-cell-accounted-for
+   report the cost master import produces.
+2. A quote priced on booked average, live LME, and blended produces three
+   different, individually explainable numbers, each fully expandable.
+3. **Live LME remains the default**, so all 99 products keep reproducing their
+   source sheets and the parity harness is untouched.
+4. Changing basis is an audited decision, attributed to a person.
+
+### Risk
+
+| Risk | Mitigation |
+|---|---|
+| The export's real columns differ from what was assumed | Do not build until a real export has been read. The cost-master import proved the point: three assumptions taken from the spec were wrong, and only the actual file revealed it |
+| Booked average silently drifts as stock is consumed | Answer the allocation question above before this is used on a real quote |
+
+---
+
 ## Phase 2 — Matching and review
 
 **Duration:** 4 weeks
@@ -258,6 +334,14 @@ Vocabulary normalisation and dictionary; the four-tier matcher; the review scree
 
 ### Out of scope
 Reading documents. Input is paste-a-line or paste-a-block.
+
+> **Shipped ahead of plan.** Deterministic reading of spreadsheets and digital
+> PDFs landed with Phase 2, because the Inbox needed something to hold and the
+> extraction ends exactly where paste begins — `modules/extraction` produces the
+> same text `matching` already consumed, so Phase 2 did not change a line to
+> accommodate it. What remains for Phase 3 is the mailbox, the side-by-side
+> provenance view, and the constrained LLM call for table regions a
+> deterministic reader cannot resolve.
 
 ### Screens
 

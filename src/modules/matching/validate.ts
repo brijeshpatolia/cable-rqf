@@ -1,5 +1,5 @@
 import { type Decimal, dec, ZERO } from '@/core/decimal';
-import type { CostBreakdown, Product } from '@/modules/costing/types';
+import type { CostBreakdown, Product } from '@/modules/costing';
 
 /**
  * The plausibility gate.

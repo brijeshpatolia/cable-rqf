@@ -110,9 +110,10 @@ export function computeCost(
         );
       }
 
-      // Cost = machine hours × cores × machine rate, with cores taken from the
-      // operation line rather than the product.
-      const hours = asHours(op.hoursPerKm.times(dec(op.cores)));
+      // Cost = machine hours × multiplier × machine rate, with the multiplier
+      // taken from the operation line rather than the product. It is a
+      // Decimal, not an integer — see MachineOp.cores.
+      const hours = asHours(op.hoursPerKm.times(op.cores));
 
       return ok({
         machineKey: op.machineKey,

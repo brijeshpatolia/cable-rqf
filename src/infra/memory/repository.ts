@@ -1,11 +1,11 @@
 import type { Decimal } from '@/core/decimal';
 import { omrPerHour, omrPerKg, omrPerUSD, usdPerTonne } from '@/core/units';
-import type { Product, ResolvedRateSet } from '@/modules/costing/types';
+import type { Product, ResolvedRateSet } from '@/modules/costing';
 import {
   type EffectiveRow,
   findOverlaps,
   resolveAllAt,
-} from '@/modules/rates/effective';
+} from '@/modules/rates';
 import type {
   AuditRepository,
   AuditEvent,
@@ -13,8 +13,8 @@ import type {
   ProductRepository,
   QuoteRepository,
   RateRepository,
-} from '@/modules/rates/ports';
-import type { OpenQuote } from '@/modules/pricewatch/drift';
+} from '@/modules/rates';
+import type { OpenQuote } from '@/modules/pricewatch';
 import { RAW_MATERIALS, products as importedProducts } from '@/infra/data';
 import {
   AUDIT,

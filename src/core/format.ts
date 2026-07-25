@@ -17,6 +17,16 @@ export const PRECISION = {
   costPerMetre: 4,
   /** Unit rate quoted to the customer — 3 dp OMR */
   unitRate: 3,
+  /**
+   * The same rate **on the document** — 4 dp.
+   *
+   * On screen a rate sits next to the breakdown that produced it, so three
+   * places is enough to read. On paper it sits next to an amount the customer
+   * will multiply out, and the engine computes that amount from the unrounded
+   * rate: at 3 dp a 12,500 m line reconciles to within about 4 OMR, at 4 dp to
+   * within about 0.6. The document also says which one is authoritative.
+   */
+  quotedRate: 4,
   /** Line and quote totals — 2 dp OMR */
   total: 2,
   /** Material consumption — 3 dp kg/km */

@@ -13,7 +13,12 @@ import { omr, type OMR, type USDPerTonne } from '@/core/units';
  */
 
 export interface OpenQuote {
-  readonly quoteId: string;
+  /**
+   * The quote's human-facing number, `Q-2026-0148`. Not the row id: this is
+   * what the watch shows, what an engineer searches for, and what a customer
+   * quotes back down the phone.
+   */
+  readonly number: string;
   readonly customer: string;
   readonly struckLme: USDPerTonne;
   readonly struckAt: Date;

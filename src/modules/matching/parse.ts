@@ -1,5 +1,5 @@
 import { type Decimal, dec } from '@/core/decimal';
-import { type Axis, canonicalise, fold, phrasesFor } from './vocabulary';
+import { type Axis, type Dictionary, BUILT_IN_DICTIONARY, fold } from './vocabulary';
 
 /**
  * Turns one RFQ line — however the customer worded it — into structured
@@ -78,7 +78,15 @@ const ALL_AXES: readonly Axis[] = [
   'standard',
 ];
 
-export function parseLine(raw: string): ExtractedLine {
+/**
+ * @param dictionary Defaults to the terms that ship with the app. The Rate
+ * Owner's learned terms are merged in by the caller, so this function stays
+ * pure and a test can pin the vocabulary it parses against.
+ */
+export function parseLine(
+  raw: string,
+  dictionary: Dictionary = BUILT_IN_DICTIONARY,
+): ExtractedLine {
   const text = raw.trim();
 
   // ── Quantity, taken first so its digits don't get read as a size ──────
@@ -112,7 +120,7 @@ export function parseLine(raw: string): ExtractedLine {
 
   // ── Vocabulary, read positionally ────────────────────────────────────
   const folded = fold(text);
-  const occurrences = findOccurrences(folded);
+  const occurrences = findOccurrences(folded, dictionary);
 
   /**
    * A cable designation is written in build order: conductor, insulation,
@@ -143,11 +151,14 @@ export function parseLine(raw: string): ExtractedLine {
  * Every dictionary phrase present, longest-first so "steel wire armoured" wins
  * over "steel", and non-overlapping so one span is read once.
  */
-function findOccurrences(folded: string): readonly Occurrence[] {
+function findOccurrences(
+  folded: string,
+  dictionary: Dictionary,
+): readonly Occurrence[] {
   const candidates: Occurrence[] = [];
 
   const phrases = new Set<string>();
-  for (const axis of ALL_AXES) for (const p of phrasesFor(axis)) phrases.add(p);
+  for (const axis of ALL_AXES) for (const p of dictionary.phrasesFor(axis)) phrases.add(p);
 
   for (const phrase of [...phrases].sort((a, b) => b.length - a.length)) {
     const re = new RegExp(
@@ -167,7 +178,7 @@ function findOccurrences(folded: string): readonly Occurrence[] {
 
       const byAxis = new Map<Axis, string>();
       for (const axis of ALL_AXES) {
-        const canonical = canonicalise(phrase, axis);
+        const canonical = dictionary.canonicalise(phrase, axis);
         if (canonical !== undefined) byAxis.set(axis, canonical);
       }
       if (byAxis.size > 0) candidates.push({ start, end, phrase, byAxis });

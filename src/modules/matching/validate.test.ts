@@ -8,8 +8,8 @@ import {
   products,
   rateSetAt,
 } from '@/infra/data';
-import { computeCost } from '@/modules/costing/engine';
-import type { CostBreakdown, Product } from '@/modules/costing/types';
+import { computeCost } from '@/modules/costing';
+import type { CostBreakdown, Product } from '@/modules/costing';
 import { deriveBounds, validate } from './validate';
 
 const LIBRARY = products();
