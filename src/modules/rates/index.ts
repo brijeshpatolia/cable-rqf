@@ -7,6 +7,17 @@ export {
   supersede,
 } from './effective';
 export type { DecimalRow, EffectiveRow, OverlapError } from './effective';
+export { planLmeEntry, planSupersede } from './edit';
+export type {
+  CurrentRate,
+  EditError,
+  EditErrorCode,
+  LmeEntryPlan,
+  LmeEntryRequest,
+  RateKind,
+  SupersedePlan,
+  SupersedeRequest,
+} from './edit';
 export type {
   AuditEvent,
   AuditRepository,

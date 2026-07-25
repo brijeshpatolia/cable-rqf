@@ -1,0 +1,124 @@
+/**
+ * Identity and authority.
+ *
+ * Pure: no knowledge of cookies, providers, or Next. `infra/auth` answers
+ * "who is making this request"; this module answers "and what may they do".
+ * That split is what lets sign-in move to Google or Microsoft later by adding
+ * one adapter file.
+ *
+ * Actors are keyed by **email**. It is the one identifier every identity
+ * provider agrees on, so switching provider means people sign in differently
+ * and keep their id, their role, and every audit row they ever wrote. Roles
+ * live in this system's database, never in the provider — who is a Rate Owner
+ * stays Nuhas's decision, not their IT department's.
+ */
+
+export type Role = 'rateOwner' | 'engineer' | 'viewer';
+
+export interface Actor {
+  readonly id: string;
+  readonly email: string;
+  readonly name: string;
+  readonly role: Role;
+}
+
+/**
+ * What may be done, named by the action rather than by the screen.
+ *
+ * PROJECT_PLAN.md §2.4 makes rate editing and approval deliberately different
+ * people: the person who sets the copper price is not the person who signs off
+ * the quote struck on it.
+ */
+export type Capability =
+  | 'rate.edit'
+  | 'lme.enter'
+  | 'line.override'
+  | 'quote.approve'
+  | 'read';
+
+/**
+ * The whole authority model, in one readable table.
+ *
+ * Exhaustive by construction: `Record<Role, ...>` means adding a role without
+ * deciding its capabilities is a compile error, not a silent denial or — far
+ * worse — a silent grant.
+ */
+const GRANTS: Readonly<Record<Role, readonly Capability[]>> = {
+  rateOwner: ['rate.edit', 'lme.enter', 'read'],
+  engineer: ['line.override', 'quote.approve', 'read'],
+  viewer: ['read'],
+};
+
+export function can(actor: Actor | null, capability: Capability): boolean {
+  if (actor === null) return false;
+  return GRANTS[actor.role].includes(capability);
+}
+
+export type AuthFailure =
+  | { readonly kind: 'UNAUTHENTICATED'; readonly message: string }
+  | { readonly kind: 'FORBIDDEN'; readonly message: string };
+
+/**
+ * The gate every write goes through.
+ *
+ * Returns a failure rather than throwing, so a caller that forgets to handle
+ * it fails to compile rather than surfacing a stack trace to an engineer
+ * mid-quote.
+ */
+export function authorise(
+  actor: Actor | null,
+  capability: Capability,
+): { readonly ok: true; readonly actor: Actor } | { readonly ok: false; readonly failure: AuthFailure } {
+  if (actor === null) {
+    return {
+      ok: false,
+      failure: { kind: 'UNAUTHENTICATED', message: 'Sign in to continue.' },
+    };
+  }
+
+  if (!can(actor, capability)) {
+    return {
+      ok: false,
+      failure: {
+        kind: 'FORBIDDEN',
+        message: `${describeRole(actor.role)} cannot ${describeCapability(capability)}.`,
+      },
+    };
+  }
+
+  return { ok: true, actor };
+}
+
+export function describeRole(role: Role): string {
+  switch (role) {
+    case 'rateOwner':
+      return 'The rate owner';
+    case 'engineer':
+      return 'An engineer';
+    case 'viewer':
+      return 'A viewer';
+  }
+}
+
+export function describeCapability(capability: Capability): string {
+  switch (capability) {
+    case 'rate.edit':
+      return 'edit rates';
+    case 'lme.enter':
+      return 'enter a copper price';
+    case 'line.override':
+      return 'override a line price';
+    case 'quote.approve':
+      return 'approve a quote';
+    case 'read':
+      return 'read this';
+  }
+}
+
+/**
+ * The port `infra/auth` implements. Declared here so nothing in modules/ ever
+ * needs to know how a session is carried.
+ */
+export interface SessionReader {
+  currentActor(): Promise<Actor | null>;
+}

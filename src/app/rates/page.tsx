@@ -1,6 +1,6 @@
 import { formatDate, formatInstant, formatNumber } from '@/core/format';
-import { repositories } from '@/infra/memory/repository';
-import { NOW } from '@/infra/memory/seed';
+import { repositories } from '@/infra/repositories';
+import { now } from '@/infra/clock';
 import { copperMetalValue } from '@/modules/costing';
 import { sweep } from '@/modules/pricewatch';
 import type { EffectiveRow } from '@/modules/rates';
@@ -9,6 +9,8 @@ import { DataTable, type Column } from '@/ui/components/DataTable';
 import { NumericCell } from '@/ui/components/NumericCell';
 import { Panel } from '@/ui/components/Panel';
 import type { Decimal } from '@/core/decimal';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata = { title: 'Rate Desk — Cable Quoting' };
 
@@ -20,10 +22,11 @@ export const metadata = { title: 'Rate Desk — Cable Quoting' };
  * not an action anyone should take by accident.
  */
 export default async function RateDeskPage() {
+  const asOf = now();
   const { rates, quotes } = repositories;
 
   const [rateSet, materialRows, machineRows, lme, openQuotes] = await Promise.all([
-    rates.resolveAt(NOW),
+    rates.resolveAt(asOf),
     rates.materialRows(),
     rates.machineRows(),
     rates.lmeHistory(5),
@@ -31,7 +34,7 @@ export default async function RateDeskPage() {
   ]);
 
   const copper = copperMetalValue(rateSet.copper);
-  const drift = sweep(openQuotes, rateSet.copper.lme, NOW);
+  const drift = sweep(openQuotes, rateSet.copper.lme, asOf);
 
   const inForce = (r: EffectiveRow<Decimal>) => r.validTo === null;
 
@@ -64,7 +67,7 @@ export default async function RateDeskPage() {
           <CopperBlock
             copper={rateSet.copper}
             derivedOmrPerKg={copper}
-            asOf={NOW}
+            asOf={asOf}
           />
         </div>
       </header>
@@ -183,7 +186,7 @@ export default async function RateDeskPage() {
               <div className="mt-1">
                 + drawing premium per copper code, 0.1026–0.1401 OMR/kg
               </div>
-              <div className="mt-1">{formatInstant(NOW)}</div>
+              <div className="mt-1">{formatInstant(asOf)}</div>
             </div>
           </Panel>
         </aside>

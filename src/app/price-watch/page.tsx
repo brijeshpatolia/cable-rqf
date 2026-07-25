@@ -1,6 +1,6 @@
 import { formatDate, formatNumber } from '@/core/format';
-import { repositories } from '@/infra/memory/repository';
-import { NOW } from '@/infra/memory/seed';
+import { repositories } from '@/infra/repositories';
+import { now } from '@/infra/clock';
 import {
   DEFAULT_THRESHOLD_PERCENT,
   driftHeadline,
@@ -12,6 +12,8 @@ import { NumericCell } from '@/ui/components/NumericCell';
 import { Panel } from '@/ui/components/Panel';
 import { StatusDot } from '@/ui/components/StatusDot';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata = { title: 'Price Watch — Cable Quoting' };
 
 /**
@@ -22,13 +24,14 @@ export const metadata = { title: 'Price Watch — Cable Quoting' };
  * number is coloured — it's a delta, not a cost.
  */
 export default async function PriceWatchPage() {
+  const asOf = now();
   const { quotes, rates } = repositories;
   const [open, rateSet] = await Promise.all([
     quotes.open(),
-    rates.resolveAt(NOW),
+    rates.resolveAt(asOf),
   ]);
 
-  const s = sweep(open, rateSet.copper.lme, NOW);
+  const s = sweep(open, rateSet.copper.lme, asOf);
   const headline = driftHeadline(s);
 
   return (

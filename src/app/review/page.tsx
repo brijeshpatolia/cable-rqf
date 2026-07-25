@@ -1,7 +1,7 @@
 import { metres } from '@/core/units';
-import { SOURCE_TERMS, RAW_MATERIALS, products as importedProducts } from '@/infra/data';
-import { repositories } from '@/infra/memory/repository';
-import { NOW } from '@/infra/memory/seed';
+import { SOURCE_TERMS } from '@/infra/data';
+import { repositories } from '@/infra/repositories';
+import { now } from '@/infra/clock';
 import { computeCost } from '@/modules/costing';
 import { axisLabel } from '@/modules/matching';
 import { byReviewOrder, isHeld, isPriced, reviewJob } from '@/modules/matching';
@@ -12,6 +12,8 @@ import { NumericCell } from '@/ui/components/NumericCell';
 import { Panel } from '@/ui/components/Panel';
 import { StatusDot, TierLegend } from '@/ui/components/StatusDot';
 import type { Tier } from '@/ui/components/tier';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata = { title: 'Review — Cable Quoting' };
 
@@ -34,11 +36,21 @@ const SAMPLE_RFQ = [
 const stripIndex = (l: string) => l.replace(/^\d+\s+/, '');
 
 export default async function ReviewPage() {
-  const { rates } = repositories;
-  const rateSet = await rates.resolveAt(NOW);
-  const library = importedProducts();
+  const asOf = now();
+  const { products, rates } = repositories;
+  const [rateSet, library] = await Promise.all([
+    rates.resolveAt(asOf),
+    products.list(),
+  ]);
 
-  const lmeLinked = new Set(RAW_MATERIALS.filter((m) => m.lmeLinked).map((m) => m.code));
+  // Which materials reprice with copper comes from the resolved rate set, not
+  // from the imported JSON — otherwise this screen would keep answering from
+  // the snapshot after the rate owner edits something.
+  const lmeLinked = new Set(
+    [...rateSet.materials]
+      .filter(([, m]) => m.lmeLinked)
+      .map(([code]) => code),
+  );
   const bounds = deriveBounds(library, lmeLinked, (p) => {
     const r = computeCost(p, { metres: metres(1000) }, rateSet, SOURCE_TERMS);
     return r.ok ? r.value.unitRate : null;

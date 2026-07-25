@@ -1,11 +1,13 @@
 import { metres } from '@/core/units';
 import { SOURCE_TERMS } from '@/infra/data';
-import { repositories } from '@/infra/memory/repository';
-import { NOW } from '@/infra/memory/seed';
+import { repositories } from '@/infra/repositories';
+import { now } from '@/infra/clock';
 import { computeCost } from '@/modules/costing';
 import { DataTable } from '@/ui/components/DataTable';
 import { NumericCell } from '@/ui/components/NumericCell';
 import { Panel } from '@/ui/components/Panel';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata = { title: 'Catalogue — Cable Quoting' };
 
@@ -24,10 +26,11 @@ const TERMS = SOURCE_TERMS;
  * this app, so this table is always current by construction.
  */
 export default async function CataloguePage() {
+  const asOf = now();
   const { products, rates } = repositories;
   const [list, rateSet] = await Promise.all([
     products.list(),
-    rates.resolveAt(NOW),
+    rates.resolveAt(asOf),
   ]);
 
   const priced = list.map((product) => {

@@ -2,8 +2,8 @@ import { notFound } from 'next/navigation';
 import { dec } from '@/core/decimal';
 import { metres } from '@/core/units';
 import { SOURCE_TERMS } from '@/infra/data';
-import { repositories } from '@/infra/memory/repository';
-import { NOW } from '@/infra/memory/seed';
+import { repositories } from '@/infra/repositories';
+import { now } from '@/infra/clock';
 import { copperMetalValue } from '@/modules/costing';
 import { computeCost } from '@/modules/costing';
 import { CopperBlock } from '@/ui/components/CopperBlock';
@@ -19,11 +19,6 @@ import { TierLegend } from '@/ui/components/StatusDot';
  */
 const TERMS = SOURCE_TERMS;
 
-export async function generateStaticParams() {
-  const products = await repositories.products.list();
-  return products.map((p) => ({ id: p.id }));
-}
-
 /**
  * Product Detail — the Phase 1 signature screen.
  *
@@ -35,12 +30,13 @@ export default async function ProductDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const asOf = now();
   const { id } = await params;
   const { products, rates } = repositories;
 
   const [product, rateSet] = await Promise.all([
     products.byId(id),
-    rates.resolveAt(NOW),
+    rates.resolveAt(asOf),
   ]);
 
   if (product === undefined) notFound();
@@ -98,7 +94,7 @@ export default async function ProductDetailPage({
           <CopperBlock
             copper={rateSet.copper}
             derivedOmrPerKg={copperRate}
-            asOf={NOW}
+            asOf={asOf}
           />
         </div>
       </header>
