@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "parity": "vitest run tests/parity"
+    "parity": "PARITY_REQUIRED=1 vitest run tests/parity"
   },
   "dependencies": {
     "decimal.js": "^10.4.3",
