@@ -15,15 +15,28 @@ import type {
   RateRepository,
 } from '@/modules/rates/ports';
 import type { OpenQuote } from '@/modules/pricewatch/drift';
+import { RAW_MATERIALS, products as importedProducts } from '@/infra/data';
 import {
   AUDIT,
-  DRAWING_PREMIUM,
   LME_HISTORY,
   MACHINE_ROWS,
   MATERIAL_ROWS,
   OPEN_QUOTES,
-  PRODUCTS,
 } from './seed';
+
+/**
+ * Drawing premiums, by material code. Held alongside the rate rather than in a
+ * separate table, because that is how the import found them — one premium per
+ * LME-linked copper code.
+ */
+const PREMIUM_BY_CODE = new Map(
+  RAW_MATERIALS.filter((m) => m.drawingPremium !== null).map((m) => [
+    m.code,
+    m.drawingPremium!,
+  ]),
+);
+
+const LME_LINKED = new Set(RAW_MATERIALS.filter((m) => m.lmeLinked).map((m) => m.code));
 
 /**
  * The in-memory adapter.
@@ -68,17 +81,24 @@ export class MemoryRateRepository implements RateRepository {
     return {
       asOf,
       materials: new Map(
-        [...materials].map(([key, row]) => [
-          key,
-          {
-            rate: omrPerKg(row.value),
-            source: {
-              rateId: row.rateId,
-              effectiveFrom: row.validFrom,
-              table: row.table,
+        [...materials].map(([key, row]) => {
+          const premium = PREMIUM_BY_CODE.get(key);
+          return [
+            key,
+            {
+              rate: omrPerKg(row.value),
+              lmeLinked: LME_LINKED.has(key),
+              ...(premium !== undefined
+                ? { drawingPremium: omrPerKg(premium) }
+                : {}),
+              source: {
+                rateId: row.rateId,
+                effectiveFrom: row.validFrom,
+                table: row.table,
+              },
             },
-          },
-        ]),
+          ];
+        }),
       ),
       machines: new Map(
         [...machines].map(([key, row]) => [
@@ -96,9 +116,6 @@ export class MemoryRateRepository implements RateRepository {
       copper: {
         lme: usdPerTonne(tick.lme),
         fx: omrPerUSD(tick.fx),
-        drawingPremiumBySize: new Map(
-          [...DRAWING_PREMIUM].map(([k, v]) => [k, omrPerKg(v)]),
-        ),
         source: {
           rateId: `lme-${tick.at.toISOString().slice(0, 10)}`,
           effectiveFrom: tick.at,
@@ -122,7 +139,7 @@ export class MemoryRateRepository implements RateRepository {
 }
 
 export class MemoryProductRepository implements ProductRepository {
-  constructor(private readonly products: readonly Product[] = PRODUCTS) {}
+  constructor(private readonly products: readonly Product[] = importedProducts()) {}
 
   async list(): Promise<readonly Product[]> {
     return this.products;

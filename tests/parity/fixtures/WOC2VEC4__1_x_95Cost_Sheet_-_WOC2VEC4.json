@@ -1,0 +1,14 @@
+{
+  "productId": "WOC2VEC4",
+  "sourceSheet": "1 x 95Cost Sheet - WOC2VEC4",
+  "expected": {
+    "materialsSubtotal": "1696.45311942204",
+    "operationsSubtotal": "16.9247286",
+    "overheadsSubtotal": "69.797999329865",
+    "tooling": "0.0329999998211861",
+    "costPerKm": "1783.20884735173",
+    "costPerMetre": "1.78320884735173",
+    "quotePerMetre": "2.05069017445448",
+    "sourceCostPerMetre": "1.78320814689967"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "productId": "P19CS4Q2XLVWVKNN",
+  "sourceSheet": "4x150 Cost Sheet - P19CS4Q2XLVWVKNN",
+  "expected": {
+    "materialsSubtotal": "11590.2851851699",
+    "operationsSubtotal": "206.4695302",
+    "overheadsSubtotal": "490.034001350402",
+    "tooling": "1",
+    "costPerKm": "12287.7887167203",
+    "costPerMetre": "12.2877887167203",
+    "quotePerMetre": "14.1309570242284",
+    "sourceCostPerMetre": "12.2877883667922"
+  }
+}

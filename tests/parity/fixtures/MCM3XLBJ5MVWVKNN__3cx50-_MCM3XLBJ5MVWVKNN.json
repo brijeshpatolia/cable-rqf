@@ -1,0 +1,14 @@
+{
+  "productId": "MCM3XLBJ5MVWVKNN",
+  "sourceSheet": "3cx50- MCM3XLBJ5MVWVKNN",
+  "expected": {
+    "materialsSubtotal": "6443.87016497648",
+    "operationsSubtotal": "347.5850563",
+    "overheadsSubtotal": "251.105998754502",
+    "tooling": "5",
+    "costPerKm": "7047.56122003098",
+    "costPerMetre": "7.04756122003098",
+    "quotePerMetre": "8.10469540303563",
+    "sourceCostPerMetre": "7.04755919982035"
+  }
+}

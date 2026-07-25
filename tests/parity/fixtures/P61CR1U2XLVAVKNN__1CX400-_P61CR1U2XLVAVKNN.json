@@ -1,0 +1,14 @@
+{
+  "productId": "P61CR1U2XLVAVKNN",
+  "sourceSheet": "1CX400- P61CR1U2XLVAVKNN",
+  "expected": {
+    "materialsSubtotal": "7349.86249539104",
+    "operationsSubtotal": "150.6779623",
+    "overheadsSubtotal": "319.686994194985",
+    "tooling": "1",
+    "costPerKm": "7821.22745188603",
+    "costPerMetre": "7.82122745188603",
+    "quotePerMetre": "8.99441156966893",
+    "sourceCostPerMetre": "7.82122760815427"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "productId": "P19CS3O2XLVWVKNN",
+  "sourceSheet": "3x95 Cost Sheet - P19CS3O2XLVWVKNN",
+  "expected": {
+    "materialsSubtotal": "5660.14454757038",
+    "operationsSubtotal": "110.89884",
+    "overheadsSubtotal": "239.333000302315",
+    "tooling": "1.5",
+    "costPerKm": "6011.87638787269",
+    "costPerMetre": "6.01187638787269",
+    "quotePerMetre": "6.9136578460536",
+    "sourceCostPerMetre": "6.01187563231652"
+  }
+}

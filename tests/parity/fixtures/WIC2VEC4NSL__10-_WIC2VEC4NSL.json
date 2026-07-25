@@ -1,0 +1,14 @@
+{
+  "productId": "WIC2VEC4NSL",
+  "sourceSheet": "10- WIC2VEC4NSL",
+  "expected": {
+    "materialsSubtotal": "194.706615072782",
+    "operationsSubtotal": "1.8814826",
+    "overheadsSubtotal": "7.40200012922287",
+    "tooling": "0.0329999998211861",
+    "costPerKm": "204.023097801826",
+    "costPerMetre": "0.204023097801826",
+    "quotePerMetre": "0.2346265624721",
+    "sourceCostPerMetre": "0.204023617313444"
+  }
+}

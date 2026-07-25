@@ -1,23 +1,23 @@
 import { notFound } from 'next/navigation';
 import { dec } from '@/core/decimal';
-import { metres, omrPerKm, percent } from '@/core/units';
+import { metres } from '@/core/units';
+import { SOURCE_TERMS } from '@/infra/data';
 import { repositories } from '@/infra/memory/repository';
 import { NOW } from '@/infra/memory/seed';
-import { copperRatePerKg, sizeKeyOf } from '@/modules/costing/copper';
+import { copperMetalValue } from '@/modules/costing/copper';
 import { computeCost } from '@/modules/costing/engine';
-import type { CommercialTerms } from '@/modules/costing/types';
 import { CopperBlock } from '@/ui/components/CopperBlock';
 import { CostBreakdownView } from '@/ui/components/CostBreakdownView';
 import { NumericCell } from '@/ui/components/NumericCell';
 import { Panel, Field } from '@/ui/components/Panel';
 import { TierLegend } from '@/ui/components/StatusDot';
 
-const TERMS: CommercialTerms = {
-  marginPercent: percent(24),
-  drumCost: omrPerKm(84),
-  packingCost: omrPerKm(26),
-  freightCost: omrPerKm(112),
-};
+/**
+ * Nuhas's own quoting terms, from the cost master's Drivers sheet: margin on
+ * cost, nothing else. Drum, packing, and freight are not in the source data
+ * and are not invented here.
+ */
+const TERMS = SOURCE_TERMS;
 
 export async function generateStaticParams() {
   const products = await repositories.products.list();
@@ -47,7 +47,7 @@ export default async function ProductDetailPage({
 
   const quantity = { metres: metres(12000) };
   const result = computeCost(product, quantity, rateSet, TERMS);
-  const copperRate = copperRatePerKg(rateSet.copper, sizeKeyOf(product.sizeMm2));
+  const copperRate = copperMetalValue(rateSet.copper);
 
   return (
     <div style={{ padding: 24 }} className="flex flex-col gap-6">
@@ -81,10 +81,10 @@ export default async function ProductDetailPage({
               </span>
             </Field>
             <Field label="Cores">
-              <NumericCell value={dec(product.cores)} decimals={0} />
+              <NumericCell value={dec(product.spec.cores)} decimals={0} />
             </Field>
             <Field label="Size">
-              <NumericCell value={product.sizeMm2} decimals={1} unit="mm²" />
+              <NumericCell value={product.spec.sizeMm2} decimals={1} unit="mm²" />
             </Field>
             <Field label="Family">
               <span style={{ color: 'var(--color-ink-secondary)' }}>
@@ -97,7 +97,7 @@ export default async function ProductDetailPage({
         <div style={{ width: 260 }} className="shrink-0">
           <CopperBlock
             copper={rateSet.copper}
-            derivedOmrPerKg={copperRate.ok ? copperRate.value : rateSet.copper.lme}
+            derivedOmrPerKg={copperRate}
             asOf={NOW}
           />
         </div>

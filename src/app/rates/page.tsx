@@ -1,7 +1,7 @@
 import { formatDate, formatInstant, formatNumber } from '@/core/format';
 import { repositories } from '@/infra/memory/repository';
 import { NOW } from '@/infra/memory/seed';
-import { copperRatePerKg } from '@/modules/costing/copper';
+import { copperMetalValue } from '@/modules/costing/copper';
 import { sweep } from '@/modules/pricewatch/drift';
 import type { EffectiveRow } from '@/modules/rates/effective';
 import { CopperBlock } from '@/ui/components/CopperBlock';
@@ -30,7 +30,7 @@ export default async function RateDeskPage() {
     quotes.open(),
   ]);
 
-  const copper = copperRatePerKg(rateSet.copper, '50');
+  const copper = copperMetalValue(rateSet.copper);
   const drift = sweep(openQuotes, rateSet.copper.lme, NOW);
 
   const inForce = (r: EffectiveRow<Decimal>) => r.validTo === null;
@@ -63,7 +63,7 @@ export default async function RateDeskPage() {
         <div style={{ width: 260 }} className="shrink-0">
           <CopperBlock
             copper={rateSet.copper}
-            derivedOmrPerKg={copper.ok ? copper.value : rateSet.copper.lme}
+            derivedOmrPerKg={copper}
             asOf={NOW}
           />
         </div>
@@ -167,7 +167,8 @@ export default async function RateDeskPage() {
                 lineHeight: 'var(--text-micro--line-height)',
               }}
             >
-              OMR/kg = LME × FX ÷ 1000 + drawing premium for the size.
+              OMR/kg = LME × FX ÷ 1000 + the drawing premium held on each of the
+            39 LME-linked copper codes.
             </p>
             <div
               className="mt-3 numeric"
@@ -178,8 +179,11 @@ export default async function RateDeskPage() {
               }}
             >
               {formatNumber(rateSet.copper.lme, 2)} × {rateSet.copper.fx.toFixed(4)} ÷
-              1000 + 0.2930 = {copper.ok ? copper.value.toFixed(4) : '—'} OMR/kg
-              <div className="mt-1">at 50mm², {formatInstant(NOW)}</div>
+              1000 = {copper.toFixed(6)} OMR/kg metal value
+              <div className="mt-1">
+                + drawing premium per copper code, 0.1026–0.1401 OMR/kg
+              </div>
+              <div className="mt-1">{formatInstant(NOW)}</div>
             </div>
           </Panel>
         </aside>

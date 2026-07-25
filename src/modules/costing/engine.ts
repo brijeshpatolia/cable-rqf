@@ -1,4 +1,4 @@
-import { addPercent, dec, sum, ZERO } from '@/core/decimal';
+import { dec, sum, ZERO } from '@/core/decimal';
 import { type Result, all, costError, err, ok } from '@/core/result';
 import {
   hours as asHours,
@@ -8,9 +8,8 @@ import {
   omrPerKm,
   omrPerMetre,
 } from '@/core/units';
-import { copperRatePerKg, sizeKeyOf } from './copper';
+import { copperMetalValue, effectiveMaterialRate } from './copper';
 import {
-  COPPER_MATERIAL_KEYS,
   type CommercialTerms,
   type CostBreakdown,
   type MachineCostLine,
@@ -55,29 +54,11 @@ export function computeCost(
     );
   }
 
-  const sizeKey = sizeKeyOf(product.sizeMm2);
-
   // ── Materials ────────────────────────────────────────────────────────
   const materialResults = product.bom.map((line): Result<MaterialCostLine> => {
-    const effective = kgPerKm(addPercent(line.consumption, line.scrapPercent));
-
-    // Copper is repriced live off the LME; every other material reads its
-    // held rate. This is the whole point of the app.
-    if (COPPER_MATERIAL_KEYS.has(line.materialKey)) {
-      const rate = copperRatePerKg(rates.copper, sizeKey);
-      if (!rate.ok) return rate;
-
-      return ok({
-        materialKey: line.materialKey,
-        materialName: line.materialName,
-        consumption: line.consumption,
-        scrapPercent: line.scrapPercent,
-        effectiveConsumption: effective,
-        rate: rate.value,
-        cost: omrPerKm(effective.times(rate.value)),
-        source: { ...rates.copper.source, lmeLinked: true },
-      });
-    }
+    // Scrap is an absolute quantity as entered in the source sheet, so the
+    // costed quantity is simply consumption + scrap.
+    const effective = kgPerKm(line.consumption.plus(line.scrap));
 
     const held = rates.materials.get(line.materialKey);
     if (held === undefined) {
@@ -90,15 +71,22 @@ export function computeCost(
       );
     }
 
+    // Copper codes reprice live off the LME; every other material reads the
+    // fixed rate it holds. One lookup path, one branch, decided by the rate.
+    const rate = effectiveMaterialRate(held, rates.copper);
+
     return ok({
       materialKey: line.materialKey,
       materialName: line.materialName,
       consumption: line.consumption,
-      scrapPercent: line.scrapPercent,
+      scrap: line.scrap,
       effectiveConsumption: effective,
-      rate: held.rate,
-      cost: omrPerKm(effective.times(held.rate)),
-      source: held.source,
+      rate,
+      cost: omrPerKm(effective.times(rate)),
+      lmeLinked: held.lmeLinked,
+      source: held.lmeLinked
+        ? { ...rates.copper.source, lmeLinked: true }
+        : held.source,
     });
   });
 
@@ -108,8 +96,6 @@ export function computeCost(
   const materialsSubtotal = omrPerKm(sum(materials.value.map((m) => m.cost)));
 
   // ── Machine operations ───────────────────────────────────────────────
-  const cores = dec(product.cores);
-
   const operationResults = [...product.operations]
     .sort((a, b) => a.sequence - b.sequence)
     .map((op): Result<MachineCostLine> => {
@@ -124,17 +110,16 @@ export function computeCost(
         );
       }
 
-      // Stranding and insulation run once per core; sheathing and armouring
-      // run once for the whole cable.
-      const hours = asHours(
-        op.scalesWithCores ? op.hoursPerKm.times(cores) : op.hoursPerKm,
-      );
+      // Cost = machine hours × cores × machine rate, with cores taken from the
+      // operation line rather than the product.
+      const hours = asHours(op.hoursPerKm.times(dec(op.cores)));
 
       return ok({
         machineKey: op.machineKey,
         machineName: op.machineName,
         sequence: op.sequence,
         hours,
+        cores: op.cores,
         rate: held.rate,
         cost: omrPerKm(hours.times(held.rate)),
         source: held.source,
@@ -163,8 +148,13 @@ export function computeCost(
   const overheadsSubtotal = omrPerKm(sum(overheads.map((o) => o.cost)));
 
   // ── Roll-up ──────────────────────────────────────────────────────────
+  // cost/km = raw material + operations + overheads + tooling, exactly as the
+  // source sheets reconcile it.
   const costPerKm = omrPerKm(
-    materialsSubtotal.plus(operationsSubtotal).plus(overheadsSubtotal),
+    materialsSubtotal
+      .plus(operationsSubtotal)
+      .plus(overheadsSubtotal)
+      .plus(product.toolingPerKm),
   );
   const costPerMetre = omrPerMetre(costPerKm.dividedBy(METRES_PER_KM));
 
@@ -184,16 +174,15 @@ export function computeCost(
 
   const unitRate = omrPerMetre(sellPerKm.dividedBy(METRES_PER_KM));
 
+  // Exposure is the mass of LME-linked material, which is what a copper move
+  // actually acts on.
   const copperMassPerKm = kg(
     sum(
       materials.value
-        .filter((m) => COPPER_MATERIAL_KEYS.has(m.materialKey))
+        .filter((m) => m.lmeLinked)
         .map((m) => m.effectiveConsumption),
     ),
   );
-
-  const copperRate = copperRatePerKg(rates.copper, sizeKey);
-  if (!copperRate.ok) return copperRate;
 
   return ok({
     productId: product.id,
@@ -204,6 +193,7 @@ export function computeCost(
     operationsSubtotal,
     overheads,
     overheadsSubtotal,
+    tooling: product.toolingPerKm,
     costPerKm,
     costPerMetre,
     commercial: {
@@ -220,7 +210,7 @@ export function computeCost(
     strike: {
       lme: rates.copper.lme,
       fx: rates.copper.fx,
-      copperOmrPerKg: copperRate.value,
+      copperOmrPerKg: copperMetalValue(rates.copper),
       asOf: rates.asOf,
     },
   });

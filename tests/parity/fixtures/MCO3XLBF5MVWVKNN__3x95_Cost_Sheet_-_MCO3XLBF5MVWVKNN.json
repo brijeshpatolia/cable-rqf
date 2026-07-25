@@ -1,0 +1,14 @@
+{
+  "productId": "MCO3XLBF5MVWVKNN",
+  "sourceSheet": "3x95 Cost Sheet - MCO3XLBF5MVWVKNN",
+  "expected": {
+    "materialsSubtotal": "6972.47655497123",
+    "operationsSubtotal": "253.3389896",
+    "overheadsSubtotal": "296.740998864174",
+    "tooling": "5",
+    "costPerKm": "7527.55654343541",
+    "costPerMetre": "7.52755654343541",
+    "quotePerMetre": "8.65669002495072",
+    "sourceCostPerMetre": "7.52755563827924"
+  }
+}

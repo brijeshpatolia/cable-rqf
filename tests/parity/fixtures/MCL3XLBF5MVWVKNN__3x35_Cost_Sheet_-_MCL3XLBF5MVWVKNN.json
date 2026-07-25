@@ -1,0 +1,14 @@
+{
+  "productId": "MCL3XLBF5MVWVKNN",
+  "sourceSheet": "3x35 Cost Sheet - MCL3XLBF5MVWVKNN",
+  "expected": {
+    "materialsSubtotal": "3240.82885031409",
+    "operationsSubtotal": "165.6836119",
+    "overheadsSubtotal": "136.422999501228",
+    "tooling": "5",
+    "costPerKm": "3547.93546171531",
+    "costPerMetre": "3.54793546171531",
+    "quotePerMetre": "4.08012578097261",
+    "sourceCostPerMetre": "3.54793188083969"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "productId": "P37CS3S2XLVWVKNN",
+  "sourceSheet": "3x240Cost Sheet - P37CS3S2XLVWVKNN",
+  "expected": {
+    "materialsSubtotal": "13947.824273806",
+    "operationsSubtotal": "236.8919319",
+    "overheadsSubtotal": "590.404996871948",
+    "tooling": "1",
+    "costPerKm": "14776.1212025779",
+    "costPerMetre": "14.7761212025779",
+    "quotePerMetre": "16.9925393829646",
+    "sourceCostPerMetre": "14.7761214923938"
+  }
+}

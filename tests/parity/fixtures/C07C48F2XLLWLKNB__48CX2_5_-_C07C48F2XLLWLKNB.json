@@ -1,0 +1,14 @@
+{
+  "productId": "C07C48F2XLLWLKNB",
+  "sourceSheet": "48CX2.5 - C07C48F2XLLWLKNB",
+  "expected": {
+    "materialsSubtotal": "4826.91045936535",
+    "operationsSubtotal": "395.17158283237",
+    "overheadsSubtotal": "170.676998496056",
+    "tooling": "10",
+    "costPerKm": "5402.75904069377",
+    "costPerMetre": "5.40275904069377",
+    "quotePerMetre": "6.21317289679783",
+    "sourceCostPerMetre": "5.40276941988305"
+  }
+}

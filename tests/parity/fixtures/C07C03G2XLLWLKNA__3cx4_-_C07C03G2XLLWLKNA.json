@@ -1,0 +1,14 @@
+{
+  "productId": "C07C03G2XLLWLKNA",
+  "sourceSheet": "3cx4 - C07C03G2XLLWLKNA",
+  "expected": {
+    "materialsSubtotal": "491.248434123049",
+    "operationsSubtotal": "36.8087574007813",
+    "overheadsSubtotal": "22.6669996529818",
+    "tooling": "10",
+    "costPerKm": "560.724191176812",
+    "costPerMetre": "0.560724191176812",
+    "quotePerMetre": "0.644832819853334",
+    "sourceCostPerMetre": "0.560726624321489"
+  }
+}

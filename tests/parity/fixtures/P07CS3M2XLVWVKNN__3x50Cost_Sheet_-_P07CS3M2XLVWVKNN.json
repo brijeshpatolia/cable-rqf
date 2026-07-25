@@ -1,0 +1,14 @@
+{
+  "productId": "P07CS3M2XLVWVKNN",
+  "sourceSheet": "3x50Cost Sheet - P07CS3M2XLVWVKNN",
+  "expected": {
+    "materialsSubtotal": "2918.33537042945",
+    "operationsSubtotal": "68.9056415",
+    "overheadsSubtotal": "125.417000055313",
+    "tooling": "1.5",
+    "costPerKm": "3114.15801198477",
+    "costPerMetre": "3.11415801198477",
+    "quotePerMetre": "3.58128171378248",
+    "sourceCostPerMetre": "3.11415941368664"
+  }
+}

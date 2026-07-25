@@ -1,0 +1,14 @@
+{
+  "productId": "MCW1XLBH5MVAVKNN",
+  "sourceSheet": "1x630Cost Sheet - MCW1XLBH5MVAVKNN",
+  "expected": {
+    "materialsSubtotal": "13019.1611573075",
+    "operationsSubtotal": "360.5688563",
+    "overheadsSubtotal": "566.933998227119",
+    "tooling": "5",
+    "costPerKm": "13951.6640118346",
+    "costPerMetre": "13.9516640118346",
+    "quotePerMetre": "16.0444136136098",
+    "sourceCostPerMetre": "13.9516653541626"
+  }
+}

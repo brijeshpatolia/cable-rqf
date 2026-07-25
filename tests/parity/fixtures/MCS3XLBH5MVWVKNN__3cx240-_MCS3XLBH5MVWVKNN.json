@@ -1,0 +1,14 @@
+{
+  "productId": "MCS3XLBH5MVWVKNN",
+  "sourceSheet": "3cx240- MCS3XLBH5MVWVKNN",
+  "expected": {
+    "materialsSubtotal": "16691.9603569918",
+    "operationsSubtotal": "498.5300789",
+    "overheadsSubtotal": "700.120004415512",
+    "tooling": "5",
+    "costPerKm": "17895.6104403073",
+    "costPerMetre": "17.8956104403073",
+    "quotePerMetre": "20.5799520063533",
+    "sourceCostPerMetre": "17.8956105811136"
+  }
+}

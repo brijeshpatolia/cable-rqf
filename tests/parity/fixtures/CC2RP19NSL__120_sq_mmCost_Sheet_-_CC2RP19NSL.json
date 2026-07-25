@@ -1,0 +1,14 @@
+{
+  "productId": "CC2RP19NSL",
+  "sourceSheet": "120 sq.mmCost Sheet - CC2RP19NSL",
+  "expected": {
+    "materialsSubtotal": "2075.08242099879",
+    "operationsSubtotal": "13.6564617",
+    "overheadsSubtotal": "88.5629993975162",
+    "tooling": "10",
+    "costPerKm": "2187.30188209631",
+    "costPerMetre": "2.18730188209631",
+    "quotePerMetre": "2.51539716441075",
+    "sourceCostPerMetre": "2.18730245694361"
+  }
+}

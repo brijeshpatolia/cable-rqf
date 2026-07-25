@@ -1,0 +1,14 @@
+{
+  "productId": "P07CR3F2XLVWVKNN",
+  "sourceSheet": "3CX2.5- P07CR3F2XLVWVKNN",
+  "expected": {
+    "materialsSubtotal": "293.565303610364",
+    "operationsSubtotal": "31.0705764",
+    "overheadsSubtotal": "16.0989997982979",
+    "tooling": "2",
+    "costPerKm": "342.734879808662",
+    "costPerMetre": "0.342734879808662",
+    "quotePerMetre": "0.394145111779962",
+    "sourceCostPerMetre": "0.342735304074038"
+  }
+}

@@ -36,7 +36,7 @@ export function CostBreakdownView({
               <Th align="left">Material</Th>
               <Th>kg/km</Th>
               <Th>Scrap</Th>
-              <Th>Effective</Th>
+              <Th>Total</Th>
               <Th>Rate</Th>
               <Th>Cost</Th>
             </tr>
@@ -56,7 +56,7 @@ export function CostBreakdownView({
                   <NumericCell value={m.consumption} kind="weight" />
                 </Td>
                 <Td>
-                  <NumericCell value={m.scrapPercent} kind="percent" unit="%" />
+                  <NumericCell value={m.scrap} kind="weight" />
                 </Td>
                 <Td>
                   <NumericCell value={m.effectiveConsumption} kind="weight" />
@@ -88,6 +88,7 @@ export function CostBreakdownView({
           <thead>
             <tr>
               <Th align="left">Stage</Th>
+              <Th>Cores</Th>
               <Th>Hours</Th>
               <Th>Rate</Th>
               <Th>Cost</Th>
@@ -102,6 +103,9 @@ export function CostBreakdownView({
                     {o.source.table} #{o.source.rateId} · effective{' '}
                     {formatDate(o.source.effectiveFrom)}
                   </Provenance>
+                </Td>
+                <Td>
+                  <span className="numeric">{o.cores}</span>
                 </Td>
                 <Td>
                   <NumericCell value={o.hours} kind="hours" unit="h" />
@@ -124,7 +128,7 @@ export function CostBreakdownView({
         raised={false}
         summary={
           <SectionSummary
-            label="Overheads & tooling"
+            label="Overheads"
             value={<NumericCell value={b.overheadsSubtotal} kind="costPerKm" />}
           />
         }
@@ -143,6 +147,11 @@ export function CostBreakdownView({
         </table>
       </ExpandableRow>
 
+      <TotalRow
+        label="Tooling"
+        value={<NumericCell value={b.tooling} kind="costPerKm" />}
+      />
+
       {/* ── Roll-up ───────────────────────────────────────────────── */}
       <TotalRow
         label="Cost per km"
@@ -160,7 +169,7 @@ export function CostBreakdownView({
         raised={false}
         summary={
           <SectionSummary
-            label={`Commercial — margin ${b.commercial.marginPercent.toFixed(1)}% · drum · packing · freight`}
+            label={commercialLabel(b)}
             value={null}
           />
         }
@@ -207,6 +216,26 @@ export function CostBreakdownView({
       </StrikeFooter>
     </div>
   );
+}
+
+/**
+ * Names only the terms that actually carry a figure. The source sheets stop at
+ * cost and margin, so listing drum, packing, and freight when all three are
+ * zero would advertise costs that aren't in the quote.
+ */
+function commercialLabel(b: CostBreakdown): string {
+  const extras = [
+    ['drum', b.commercial.drumCost],
+    ['packing', b.commercial.packingCost],
+    ['freight', b.commercial.freightCost],
+  ] as const;
+
+  const present = extras.filter(([, v]) => !v.isZero()).map(([name]) => name);
+  const margin = `margin ${b.commercial.marginPercent.toFixed(1)}%`;
+
+  return present.length === 0
+    ? `Commercial — ${margin}`
+    : `Commercial — ${margin} · ${present.join(' · ')}`;
 }
 
 function SectionSummary({

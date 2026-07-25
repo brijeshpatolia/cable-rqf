@@ -1,0 +1,14 @@
+{
+  "productId": "P07CS4L2XLVWVKNN",
+  "sourceSheet": "4x35Cost Sheet - P07CS4L2XLVWVKNN",
+  "expected": {
+    "materialsSubtotal": "2870.74194911037",
+    "operationsSubtotal": "72.2317598",
+    "overheadsSubtotal": "124.34300199151",
+    "tooling": "1.5",
+    "costPerKm": "3068.81671090188",
+    "costPerMetre": "3.06881671090188",
+    "quotePerMetre": "3.52913921753717",
+    "sourceCostPerMetre": "3.06881899246772"
+  }
+}

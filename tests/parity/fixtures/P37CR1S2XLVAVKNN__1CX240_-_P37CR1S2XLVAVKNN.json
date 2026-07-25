@@ -1,0 +1,14 @@
+{
+  "productId": "P37CR1S2XLVAVKNN",
+  "sourceSheet": "1CX240 - P37CR1S2XLVAVKNN",
+  "expected": {
+    "materialsSubtotal": "4611.96512179875",
+    "operationsSubtotal": "98.1589777",
+    "overheadsSubtotal": "201.282997965813",
+    "tooling": "1",
+    "costPerKm": "4912.40709746456",
+    "costPerMetre": "4.91240709746456",
+    "quotePerMetre": "5.64926816208425",
+    "sourceCostPerMetre": "4.91240719300001"
+  }
+}

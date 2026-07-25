@@ -1,0 +1,14 @@
+{
+  "productId": "P61CR1W2XLVAVKNN",
+  "sourceSheet": "1CX630 - P61CR1W2XLVAVKNN",
+  "expected": {
+    "materialsSubtotal": "12016.3555863486",
+    "operationsSubtotal": "177.2645797",
+    "overheadsSubtotal": "510.023006081581",
+    "tooling": "1",
+    "costPerKm": "12704.6431721302",
+    "costPerMetre": "12.7046431721302",
+    "quotePerMetre": "14.6103396479497",
+    "sourceCostPerMetre": "12.7046417910582"
+  }
+}

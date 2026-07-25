@@ -1,0 +1,14 @@
+{
+  "productId": "MCW1XLBF5MVAVKNN",
+  "sourceSheet": "1x630Cost Sheet - P37CS4R2XCVWVKNN",
+  "expected": {
+    "materialsSubtotal": "12791.0052168466",
+    "operationsSubtotal": "296.320143",
+    "overheadsSubtotal": "551.357999920845",
+    "tooling": "5",
+    "costPerKm": "13643.6833597674",
+    "costPerMetre": "13.6436833597674",
+    "quotePerMetre": "15.6902358637326",
+    "sourceCostPerMetre": "13.6436834153954"
+  }
+}

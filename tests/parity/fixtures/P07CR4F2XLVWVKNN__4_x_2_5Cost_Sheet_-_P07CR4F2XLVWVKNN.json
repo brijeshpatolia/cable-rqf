@@ -1,0 +1,14 @@
+{
+  "productId": "P07CR4F2XLVWVKNN",
+  "sourceSheet": "4 x 2.5Cost Sheet - P07CR4F2XLVWVKNN",
+  "expected": {
+    "materialsSubtotal": "353.150359097686",
+    "operationsSubtotal": "30.8635504",
+    "overheadsSubtotal": "18.1210000067949",
+    "tooling": "2",
+    "costPerKm": "404.134909504481",
+    "costPerMetre": "0.404134909504481",
+    "quotePerMetre": "0.464755145930153",
+    "sourceCostPerMetre": "0.404135359991648"
+  }
+}

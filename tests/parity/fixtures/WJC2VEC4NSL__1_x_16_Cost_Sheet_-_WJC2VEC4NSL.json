@@ -1,0 +1,14 @@
+{
+  "productId": "WJC2VEC4NSL",
+  "sourceSheet": "1 x 16 Cost Sheet - WJC2VEC4NSL",
+  "expected": {
+    "materialsSubtotal": "296.203120418762",
+    "operationsSubtotal": "2.8740882",
+    "overheadsSubtotal": "11.635999828577",
+    "tooling": "0.0329999998211861",
+    "costPerKm": "310.74620844716",
+    "costPerMetre": "0.31074620844716",
+    "quotePerMetre": "0.357358139714234",
+    "sourceCostPerMetre": "0.310747124481798"
+  }
+}

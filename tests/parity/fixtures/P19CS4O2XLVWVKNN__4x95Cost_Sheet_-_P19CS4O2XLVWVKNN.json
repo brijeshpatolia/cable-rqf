@@ -1,0 +1,14 @@
+{
+  "productId": "P19CS4O2XLVWVKNN",
+  "sourceSheet": "4x95Cost Sheet - P19CS4O2XLVWVKNN",
+  "expected": {
+    "materialsSubtotal": "7433.86534342335",
+    "operationsSubtotal": "124.9774984",
+    "overheadsSubtotal": "312.21600317955",
+    "tooling": "1.5",
+    "costPerKm": "7872.5588450029",
+    "costPerMetre": "7.8725588450029",
+    "quotePerMetre": "9.05344267175334",
+    "sourceCostPerMetre": "7.87255745919468"
+  }
+}

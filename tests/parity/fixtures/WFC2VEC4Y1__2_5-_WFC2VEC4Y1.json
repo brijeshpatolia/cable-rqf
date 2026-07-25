@@ -1,0 +1,14 @@
+{
+  "productId": "WFC2VEC4Y1",
+  "sourceSheet": "2.5- WFC2VEC4Y1",
+  "expected": {
+    "materialsSubtotal": "48.1935906976364",
+    "operationsSubtotal": "1.0243575",
+    "overheadsSubtotal": "1.51700001209974",
+    "tooling": "0.0329999998211861",
+    "costPerKm": "50.7679482095573",
+    "costPerMetre": "0.0507679482095573",
+    "quotePerMetre": "0.0583831404409909",
+    "sourceCostPerMetre": "0.0507675909313493"
+  }
+}

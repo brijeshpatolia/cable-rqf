@@ -1,0 +1,14 @@
+{
+  "productId": "MCT3XLBH5MVWVKNN",
+  "sourceSheet": "3cx300- MCT3XLBH5MVWVKNN",
+  "expected": {
+    "materialsSubtotal": "20297.8710396571",
+    "operationsSubtotal": "595.3489209",
+    "overheadsSubtotal": "860.637006282806",
+    "tooling": "5",
+    "costPerKm": "21758.8569668399",
+    "costPerMetre": "21.7588569668399",
+    "quotePerMetre": "25.0226855118659",
+    "sourceCostPerMetre": "21.7588573140645"
+  }
+}

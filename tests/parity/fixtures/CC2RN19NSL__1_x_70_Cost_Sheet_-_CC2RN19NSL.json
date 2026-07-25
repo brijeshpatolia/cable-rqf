@@ -1,0 +1,14 @@
+{
+  "productId": "CC2RN19NSL",
+  "sourceSheet": "1 x 70 Cost Sheet - CC2RN19NSL",
+  "expected": {
+    "materialsSubtotal": "1187.70995518587",
+    "operationsSubtotal": "2.6848668",
+    "overheadsSubtotal": "49.137000605464",
+    "tooling": "10",
+    "costPerKm": "1249.53182259133",
+    "costPerMetre": "1.24953182259133",
+    "quotePerMetre": "1.43696159598003",
+    "sourceCostPerMetre": "1.24953197530075"
+  }
+}

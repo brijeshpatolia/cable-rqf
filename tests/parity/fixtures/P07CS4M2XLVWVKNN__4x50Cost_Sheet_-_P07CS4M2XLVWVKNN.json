@@ -1,0 +1,14 @@
+{
+  "productId": "P07CS4M2XLVWVKNN",
+  "sourceSheet": "4x50Cost Sheet - P07CS4M2XLVWVKNN",
+  "expected": {
+    "materialsSubtotal": "3807.35479681246",
+    "operationsSubtotal": "81.561404",
+    "overheadsSubtotal": "163.226997852325",
+    "tooling": "1.5",
+    "costPerKm": "4053.64319866479",
+    "costPerMetre": "4.05364319866479",
+    "quotePerMetre": "4.66168967846451",
+    "sourceCostPerMetre": "4.05364585226729"
+  }
+}

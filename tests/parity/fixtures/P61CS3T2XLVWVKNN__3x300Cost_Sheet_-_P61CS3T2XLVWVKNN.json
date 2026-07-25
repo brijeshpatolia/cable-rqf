@@ -1,0 +1,14 @@
+{
+  "productId": "P61CS3T2XLVWVKNN",
+  "sourceSheet": "3x300Cost Sheet - P61CS3T2XLVWVKNN",
+  "expected": {
+    "materialsSubtotal": "17426.0316618615",
+    "operationsSubtotal": "307.9523965",
+    "overheadsSubtotal": "741.424007415771",
+    "tooling": "1",
+    "costPerKm": "18476.4080657773",
+    "costPerMetre": "18.4764080657773",
+    "quotePerMetre": "21.2478692756438",
+    "sourceCostPerMetre": "18.4764059374018"
+  }
+}

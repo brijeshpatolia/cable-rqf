@@ -1,0 +1,14 @@
+{
+  "productId": "IEC1XP01NATWTKNA",
+  "sourceSheet": "1px1.5 - IEC1XP01NATWTKNA",
+  "expected": {
+    "materialsSubtotal": "201.389922756903",
+    "operationsSubtotal": "30.2427514",
+    "overheadsSubtotal": "12.6390001326799",
+    "tooling": "10",
+    "costPerKm": "254.271674289583",
+    "costPerMetre": "0.254271674289583",
+    "quotePerMetre": "0.292412425433021",
+    "sourceCostPerMetre": "0.254271923537092"
+  }
+}

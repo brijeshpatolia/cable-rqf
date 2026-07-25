@@ -1,0 +1,14 @@
+{
+  "productId": "P37CS3R2XLVWVKNN",
+  "sourceSheet": "3x185Cost Sheet - P37CS3R2XLVWVKNN",
+  "expected": {
+    "materialsSubtotal": "10721.3137369414",
+    "operationsSubtotal": "201.8757931",
+    "overheadsSubtotal": "456.571999192238",
+    "tooling": "1",
+    "costPerKm": "11380.7615292336",
+    "costPerMetre": "11.3807615292336",
+    "quotePerMetre": "13.0878757586186",
+    "sourceCostPerMetre": "11.3807608987547"
+  }
+}

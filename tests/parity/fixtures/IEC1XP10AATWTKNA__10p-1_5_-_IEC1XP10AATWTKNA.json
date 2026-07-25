@@ -1,0 +1,14 @@
+{
+  "productId": "IEC1XP10AATWTKNA",
+  "sourceSheet": "10p-1.5 - IEC1XP10AATWTKNA",
+  "expected": {
+    "materialsSubtotal": "1289.91901838916",
+    "operationsSubtotal": "130.808330001059",
+    "overheadsSubtotal": "61.3239994347096",
+    "tooling": "10",
+    "costPerKm": "1492.05134782493",
+    "costPerMetre": "1.49205134782493",
+    "quotePerMetre": "1.71585904999867",
+    "sourceCostPerMetre": "1.49204622397997"
+  }
+}
