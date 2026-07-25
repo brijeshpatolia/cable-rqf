@@ -5,6 +5,7 @@ import type {
   RateRepository,
 } from '@/modules/rates';
 import { DbProductRepository, DbRateRepository } from './db/repository';
+import { DbCatalogueRepository } from './db/catalogue-repository';
 import { DbJobRepository } from './db/job-repository';
 import { DbQuoteRepository } from './db/quote-repository';
 import { DbSubstitutionRepository } from './db/substitution-repository';
@@ -80,6 +81,9 @@ export const quoteStore = new DbQuoteRepository();
 export const jobStore = new DbJobRepository();
 export const vocabularyStore = new DbVocabularyRepository();
 export const substitutionStore = new DbSubstitutionRepository();
+
+/** The product library's write path — designs and new item codes. */
+export const catalogueStore = new DbCatalogueRepository();
 
 /** True when the app is reading real data rather than the seeded stand-in. */
 export const isDatabaseBacked = !useMemory;

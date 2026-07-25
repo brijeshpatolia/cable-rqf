@@ -58,6 +58,16 @@ export default async function ProductDetailPage({
           >
             ← Catalogue
           </a>
+          <a
+            href={`/catalogue/${id}/design`}
+            style={{
+              marginLeft: 16,
+              color: 'var(--color-copper)',
+              fontSize: 'var(--text-micro)',
+            }}
+          >
+            Design and bill of materials →
+          </a>
           <h1
             className="mt-2"
             style={{

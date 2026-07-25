@@ -62,6 +62,7 @@ model AppUser {
   auditEvents       AuditEvent[]
   quotes            Quote[]
   jobs              Job[]
+  revisedProducts   Product[]
   jobDecisions      JobLine[]
   vocabularyTerms   VocabularyTerm[]
   substitutionRules SubstitutionRule[]
@@ -171,6 +172,16 @@ model Product {
   voltage    String
 
   toolingPerKm Decimal @map("tooling_per_km") @db.Decimal
+
+  /// Set the first time a person changes this product's design.
+  ///
+  /// The parity harness asserts every imported product still reproduces its
+  /// source cost sheet. A revised product legitimately does not — that is the
+  /// point of revising it — so parity excludes these and *says how many*,
+  /// rather than quietly weakening to whatever the library happens to contain.
+  revisedAt   DateTime? @map("revised_at") @db.Timestamptz(6)
+  revisedById String?   @map("revised_by_id") @db.Uuid
+  revisedBy   AppUser?  @relation(fields: [revisedById], references: [id], onDelete: Restrict)
 
   bomLines   BomLine[]
   operations MachineOp[]

@@ -54,6 +54,13 @@ export default async function CataloguePage() {
         >
           Catalogue
         </h1>
+        <a
+          href="/catalogue/new"
+          className="mt-2 inline-block"
+          style={{ color: 'var(--color-copper)', fontSize: 'var(--text-micro)' }}
+        >
+          Add a new item →
+        </a>
         <p className="mt-2" style={{ color: 'var(--color-ink-secondary)' }}>
           {list.length} costed products, priced on today&rsquo;s copper. Nothing
           here is a stored price — every figure is rebuilt from the rate tables
@@ -177,7 +184,10 @@ export default async function CataloguePage() {
             },
           ]}
           rows={priced}
-          rowKey={({ product }) => product.id}
+          // The library's natural key is (code, source sheet): two products
+          // genuinely share the item code `P07CS3M2XLVWVKNN`. Keyed on the code
+          // alone, React was free to drop or duplicate a catalogue row.
+          rowKey={({ product }) => `${product.id}\u0000${product.sourceSheet ?? ''}`}
           href={({ product }) => `/catalogue/${product.id}`}
         />
       </Panel>

@@ -6,6 +6,7 @@ export {
   MATCH_AXES,
   SUBSTITUTION_RULES,
   axisLabel,
+  candidatesFor,
   differencesBetween,
   isPriceable,
   matchLine,

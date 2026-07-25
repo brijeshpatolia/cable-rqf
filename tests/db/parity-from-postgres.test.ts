@@ -6,6 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { dec } from '@/core/decimal';
 import { metres } from '@/core/units';
 import { SOURCE_TERMS } from '@/infra/data';
+import { DbCatalogueRepository } from '@/infra/db/catalogue-repository';
 import { DbProductRepository, DbRateRepository } from '@/infra/db/repository';
 import { computeCost } from '@/modules/costing';
 
@@ -73,10 +74,31 @@ describe.skipIf(url === undefined)('parity, computed from Postgres', () => {
     expect(all).toContain('1.83595955371857');
   });
 
-  it('reproduces all 99 cost sheets from database rows', () => {
+  it('reproduces every unrevised cost sheet from database rows', async () => {
+    /*
+      Revised products are excluded, and the count is asserted.
+
+      Once a person can change a bill of materials, a revised product
+      legitimately stops matching its source spreadsheet — that is the point of
+      revising it. What must not happen is this test quietly weakening into
+      "whatever the library contains reproduces whatever it contains", so the
+      exclusion is explicit, counted, and printed.
+    */
+    const revised = await new DbCatalogueRepository(db).revisedCount();
+    const revisedCodes = new Set(
+      (
+        await db.$queryRaw<{ code: string }[]>`
+          SELECT code FROM product WHERE revised_at IS NOT NULL`
+      ).map((r) => r.code),
+    );
+    expect(revisedCodes.size).toBe(revised);
+
     const failures: string[] = [];
+    let checked = 0;
 
     for (const f of fixtures) {
+      if (revisedCodes.has(f.productId)) continue;
+
       const product = products.find(
         (p) => p.id === f.productId && p.sourceSheet === f.sourceSheet,
       );
@@ -84,6 +106,7 @@ describe.skipIf(url === undefined)('parity, computed from Postgres', () => {
         failures.push(`${f.productId}: not found in the database`);
         continue;
       }
+      checked += 1;
 
       const result = computeCost(
         product,
@@ -114,6 +137,10 @@ describe.skipIf(url === undefined)('parity, computed from Postgres', () => {
 
     expect(failures.slice(0, 5)).toEqual([]);
     expect(failures).toHaveLength(0);
+
+    // The harness is only worth something if it is actually checking things.
+    expect(checked).toBe(fixtures.length - revisedCodes.size);
+    expect(checked).toBeGreaterThan(0);
   });
 
   it('resolves rates in one round of queries, not one per product', async () => {
