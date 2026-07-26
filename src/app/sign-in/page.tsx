@@ -1,122 +1,23 @@
-'use client';
+import { SignInForm } from '@/ui/components/SignInForm';
 
-import { useActionState } from 'react';
-import { signIn } from './actions';
-import { Panel } from '@/ui/components/Panel';
+export const metadata = { title: 'Sign in — Cable Quoting' };
 
 /**
  * Sign in.
  *
- * The only screen in the app with nothing on it. Deliberately plain — an
- * instrument does not greet you.
+ * A server component around a client form, only so the destination the
+ * middleware remembered can be read here rather than from a browser hook.
  */
-export default function SignInPage() {
-  const [state, action, pending] = useActionState(signIn, {});
+export default async function SignInPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string | string[] }>;
+}) {
+  const { next } = await searchParams;
+  // A repeated `?next=` arrives as an array. Taking the first is arbitrary but
+  // harmless: the action validates whatever it is handed, and a request with
+  // two destinations was never made by this app.
+  const to = Array.isArray(next) ? (next[0] ?? '') : (next ?? '');
 
-  return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ padding: 24 }}
-    >
-      <div style={{ width: 340 }}>
-        <div style={{ marginBottom: 20 }}>
-          <div
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 'var(--text-display-sm)',
-              lineHeight: 'var(--text-display-sm--line-height)',
-              letterSpacing: 'var(--text-display-sm--letter-spacing)',
-              fontWeight: 500,
-            }}
-          >
-            Cable Quoting
-          </div>
-          <div className="label" style={{ marginTop: 4 }}>
-            Sign in
-          </div>
-        </div>
-
-        <Panel>
-          <form action={action} className="flex flex-col gap-4">
-            <label className="flex flex-col gap-1">
-              <span className="label">Email</span>
-              <input
-                name="email"
-                type="email"
-                autoComplete="username"
-                autoFocus
-                required
-                style={inputStyle}
-              />
-            </label>
-
-            <label className="flex flex-col gap-1">
-              <span className="label">Password</span>
-              <input
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                style={inputStyle}
-              />
-            </label>
-
-            {state.error !== undefined ? (
-              <p
-                role="alert"
-                style={{
-                  color: 'var(--color-status-manual)',
-                  fontSize: 'var(--text-micro)',
-                  lineHeight: 'var(--text-micro--line-height)',
-                }}
-              >
-                {state.error}
-              </p>
-            ) : null}
-
-            <button
-              type="submit"
-              disabled={pending}
-              style={{
-                backgroundColor: pending
-                  ? 'var(--color-surface-raised)'
-                  : 'var(--color-copper)',
-                color: pending
-                  ? 'var(--color-ink-tertiary)'
-                  : 'var(--color-ink-on-copper)',
-                borderRadius: 'var(--radius-md)',
-                padding: '8px 12px',
-                fontWeight: 550,
-                minHeight: 'var(--row-height)',
-                marginTop: 4,
-              }}
-            >
-              {pending ? 'Signing in…' : 'Sign in'}
-            </button>
-          </form>
-        </Panel>
-
-        <p
-          style={{
-            marginTop: 16,
-            color: 'var(--color-ink-tertiary)',
-            fontSize: 'var(--text-micro)',
-            lineHeight: 'var(--text-micro--line-height)',
-          }}
-        >
-          Accounts are created by the administrator. There is no self-signup.
-        </p>
-      </div>
-    </div>
-  );
+  return <SignInForm next={to} />;
 }
-
-const inputStyle: React.CSSProperties = {
-  backgroundColor: 'var(--color-surface-base)',
-  border: '1px solid var(--color-line-strong)',
-  borderRadius: 'var(--radius-sm)',
-  color: 'var(--color-ink-primary)',
-  padding: '6px 10px',
-  fontSize: 'var(--text-body)',
-  minHeight: 'var(--row-height)',
-};

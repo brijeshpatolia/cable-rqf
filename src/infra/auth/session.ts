@@ -1,8 +1,8 @@
-import { createHmac, timingSafeEqual } from 'node:crypto';
 import { cookies } from 'next/headers';
 import type { PrismaClient } from '@prisma/client';
 import type { Actor, Role, SessionReader } from '@/modules/auth';
 import { prisma as defaultClient } from '@/infra/db/client';
+import { SESSION_COOKIE, verify } from './token';
 
 /**
  * Sessions, carried in a signed cookie.
@@ -14,64 +14,19 @@ import { prisma as defaultClient } from '@/infra/db/client';
  * revoking someone's authority takes effect immediately rather than whenever
  * their cookie happens to expire.
  *
+ * Signing and verifying live in `token.ts`, because the middleware needs them
+ * too and does not run in the Node runtime.
+ *
+ * **This is the authoritative check, not the perimeter.** Middleware turns
+ * anonymous traffic away before it reaches a page; this is what knows whether
+ * the account still exists, is still enabled, and what it may do.
+ *
  * This is the one adapter that would be replaced by OIDC. `modules/auth`
  * declares the `SessionReader` port; nothing above this file knows a cookie
  * is involved.
  */
 
-export const SESSION_COOKIE = 'cq_session';
-
-const DURATION_MS = 12 * 60 * 60 * 1000; // one working day
-
-function secret(): Buffer {
-  const value = process.env['AUTH_SECRET'];
-  if (value === undefined || value.length < 32) {
-    throw new Error(
-      'AUTH_SECRET is missing or too short. Generate one with ' +
-        '`openssl rand -base64 32` and set it in the environment.',
-    );
-  }
-  return Buffer.from(value, 'utf8');
-}
-
-function sign(payload: string): string {
-  return createHmac('sha256', secret()).update(payload).digest('base64url');
-}
-
-export function issue(userId: string, at: Date = new Date()): string {
-  const payload = Buffer.from(
-    JSON.stringify({ sub: userId, exp: at.getTime() + DURATION_MS }),
-  ).toString('base64url');
-  return `${payload}.${sign(payload)}`;
-}
-
-interface Claims {
-  readonly sub: string;
-  readonly exp: number;
-}
-
-function verify(token: string, at: Date = new Date()): Claims | null {
-  const [payload, signature] = token.split('.');
-  if (payload === undefined || signature === undefined) return null;
-
-  const expected = Buffer.from(sign(payload), 'base64url');
-  const actual = Buffer.from(signature, 'base64url');
-  if (expected.length !== actual.length) return null;
-  if (!timingSafeEqual(expected, actual)) return null;
-
-  try {
-    const claims = JSON.parse(
-      Buffer.from(payload, 'base64url').toString('utf8'),
-    ) as Claims;
-    if (typeof claims.sub !== 'string' || typeof claims.exp !== 'number') {
-      return null;
-    }
-    if (claims.exp <= at.getTime()) return null;
-    return claims;
-  } catch {
-    return null;
-  }
-}
+export { SESSION_COOKIE, cookieOptions, issue } from './token';
 
 export class CookieSessionReader implements SessionReader {
   constructor(private readonly db: PrismaClient = defaultClient) {}
@@ -81,7 +36,7 @@ export class CookieSessionReader implements SessionReader {
     const token = store.get(SESSION_COOKIE)?.value;
     if (token === undefined) return null;
 
-    const claims = verify(token);
+    const claims = await verify(token);
     if (claims === null) return null;
 
     // Read the role fresh every request rather than trusting the cookie, so
@@ -100,11 +55,3 @@ export class CookieSessionReader implements SessionReader {
 
 /** The reader the app uses. One line to swap for an OIDC adapter. */
 export const session = new CookieSessionReader();
-
-export const cookieOptions = {
-  httpOnly: true,
-  sameSite: 'lax' as const,
-  secure: process.env['NODE_ENV'] === 'production',
-  path: '/',
-  maxAge: DURATION_MS / 1000,
-};
