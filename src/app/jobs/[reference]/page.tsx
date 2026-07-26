@@ -78,6 +78,16 @@ export default async function JobPage({
         <a href="/" style={{ color: 'var(--color-ink-tertiary)', fontSize: 'var(--text-micro)' }}>
           ← Inbox
         </a>
+        <a
+          href="/history"
+          style={{
+            marginLeft: 16,
+            color: 'var(--color-copper)',
+            fontSize: 'var(--text-micro)',
+          }}
+        >
+          History →
+        </a>
         <div className="mt-2 flex items-baseline gap-4">
           <h1
             style={{

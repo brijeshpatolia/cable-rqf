@@ -84,6 +84,16 @@ export default async function DesignPage({
         >
           ← {product.id}
         </a>
+        <a
+          href="/history"
+          style={{
+            marginLeft: 16,
+            color: 'var(--color-copper)',
+            fontSize: 'var(--text-micro)',
+          }}
+        >
+          History →
+        </a>
         <h1
           className="mt-2"
           style={{

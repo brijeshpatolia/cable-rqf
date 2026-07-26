@@ -47,6 +47,16 @@ export default async function QuotePage({
           <a href="/quotes" style={{ color: 'var(--color-ink-tertiary)', fontSize: 'var(--text-micro)' }}>
             ← Quotes
           </a>
+          <a
+            href="/history"
+            style={{
+              marginLeft: 16,
+              color: 'var(--color-copper)',
+              fontSize: 'var(--text-micro)',
+            }}
+          >
+            History →
+          </a>
           <h1
             className="mt-2"
             style={{
