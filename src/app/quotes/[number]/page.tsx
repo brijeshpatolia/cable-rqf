@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { formatDate, formatInstant, formatNumber } from '@/core/format';
 import { now } from '@/infra/clock';
-import { quoteStore } from '@/infra/repositories';
+import { jobStore, quoteStore } from '@/infra/repositories';
 import {
   copperMassIsPartial,
   copperMassOf,
@@ -13,6 +13,9 @@ import { CostBreakdownView } from '@/ui/components/CostBreakdownView';
 import { ExpandableRow } from '@/ui/components/ExpandableRow';
 import { NumericCell } from '@/ui/components/NumericCell';
 import { Panel, Field } from '@/ui/components/Panel';
+import { SupersedeQuote } from '@/ui/components/SupersedeQuote';
+import { can } from '@/modules/auth';
+import { reopenQuote } from '../actions';
 import { requireRead } from '../guard';
 
 export const dynamic = 'force-dynamic';
@@ -31,12 +34,15 @@ export default async function QuotePage({
 }: {
   params: Promise<{ number: string }>;
 }) {
-  await requireRead();
+  const actor = await requireRead();
 
   const { number } = await params;
   const asOf = now();
   const quote = await quoteStore.byNumber(number);
   if (quote === undefined) notFound();
+
+  // The enquiry behind it, which is what a correction reopens.
+  const job = await jobStore.byQuoteNumber(number);
 
   const lapsed = isExpired(quote, asOf);
 
@@ -299,6 +305,34 @@ export default async function QuotePage({
               </p>
             </Panel>
           ) : null}
+
+          {/*
+            Last in the column, deliberately. Correcting a quote is the rarest
+            thing anyone does on this screen and the most consequential — a
+            customer gets a second document out of it.
+          */}
+          <Panel title="Correcting this quote">
+            {quote.supersedes === null ? null : (
+              <p className="mb-3" style={{
+                color: 'var(--color-ink-secondary)',
+                fontSize: 'var(--text-micro)',
+                lineHeight: 'var(--text-micro--line-height)',
+              }}>
+                Supersedes{' '}
+                <a href={`/quotes/${quote.supersedes}`} style={{ color: 'var(--color-copper)' }}>
+                  {quote.supersedes}
+                </a>
+                .
+              </p>
+            )}
+            <SupersedeQuote
+              action={reopenQuote}
+              number={quote.number}
+              supersededBy={quote.supersededBy}
+              canCorrect={can(actor, 'quote.approve')}
+              reference={job?.reference ?? null}
+            />
+          </Panel>
         </aside>
       </div>
     </div>

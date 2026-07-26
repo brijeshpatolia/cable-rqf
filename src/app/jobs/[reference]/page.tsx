@@ -103,7 +103,7 @@ export default async function JobPage({
           <span className="numeric" style={{ color: 'var(--color-ink-tertiary)' }}>
             {persisted.reference}
           </span>
-          {persisted.quoteNumber !== null ? (
+          {persisted.quoteNumber !== null && persisted.status !== 'review' ? (
             <a
               href={`/quotes/${persisted.quoteNumber}`}
               className="numeric"
@@ -111,6 +111,19 @@ export default async function JobPage({
             >
               → {persisted.quoteNumber}
             </a>
+          ) : persisted.quoteNumber !== null ? (
+            /*
+              Reopened to correct a quote already sent. Showing the quote
+              number alone made this look like a finished job; it is the
+              opposite — the most consequential state the screen has, because
+              approving it sends the customer a second document.
+            */
+            <span style={{ color: 'var(--color-status-review)', fontSize: 'var(--text-micro)' }}>
+              Correcting{' '}
+              <a href={`/quotes/${persisted.quoteNumber}`} className="numeric" style={{ color: 'inherit' }}>
+                {persisted.quoteNumber}
+              </a>
+            </span>
           ) : (
             <span style={{ color: 'var(--color-ink-tertiary)', fontSize: 'var(--text-micro)' }}>
               {statusLabel(persisted.status)}

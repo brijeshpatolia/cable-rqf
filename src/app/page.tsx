@@ -1,9 +1,11 @@
+import { dec } from '@/core/decimal';
 import { formatInstant } from '@/core/format';
+import { now } from '@/infra/clock';
 import { session } from '@/infra/auth/session';
-import type { JobSummary } from '@/infra/db/job-repository';
 import { jobStore } from '@/infra/repositories';
 import { statusLabel } from '@/modules/jobs';
-import { DataTable } from '@/ui/components/DataTable';
+import { JobsTable, type JobRowView } from '@/ui/components/JobsTable';
+import { NumericCell } from '@/ui/components/NumericCell';
 import { NewJob } from '@/ui/components/NewJob';
 import { Panel } from '@/ui/components/Panel';
 import { openJob, openJobFromFile } from './jobs/actions';
@@ -23,6 +25,83 @@ export default async function InboxPage() {
   const actor = await session.currentActor();
   const jobs = actor === null ? [] : await jobStore.list();
   const open = jobs.filter((j) => j.status === 'review');
+
+  /*
+    Cells are rendered here and handed over already formed, so the filter chips
+    are the only thing the browser is asked to do. Formatting a number or a
+    date twice — once for the server pass and once for the client — is how two
+    screens end up disagreeing about what 8,500 looks like.
+
+    `ageDays` is computed here too: the client has no business owning a clock
+    when the server already knows when the page was built.
+  */
+  const asOf = now();
+  const rows: readonly JobRowView[] = jobs.map((j) => ({
+    reference: j.reference,
+    href: `/jobs/${j.reference}`,
+    customer: j.customer,
+    status: j.status,
+    ageDays: Math.floor((asOf.getTime() - j.createdAt.getTime()) / 86_400_000),
+    cells: [
+      <span key="r" className="numeric" style={leftNumeric}>
+        {j.reference}
+      </span>,
+      j.customer ?? (
+        <span key="c" style={{ color: 'var(--color-ink-tertiary)' }}>
+          not named yet
+        </span>
+      ),
+      <span key="l" className="numeric">
+        {j.lineCount}
+      </span>,
+      <span
+        key="d"
+        className="numeric"
+        style={{
+          color:
+            j.decisionCount > 0
+              ? 'var(--color-status-review)'
+              : 'var(--color-ink-tertiary)',
+        }}
+        title="Lines a person answered rather than the app"
+      >
+        {j.decisionCount === 0 ? '—' : j.decisionCount}
+      </span>,
+      <NumericCell
+        key="v"
+        value={j.quotedValue === null ? null : dec(j.quotedValue)}
+        kind="total"
+      />,
+      j.quoteNumber === null ? (
+        <span
+          key="s"
+          style={{
+            color:
+              j.status === 'review'
+                ? 'var(--color-ink-primary)'
+                : 'var(--color-ink-tertiary)',
+          }}
+        >
+          {statusLabel(j.status)}
+        </span>
+      ) : (
+        <span key="s" className="numeric" style={{ ...leftNumeric, color: 'var(--color-copper)' }}>
+          {j.quoteNumber}
+        </span>
+      ),
+      <span
+        key="t"
+        className="numeric"
+        style={{
+          ...leftNumeric,
+          color: 'var(--color-ink-tertiary)',
+          fontSize: 'var(--text-micro)',
+        }}
+      >
+        {formatInstant(j.createdAt)}
+      </span>,
+    ],
+  }));
 
   return (
     <div style={{ padding: 24 }} className="flex flex-col gap-6">
@@ -61,122 +140,18 @@ export default async function InboxPage() {
             <NewJob action={openJob} uploadAction={openJobFromFile} />
           </Panel>
 
-          <Panel
-            title="Jobs"
-            flush
-            aside={
-              <span
-                className="numeric"
-                style={{
-                  color: 'var(--color-ink-tertiary)',
-                  fontSize: 'var(--text-micro)',
-                }}
-              >
-                {open.length} open · {jobs.length} total
-              </span>
-            }
-          >
-            <DataTable
+          <Panel title="Enquiries" flush>
+            <JobsTable
               columns={[
-                {
-                  key: 'reference',
-                  header: 'Job',
-                  width: 120,
-                  render: (j: JobSummary) => (
-                    <span className="numeric" style={{ textAlign: 'left', display: 'block' }}>
-                      {j.reference}
-                    </span>
-                  ),
-                },
-                {
-                  key: 'customer',
-                  header: 'Customer',
-                  render: (j) =>
-                    j.customer ?? (
-                      <span style={{ color: 'var(--color-ink-tertiary)' }}>
-                        not named yet
-                      </span>
-                    ),
-                },
-                {
-                  key: 'lines',
-                  header: 'Lines',
-                  align: 'right',
-                  width: 70,
-                  render: (j) => <span className="numeric">{j.lineCount}</span>,
-                },
-                {
-                  key: 'decided',
-                  header: 'By hand',
-                  align: 'right',
-                  width: 80,
-                  render: (j) => (
-                    <span
-                      className="numeric"
-                      style={{
-                        color:
-                          j.decisionCount > 0
-                            ? 'var(--color-status-review)'
-                            : 'var(--color-ink-tertiary)',
-                      }}
-                      title="Lines a person answered rather than the app"
-                    >
-                      {j.decisionCount === 0 ? '—' : j.decisionCount}
-                    </span>
-                  ),
-                },
-                {
-                  key: 'status',
-                  header: 'Status',
-                  width: 120,
-                  render: (j) =>
-                    j.quoteNumber === null ? (
-                      <span
-                        style={{
-                          color:
-                            j.status === 'review'
-                              ? 'var(--color-ink-primary)'
-                              : 'var(--color-ink-tertiary)',
-                        }}
-                      >
-                        {statusLabel(j.status)}
-                      </span>
-                    ) : (
-                      <span
-                        className="numeric"
-                        style={{
-                          color: 'var(--color-copper)',
-                          textAlign: 'left',
-                          display: 'block',
-                        }}
-                      >
-                        {j.quoteNumber}
-                      </span>
-                    ),
-                },
-                {
-                  key: 'received',
-                  header: 'Received',
-                  width: 160,
-                  render: (j) => (
-                    <span
-                      className="numeric"
-                      style={{
-                        color: 'var(--color-ink-tertiary)',
-                        fontSize: 'var(--text-micro)',
-                        textAlign: 'left',
-                        display: 'block',
-                      }}
-                    >
-                      {formatInstant(j.createdAt)}
-                    </span>
-                  ),
-                },
+                { header: 'Job', width: 120 },
+                { header: 'Customer' },
+                { header: 'Lines', width: 70, align: 'right' },
+                { header: 'By hand', width: 80, align: 'right' },
+                { header: 'Quoted', width: 120, align: 'right' },
+                { header: 'Status', width: 120 },
+                { header: 'Received', width: 160 },
               ]}
-              rows={jobs}
-              rowKey={(j) => j.id}
-              href={(j) => `/jobs/${j.reference}`}
-              empty="No enquiries yet. Paste one above, or upload the customer’s file."
+              rows={rows}
             />
           </Panel>
         </>
@@ -184,3 +159,5 @@ export default async function InboxPage() {
     </div>
   );
 }
+
+const leftNumeric: React.CSSProperties = { textAlign: 'left', display: 'block' };

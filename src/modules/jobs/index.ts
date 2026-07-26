@@ -59,6 +59,13 @@ export interface Job {
   readonly createdAt: Date;
   readonly updatedAt: Date;
   readonly quoteNumber: string | null;
+  /**
+   * The quote this job became, if it has been out to a customer.
+   *
+   * Survives a reopening on purpose: it is what tells the approval path that
+   * the next quote replaces one already issued rather than being the first.
+   */
+  readonly quoteId: string | null;
   readonly decisions: readonly LineDecision[];
 }
 

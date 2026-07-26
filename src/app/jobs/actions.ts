@@ -495,7 +495,16 @@ export async function approveJob(
   });
   if (!assembled.ok) return { error: assembled.error.message };
 
-  const { number, id } = await quoteStore.approve(assembled.value, permitted.actor);
+  /*
+    A job that already carries a quote is being corrected, not quoted for the
+    first time. The new document records which one it replaces; the old row is
+    never touched, because it is what the customer was told.
+  */
+  const { number, id } = await quoteStore.approve(
+    assembled.value,
+    permitted.actor,
+    persisted.quoteId,
+  );
   await jobStore.markQuoted(persisted.id, id);
 
   revalidatePath('/');

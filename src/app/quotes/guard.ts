@@ -3,16 +3,18 @@ import { session } from '@/infra/auth/session';
 import { type Actor, authorise } from '@/modules/auth';
 
 /**
- * Quotes are behind sign-in, and the rest of the app is not — deliberately.
+ * The authoritative read check for a quote.
  *
- * A rate table is commercially sensitive; a quote is worse. It carries the
- * customer's name, the price they were given, and the complete internal cost
- * build-up behind it, at a URL an outsider can guess in one try
- * (`Q-2026-0001`). So every quote page and both export routes go through here.
+ * The whole app is behind sign-in now — the middleware turns away anything
+ * without a session before it reaches a page. This is still here, and is not
+ * redundant: the middleware is a perimeter that knows only whether a cookie
+ * was signed, and this is what knows whether the account still exists, is
+ * still enabled, and may read at all.
  *
- * The rest of the app's screens will move behind the same check when sign-in
- * stops being optional. This is not that change; it is the part that cannot
- * wait for it.
+ * Kept on quotes in particular because they are the worst thing to leak: a
+ * quote carries the customer's name, the price they were given, and the
+ * complete internal cost build-up behind it, at a URL an outsider can guess in
+ * one try (`Q-2026-0001`).
  */
 export async function requireRead(): Promise<Actor> {
   const actor = await session.currentActor();
