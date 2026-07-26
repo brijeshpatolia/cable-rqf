@@ -515,4 +515,108 @@ describe.skipIf(url === undefined)('invariants the database enforces', () => {
       );
     });
   });
+
+  /**
+   * Signing out.
+   *
+   * The cookie is a signed statement and cannot be withdrawn; the row it names
+   * is what makes it live. That only holds if ending the row is final — an
+   * "un-revoke" a single UPDATE away would mean a session somebody ended
+   * because they thought it was compromised could be quietly reopened.
+   */
+  describe('a session that has ended has ended', () => {
+    const S = '77777777-7777-7777-7777-77777777777';
+
+    /** An open session, and one already revoked. */
+    const openSession = (n: number) =>
+      `INSERT INTO app_session (id, user_id, expires_at)
+       VALUES ('${S}${n}', '${ACTOR}', now() + interval '12 hours')`;
+
+    it('will not reopen a session that was signed out of', async () => {
+      await withSetup(
+        async () => {
+          await run(openSession(1));
+          await run(`UPDATE app_session SET revoked_at = now() WHERE id = '${S}1'`);
+        },
+        async () => {
+          expect(
+            await attempt(`UPDATE app_session SET revoked_at = NULL WHERE id = '${S}1'`),
+          ).toMatch(/already ended/);
+
+          // Nor by moving the end further out, which is the same thing said
+          // more quietly: a session that ended at nine is not one that ends at
+          // six tomorrow.
+          expect(
+            await attempt(
+              `UPDATE app_session SET revoked_at = now() + interval '1 day' WHERE id = '${S}1'`,
+            ),
+          ).toMatch(/already ended/);
+        },
+      );
+    });
+
+    it('will not hand a live session to a different account', async () => {
+      await withSetup(
+        async () => {
+          await run(openSession(2));
+          await run(
+            `INSERT INTO app_user (id, email, name, role)
+             VALUES ('${S}9', 'someone-else@test.invalid', 'Someone Else', 'engineer')`,
+          );
+        },
+        async () => {
+          // The token names the session; the session names the user. Repointing
+          // the row is how one person's live cookie becomes another person's
+          // authority, with nothing in the audit trail to show for it.
+          expect(
+            await attempt(`UPDATE app_session SET user_id = '${S}9' WHERE id = '${S}2'`),
+          ).toMatch(/cannot be rewritten/);
+
+          expect(
+            await attempt(
+              `UPDATE app_session SET expires_at = now() + interval '1 year' WHERE id = '${S}2'`,
+            ),
+          ).toMatch(/cannot be rewritten/);
+        },
+      );
+    });
+
+    it('still lets a live session be ended, which is the point', async () => {
+      await withSetup(
+        async () => {
+          await run(openSession(3));
+        },
+        async () => {
+          expect(
+            await attempt(`UPDATE app_session SET revoked_at = now() WHERE id = '${S}3'`),
+          ).toBeNull();
+        },
+      );
+    });
+
+    it('goes when the account does', async () => {
+      // ON DELETE CASCADE. There is nothing to keep in a session row whose
+      // account no longer exists, and an orphan would outlive every check that
+      // could refuse it.
+      await withSetup(
+        async () => {
+          await run(
+            `INSERT INTO app_user (id, email, name, role)
+             VALUES ('${S}8', 'transient@test.invalid', 'Transient', 'engineer')`,
+          );
+          await run(
+            `INSERT INTO app_session (id, user_id, expires_at)
+             VALUES ('${S}4', '${S}8', now() + interval '12 hours')`,
+          );
+        },
+        async () => {
+          await run(`DELETE FROM app_user WHERE id = '${S}8'`);
+          const left = await db.query(
+            `SELECT count(*)::int AS n FROM app_session WHERE id = '${S}4'`,
+          );
+          expect(left.rows[0].n).toBe(0);
+        },
+      );
+    });
+  });
 });

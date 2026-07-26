@@ -16,6 +16,23 @@ export default async function QuotesPage() {
   const asOf = now();
   const quotes = await quoteStore.list();
 
+  /*
+    The footer used to add up every row.
+
+    A correction does not replace its predecessor in this list — both rows
+    stay, which is the point: the superseded quote is what a customer was
+    actually told and it has to remain readable. But summing both counted the
+    same enquiry twice, so correcting a 40,000 OMR quote by 200 OMR made the
+    book jump by 40,200. The number people read off this line is "what have we
+    got out there", and a replaced quote is not out there.
+
+    Lapsed quotes are still counted. A quote past its validity date is a price
+    that was offered and expired, not one that was withdrawn, and dropping it
+    would quietly rewrite the quarter every time a date passed.
+  */
+  const standing = quotes.filter((q) => q.supersededBy === null);
+  const replaced = quotes.length - standing.length;
+
   return (
     <div style={{ padding: 24 }} className="flex flex-col gap-6">
       <header>
@@ -95,8 +112,30 @@ export default async function QuotesPage() {
               key: 'status',
               header: 'Status',
               width: 110,
+              /*
+                Superseded is checked first, and it has to be.
+
+                The row's own `status` column still reads `approved` after a
+                correction is issued — that is deliberate, because the quote
+                *was* approved and the document that went out says so. But this
+                screen was rendering it as plain "Approved", identical to the
+                quote standing in its place, so the list showed two live prices
+                for one enquiry and nothing to say which one holds.
+
+                It outranks Lapsed too. A quote that was replaced and then ran
+                past its validity date was never going to be honoured on the
+                strength of its date; what matters is that something else took
+                its place.
+              */
               render: (q) =>
-                isExpired(q, asOf) ? (
+                q.supersededBy !== null ? (
+                  <span
+                    style={{ color: 'var(--color-ink-tertiary)' }}
+                    title={`Replaced by ${q.supersededBy}. That is the price that stands.`}
+                  >
+                    Replaced
+                  </span>
+                ) : isExpired(q, asOf) ? (
                   <span style={{ color: 'var(--color-ink-tertiary)' }}>Lapsed</span>
                 ) : (
                   <span style={{ color: 'var(--color-ink-secondary)' }}>
@@ -126,7 +165,10 @@ export default async function QuotesPage() {
       {quotes.length > 0 ? (
         <p style={{ color: 'var(--color-ink-tertiary)', fontSize: 'var(--text-micro)' }}>
           {quotes.length} quote{quotes.length === 1 ? '' : 's'} ·{' '}
-          {formatNumber(totalOf(quotes.flatMap((q) => q.lines)), 2)} OMR in total
+          {formatNumber(totalOf(standing.flatMap((q) => q.lines)), 2)} OMR standing
+          {replaced === 0
+            ? ''
+            : `, ${replaced} replaced quote${replaced === 1 ? '' : 's'} not counted`}
         </p>
       ) : null}
     </div>

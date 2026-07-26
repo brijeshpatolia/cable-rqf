@@ -5,7 +5,13 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/infra/db/client';
 import { verifyPassword } from '@/infra/auth/password';
-import { SESSION_COOKIE, cookieOptions, issue } from '@/infra/auth/session';
+import {
+  DURATION_MS,
+  SESSION_COOKIE,
+  cookieOptions,
+  issue,
+  revoke,
+} from '@/infra/auth/session';
 
 /**
  * Sign in.
@@ -44,8 +50,22 @@ export async function signIn(
     return { error: 'That email and password do not match an active account.' };
   }
 
+  /*
+    The session row comes first, and the token is issued against it.
+
+    The cookie is a signed statement and cannot be withdrawn once it leaves;
+    this row is the thing that can be. Written before the token so there is
+    never a token pointing at a session that does not exist — `currentActor()`
+    would refuse it, which is safe, but it would also be a sign-in that
+    silently did not work.
+  */
+  const opened = await prisma.appSession.create({
+    data: { userId: user.id, expiresAt: new Date(Date.now() + DURATION_MS) },
+    select: { id: true },
+  });
+
   const store = await cookies();
-  store.set(SESSION_COOKIE, await issue(user.id), cookieOptions);
+  store.set(SESSION_COOKIE, await issue(user.id, opened.id), cookieOptions);
 
   /*
     Back to where they were going.
@@ -96,8 +116,24 @@ function safeNext(next: string): `/${string}` {
   return path.startsWith('/') ? (path as `/${string}`) : '/rates';
 }
 
+/**
+ * Sign out.
+ *
+ * Deleting the cookie is the visible half and was, until now, the only half:
+ * the token stayed valid for the rest of its twelve hours, so a copy taken
+ * from a shared machine or a proxy log kept working and nothing anyone could
+ * do in this app would stop it. Ending the session row is what makes the
+ * button mean what it says.
+ *
+ * The row is ended first. If that fails the cookie stays put and the person
+ * sees they are still signed in, which is true; clearing it first and failing
+ * afterwards would show them a sign-in screen while the session they wanted
+ * ended was still live.
+ */
 export async function signOut(): Promise<void> {
   const store = await cookies();
+  const token = store.get(SESSION_COOKIE)?.value;
+  if (token !== undefined) await revoke(token);
   store.delete(SESSION_COOKIE);
   redirect('/sign-in');
 }

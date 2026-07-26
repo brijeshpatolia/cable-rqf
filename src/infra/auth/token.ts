@@ -14,10 +14,23 @@
  * code runs unchanged in a Server Action, a Server Component and middleware.
  */
 
-const DURATION_MS = 12 * 60 * 60 * 1000; // one working day
+export const DURATION_MS = 12 * 60 * 60 * 1000; // one working day
 
 export interface Claims {
   readonly sub: string;
+  /**
+   * The `app_session` row this token belongs to.
+   *
+   * Present so that signing out can end the session rather than merely
+   * forgetting it. A signed statement cannot be withdrawn; a row can.
+   *
+   * Optional in the type because tokens issued before the session table
+   * existed are still in circulation and still verify. They are rejected by
+   * `currentActor()` — a token with no session behind it has nothing that can
+   * be ended, which is the state this exists to get out of — but that is a
+   * decision for the authority to make, not for the signature check.
+   */
+  readonly sid?: string;
   readonly exp: number;
 }
 
@@ -34,12 +47,36 @@ function bytes(text: string): Uint8Array<ArrayBuffer> {
   return out.subarray(0, written) as Uint8Array<ArrayBuffer>;
 }
 
+/**
+ * Secrets that are long enough and worth nothing.
+ *
+ * Length was the only test, and length is the one property a placeholder has:
+ * anything copied out of a README or typed to get past a startup check clears
+ * thirty-two characters without difficulty. A secret that has been written
+ * down somewhere public signs cookies exactly as well as a real one, which is
+ * the problem — every session in the app is forgeable by anyone who has read
+ * the same page.
+ *
+ * Matched loosely on purpose. This is not an attempt to detect weak keys in
+ * general, which cannot be done from inside the process; it is a check for the
+ * specific failure of shipping with the example value still in place. Anything
+ * that says "change me" in any of the usual ways is that failure.
+ */
+const PLACEHOLDER = /change[-_ ]?me|replace[-_ ]?me|your[-_ ]?secret|example|placeholder|xxxxxx|^(.)\1+$/i;
+
 function secretBytes(): Uint8Array<ArrayBuffer> {
   const value = process.env['AUTH_SECRET'];
   if (value === undefined || value.length < 32) {
     throw new Error(
       'AUTH_SECRET is missing or too short. Generate one with ' +
         '`openssl rand -base64 32` and set it in the environment.',
+    );
+  }
+  if (PLACEHOLDER.test(value)) {
+    throw new Error(
+      'AUTH_SECRET is still a placeholder. It signs every session in the app, ' +
+        'so a value anyone can read is a value anyone can sign with. Generate ' +
+        'a real one with `openssl rand -base64 32`.',
     );
   }
   return bytes(value);
@@ -70,10 +107,17 @@ function fromBase64Url(text: string): Uint8Array<ArrayBuffer> {
   return out;
 }
 
-export async function issue(userId: string, at: Date = new Date()): Promise<string> {
-  const payload = toBase64Url(
-    bytes(JSON.stringify({ sub: userId, exp: at.getTime() + DURATION_MS })),
-  );
+export async function issue(
+  userId: string,
+  sessionId: string,
+  at: Date = new Date(),
+): Promise<string> {
+  const claims: Claims = {
+    sub: userId,
+    sid: sessionId,
+    exp: at.getTime() + DURATION_MS,
+  };
+  const payload = toBase64Url(bytes(JSON.stringify(claims)));
   const signature = await crypto.subtle.sign(
     'HMAC',
     await key(),
@@ -113,6 +157,7 @@ export async function verify(
   try {
     const claims = JSON.parse(new TextDecoder().decode(fromBase64Url(payload))) as Claims;
     if (typeof claims.sub !== 'string' || typeof claims.exp !== 'number') return null;
+    if (claims.sid !== undefined && typeof claims.sid !== 'string') return null;
     if (claims.exp <= at.getTime()) return null;
     return claims;
   } catch {

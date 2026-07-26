@@ -66,8 +66,43 @@ model AppUser {
   jobDecisions      JobLine[]
   vocabularyTerms   VocabularyTerm[]
   substitutionRules SubstitutionRule[]
+  sessions          AppSession[]
 
   @@map("app_user")
+}
+
+/// A sign-in, so that signing out can end it.
+///
+/// The cookie is a signed statement, and a signed statement cannot be taken
+/// back — `signOut` deleted the browser's copy and that was all it could do.
+/// Anyone who had captured the cookie (a shared machine, a proxy log, a
+/// screenshared devtools panel) kept a working session for the rest of its
+/// twelve hours, and the person who signed out because they were worried had
+/// no way to end it.
+///
+/// So the token carries the id of a row here, and this row is what makes it
+/// live. Ending a session is an UPDATE.
+///
+/// This is checked in `session.currentActor()`, not in the middleware. The
+/// perimeter runs on the Edge with no database and still only asks "did this
+/// app sign this?" — which is the right question for it. Whether the session
+/// is still open is the same class of question as whether the account is still
+/// enabled, and is answered in the same place, on the same query.
+model AppSession {
+  id     String  @id @default(uuid()) @db.Uuid
+  userId String  @map("user_id") @db.Uuid
+  user   AppUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  issuedAt  DateTime  @default(now()) @map("issued_at") @db.Timestamptz(6)
+  /// When the token stops verifying on its own. Kept alongside so expired rows
+  /// can be swept without decoding anything.
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(6)
+  /// Set by signing out. Nothing is deleted — when a session ended is a fact
+  /// worth having when somebody asks what happened on an account.
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz(6)
+
+  @@index([userId])
+  @@map("app_session")
 }
 
 // ─── Effective-dated rates ───────────────────────────────────────────────

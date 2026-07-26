@@ -78,7 +78,40 @@ export async function reopenQuote(
     };
   }
 
-  await jobStore.reopen(job.reference, permitted.actor, reason);
+  /*
+    Already reopened.
+
+    The form lives on the quote screen, which stays reachable after a
+    correction is under way — so two people looking at the same mistake, or one
+    person on a stale tab, could both submit it. The second submission changed
+    nothing about the job (it was in review already) but wrote an audit row
+    saying the status went from approved to review, which is a sentence about
+    something that did not happen. The trail is the one thing in this app that
+    has to be literally true.
+  */
+  if (job.status === 'review') {
+    return {
+      error:
+        `${number} is already being corrected on ${job.reference}. Finish the ` +
+        'correction there and approve it — the new quote will say it replaces ' +
+        `${number}.`,
+      submitted,
+    };
+  }
+
+  // False means somebody else got there between the check above and this
+  // line. Same sentence, because from the engineer's side it is the same
+  // situation: the correction is under way on the job screen.
+  const reopened = await jobStore.reopen(job.reference, permitted.actor, reason);
+  if (!reopened) {
+    return {
+      error:
+        `${number} is already being corrected on ${job.reference}. Finish the ` +
+        'correction there and approve it — the new quote will say it replaces ' +
+        `${number}.`,
+      submitted,
+    };
+  }
 
   revalidatePath('/');
   revalidatePath('/quotes');

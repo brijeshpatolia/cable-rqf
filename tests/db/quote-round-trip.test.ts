@@ -11,6 +11,7 @@ import { renderQuoteXlsx } from '@/infra/documents/quote-xlsx';
 import type { Actor } from '@/modules/auth';
 import { computeCost } from '@/modules/costing';
 import {
+  type AssembledQuote,
   type DraftLine,
   assembleQuote,
   copperMassIsPartial,
@@ -38,12 +39,15 @@ const IMPORTED_AT = new Date('2026-01-01T00:00:00Z');
 const url = process.env['DATABASE_URL'];
 
 const ACTOR_EMAIL = 'round-trip@test.invalid';
+const JOB_REFERENCE = 'J-TEST-ROUNDTRIP';
 
 describe.skipIf(url === undefined)('a quote, written and read back', () => {
   let db: PrismaClient;
   let repo: DbQuoteRepository;
   let actor: Actor;
   let number: string;
+  let jobId: string;
+  let draft: AssembledQuote;
 
   beforeAll(async () => {
     db = new PrismaClient({ adapter: new PrismaPg({ connectionString: url! }) });
@@ -108,7 +112,26 @@ describe.skipIf(url === undefined)('a quote, written and read back', () => {
     });
     if (!assembled.ok) throw new Error(assembled.error.message);
 
-    ({ number } = await repo.approve(assembled.value, actor));
+    /*
+      A quote is issued *for an enquiry* — the job move and the quote write are
+      one transaction now, so there has to be a job under review to move. That
+      is the point of the change rather than an inconvenience of it: there is
+      no longer any way to write a quote that no enquiry points at.
+    */
+    const job = await db.job.create({
+      data: {
+        reference: JOB_REFERENCE,
+        status: 'review',
+        customer: 'Round Trip Trading LLC',
+        rawText: lines.map((l) => l.requestText).join('\n'),
+      },
+    });
+    jobId = job.id;
+    draft = assembled.value;
+
+    const issued = await repo.approve(draft, actor, jobId);
+    if (!issued.ok) throw new Error(issued.error);
+    ({ number } = issued.value);
   });
 
   afterAll(async () => {
@@ -116,6 +139,10 @@ describe.skipIf(url === undefined)('a quote, written and read back', () => {
     // UPDATE and DELETE on lines, so the test's rows are removed by first
     // returning the quote to draft.
     if (number !== undefined) {
+      // The job goes first: it holds a foreign key to the quote, and
+      // `quote_is_undeletable_once_issued` means the quote has to be returned
+      // to draft before it will go at all.
+      await db.$executeRawUnsafe(`DELETE FROM job WHERE reference = $1`, JOB_REFERENCE);
       await db.$executeRawUnsafe(
         `UPDATE quote SET status = 'draft' WHERE number = $1`,
         number,
@@ -130,6 +157,45 @@ describe.skipIf(url === undefined)('a quote, written and read back', () => {
 
   it('takes the next number for the year', () => {
     expect(number).toMatch(/^Q-2026-\d{4}$/);
+  });
+
+  /**
+   * The second approval of one enquiry.
+   *
+   * Approving used to be two transactions — write the quote here, move the job
+   * there — and between them the job was still under review with its quote
+   * already written. Two engineers on the same enquiry both read `review`,
+   * both wrote a quote, and the second `markQuoted` overwrote the first: a
+   * customer with two live prices, and an orphaned quote that
+   * `quote_is_undeletable_once_issued` will not now let anybody tidy away.
+   *
+   * The job move is `UPDATE ... WHERE status = 'review'` inside the same
+   * transaction, so the check and the write are one statement.
+   */
+  it('refuses to quote the same enquiry twice, and writes nothing when it does', async () => {
+    const before = await db.quote.count({ where: { customer: 'Round Trip Trading LLC' } });
+
+    const again = await repo.approve(draft, actor, jobId);
+
+    expect(again.ok).toBe(false);
+    if (!again.ok) expect(again.error).toContain('no longer under review');
+
+    // The refusal is worth nothing if the quote was written anyway and only the
+    // return value said no.
+    expect(await db.quote.count({ where: { customer: 'Round Trip Trading LLC' } })).toBe(
+      before,
+    );
+  });
+
+  it('leaves the enquiry pointing at the quote it became', async () => {
+    // The half-completed state the old two-transaction sequence could leave
+    // behind: approved, and pointing at nothing.
+    const job = await db.job.findUniqueOrThrow({
+      where: { id: jobId },
+      include: { quote: { select: { number: true } } },
+    });
+    expect(job.status).toBe('approved');
+    expect(job.quote?.number).toBe(number);
   });
 
   it('reads back every figure in the tree, not only the total', async () => {
