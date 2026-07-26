@@ -72,6 +72,17 @@ export default async function InboxPage() {
         value={j.quotedValue === null ? null : dec(j.quotedValue)}
         kind="total"
       />,
+      /*
+        Three states, not two.
+
+        Branching on "does it have a quote number" alone rendered a job
+        reopened to correct a quote exactly like a finished one — the same
+        defect the job screen had, fixed there and missed here, which is what
+        happens when one condition is written twice. It matters more on this
+        screen than on that one: the rail counts a reopened job as waiting, so
+        the inbox would say twenty-four are waiting and then show a row that
+        looks done.
+      */
       j.quoteNumber === null ? (
         <span
           key="s"
@@ -83,6 +94,14 @@ export default async function InboxPage() {
           }}
         >
           {statusLabel(j.status)}
+        </span>
+      ) : j.status === 'review' ? (
+        <span
+          key="s"
+          style={{ color: 'var(--color-status-review)', fontSize: 'var(--text-micro)' }}
+          title={`Reopened to correct ${j.quoteNumber}. Approving sends a second document.`}
+        >
+          Correcting <span className="numeric">{j.quoteNumber}</span>
         </span>
       ) : (
         <span key="s" className="numeric" style={{ ...leftNumeric, color: 'var(--color-copper)' }}>
