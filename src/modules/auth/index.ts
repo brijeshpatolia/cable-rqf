@@ -49,6 +49,24 @@ const GRANTS: Readonly<Record<Role, readonly Capability[]>> = {
   viewer: ['read'],
 };
 
+/**
+ * The role, in the words the screens already use.
+ *
+ * Worth naming rather than leaving as `rateOwner` on screen: controls are
+ * hidden by role throughout the app, and a person who cannot see the button
+ * deserves to know which of the two jobs they are doing rather than wondering
+ * whether the screen is broken.
+ */
+const ROLE_LABELS: Readonly<Record<Role, string>> = {
+  rateOwner: 'Rate Owner',
+  engineer: 'Engineer',
+  viewer: 'Viewer',
+};
+
+export function roleLabel(role: Role): string {
+  return ROLE_LABELS[role];
+}
+
 export function can(actor: Actor | null, capability: Capability): boolean {
   if (actor === null) return false;
   return GRANTS[actor.role].includes(capability);

@@ -1,5 +1,8 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import { session } from '@/infra/auth/session';
+import { roleLabel } from '@/modules/auth';
+import { WhoAmI } from '@/ui/components/WhoAmI';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -18,15 +21,33 @@ const NAV = [
   { label: 'Coverage', href: '/coverage', phase: 2 },
 ] as const;
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  /*
+    Read here rather than passed down from each page: the rail is on every
+    screen, and threading the actor through fifteen pages to render one block
+    would be the kind of ceremony that stops being done consistently.
+
+    Null on the sign-in screen, which is the only place there is nobody yet.
+  */
+  const actor = await session.currentActor();
+
   return (
     <html lang="en">
       <body>
         <div className="flex min-h-screen">
+          {/*
+            Stuck to the viewport, not to the page.
+
+            The rail is a flex column so the identity block can sit at its
+            foot — but a rail that stretched with the content would put "Sign
+            out" a couple of thousand pixels below the fold on the Rate Desk.
+            Nobody scrolls to the end of a rate table to leave.
+          */}
           <nav
-            className="shrink-0"
+            className="shrink-0 flex flex-col sticky top-0"
             style={{
               width: 'var(--rail-width)',
+              height: '100vh',
               borderRight: '1px solid var(--color-line-hairline)',
               backgroundColor: 'var(--color-surface-panel)',
             }}
@@ -50,7 +71,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             </div>
 
             {/* Labels always visible — no icons-only mode. */}
-            <ul style={{ padding: '8px 0' }}>
+            <ul className="flex-1" style={{ padding: '8px 0', overflowY: 'auto' }}>
               {NAV.map((item) => (
                 <li key={item.href}>
                   <a
@@ -77,6 +98,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                 </li>
               ))}
             </ul>
+
+            {actor === null ? null : (
+              <WhoAmI name={actor.name} role={roleLabel(actor.role)} />
+            )}
           </nav>
 
           <main className="min-w-0 flex-1">{children}</main>
