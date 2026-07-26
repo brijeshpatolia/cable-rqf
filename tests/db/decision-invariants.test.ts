@@ -337,4 +337,105 @@ describe.skipIf(url === undefined)('invariants the database enforces', () => {
       expect(err).toBeNull();
     });
   });
+
+  /**
+   * Superseding a quote.
+   *
+   * The immutability trigger has always told people to "supersede it with a
+   * new quote". These are the rules that make the resulting chain readable as
+   * a history rather than as a set of competing claims about what a customer
+   * was told.
+   */
+  describe('replacing an issued quote', () => {
+    const quote = (id: string, number: string, status: string) =>
+      `INSERT INTO quote (id, number, status, customer, priced_at, valid_until,
+                          lme_struck, fx_struck, margin_percent)
+       VALUES ('${id}', '${number}', '${status}', 'TEST CUSTOMER',
+               now(), now() + interval '30 days', 9000, 0.3845, 12)`;
+
+    const A = '55555555-5555-5555-5555-555555555555';
+    const B = '66666666-6666-6666-6666-666666666666';
+    const C = '77777777-7777-7777-7777-777777777777';
+
+    it('refuses a quote that supersedes itself', async () => {
+      await withSetup(
+        async () => {
+          await run(quote(A, 'Q-TEST-0001', 'approved'));
+        },
+        async () => {
+          const err = await attempt(
+            `UPDATE quote SET supersedes_id = '${A}' WHERE id = '${A}'`,
+          );
+          expect(err).toMatch(/quote_supersedes_another/);
+        },
+      );
+    });
+
+    it('refuses a second quote claiming to replace the same one', async () => {
+      // Two corrections of one quote is a contradiction nobody could resolve
+      // from the record: which price is the one standing?
+      await withSetup(
+        async () => {
+          await run(quote(A, 'Q-TEST-0001', 'approved'));
+          await run(quote(B, 'Q-TEST-0002', 'approved'));
+          await run(`UPDATE quote SET supersedes_id = '${A}' WHERE id = '${B}'`);
+          await run(quote(C, 'Q-TEST-0003', 'approved'));
+        },
+        async () => {
+          const err = await attempt(
+            `UPDATE quote SET supersedes_id = '${A}' WHERE id = '${C}'`,
+          );
+          expect(err).toMatch(/quote_supersedes_id_key|duplicate key/);
+        },
+      );
+    });
+
+    it('refuses superseding a draft — that is editing, not superseding', async () => {
+      await withSetup(
+        async () => {
+          await run(quote(A, 'Q-TEST-0001', 'draft'));
+          await run(quote(B, 'Q-TEST-0002', 'approved'));
+        },
+        async () => {
+          const err = await attempt(
+            `UPDATE quote SET supersedes_id = '${A}' WHERE id = '${B}'`,
+          );
+          expect(err).toMatch(/still a draft/);
+        },
+      );
+    });
+
+    it('allows a chain, which is what a history is', async () => {
+      await withSetup(
+        async () => {
+          await run(quote(A, 'Q-TEST-0001', 'approved'));
+          await run(quote(B, 'Q-TEST-0002', 'approved'));
+          await run(`UPDATE quote SET supersedes_id = '${A}' WHERE id = '${B}'`);
+          await run(quote(C, 'Q-TEST-0003', 'approved'));
+        },
+        async () => {
+          const err = await attempt(
+            `UPDATE quote SET supersedes_id = '${B}' WHERE id = '${C}'`,
+          );
+          expect(err).toBeNull();
+        },
+      );
+    });
+
+    it('still refuses to edit the superseded quote itself', async () => {
+      // The whole point: the old document is what the customer was told, and
+      // the correction is a new one that says so.
+      await withSetup(
+        async () => {
+          await run(quote(A, 'Q-TEST-0001', 'approved'));
+        },
+        async () => {
+          const err = await attempt(
+            `UPDATE quote SET customer = 'SOMEONE ELSE' WHERE id = '${A}'`,
+          );
+          expect(err).toMatch(/can no longer be edited/);
+        },
+      );
+    });
+  });
 });

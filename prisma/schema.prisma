@@ -316,6 +316,18 @@ model Quote {
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   approvedAt  DateTime? @map("approved_at") @db.Timestamptz(6)
 
+  /// The quote this one replaces, and the one that replaced it.
+  ///
+  /// A chain, not a tree: `@unique` means one quote replaces at most one other
+  /// and is replaced by at most one. Two quotes both claiming to replace the
+  /// same one would be a contradiction nobody could resolve from the record.
+  ///
+  /// A superseded quote is never edited and never deleted — it is what a
+  /// customer was told, and the correction is a new document that says so.
+  supersedesId String? @unique @map("supersedes_id") @db.Uuid
+  supersedes   Quote?  @relation("Supersession", fields: [supersedesId], references: [id], onDelete: Restrict)
+  supersededBy Quote?  @relation("Supersession")
+
   lines QuoteLine[]
   job   Job?
 

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { session } from '@/infra/auth/session';
+import { jobStore } from '@/infra/repositories';
 import { roleLabel } from '@/modules/auth';
 import { WhoAmI } from '@/ui/components/WhoAmI';
 import './globals.css';
@@ -30,6 +31,17 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     Null on the sign-in screen, which is the only place there is nobody yet.
   */
   const actor = await session.currentActor();
+
+  /*
+    Enquiries waiting on a person, as a small mono number beside Inbox — the
+    plan is explicit that it is not a red circle. Red is one of this app's
+    three status colours and it means *the app will not price this*; spending
+    it on "there is work" would make the two indistinguishable at a glance.
+
+    Only read when there is somebody to read it for, so the sign-in screen
+    costs no query.
+  */
+  const waiting = actor === null ? 0 : await jobStore.awaitingCount();
 
   return (
     <html lang="en">
@@ -84,16 +96,29 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
                     }}
                   >
                     {item.label}
-                    <span
-                      className="numeric"
-                      style={{
-                        color: 'var(--color-ink-tertiary)',
-                        fontSize: 'var(--text-micro)',
-                      }}
-                      title={`Ships in phase ${item.phase}`}
-                    >
-                      P{item.phase}
-                    </span>
+                    {item.href === '/' && waiting > 0 ? (
+                      <span
+                        className="numeric"
+                        style={{
+                          color: 'var(--color-ink-primary)',
+                          fontSize: 'var(--text-micro)',
+                        }}
+                        title={`${waiting} ${waiting === 1 ? 'enquiry is' : 'enquiries are'} waiting on a person`}
+                      >
+                        {waiting}
+                      </span>
+                    ) : (
+                      <span
+                        className="numeric"
+                        style={{
+                          color: 'var(--color-ink-tertiary)',
+                          fontSize: 'var(--text-micro)',
+                        }}
+                        title={`Ships in phase ${item.phase}`}
+                      >
+                        P{item.phase}
+                      </span>
+                    )}
                   </a>
                 </li>
               ))}

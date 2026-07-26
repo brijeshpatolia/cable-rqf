@@ -38,6 +38,9 @@ interface QuoteRow {
   readonly created_by: string | null;
   readonly created_at: Date;
   readonly approved_at: Date | null;
+  /** The quote this one replaced, and the one that replaced it. */
+  readonly supersedes: string | null;
+  readonly superseded_by: string | null;
 }
 
 interface LineRow {
@@ -154,6 +157,8 @@ function hydrate(q: QuoteRow, lines: readonly LineRow[]): Quote {
     createdBy: q.created_by,
     createdAt: q.created_at,
     approvedAt: q.approved_at,
+    supersedes: q.supersedes,
+    supersededBy: q.superseded_by,
     lines: lines
       .filter((l) => l.quote_id === q.id)
       .sort((a, b) => a.position - b.position)
@@ -191,8 +196,12 @@ const SELECT_QUOTE = `
   SELECT q.id::text, q.number, q.status::text AS status, q.customer, q.terms,
          q.priced_at, q.valid_until, q.lme_struck::text AS lme_struck,
          q.fx_struck::text AS fx_struck, q.margin_percent::text AS margin_percent,
-         u.name AS created_by, q.created_at, q.approved_at
-    FROM quote q LEFT JOIN app_user u ON u.id = q.created_by_id`;
+         u.name AS created_by, q.created_at, q.approved_at,
+         old.number AS supersedes, new.number AS superseded_by
+    FROM quote q
+    LEFT JOIN app_user u ON u.id = q.created_by_id
+    LEFT JOIN quote old ON old.id = q.supersedes_id
+    LEFT JOIN quote new ON new.supersedes_id = q.id`;
 
 const SELECT_LINES = `
   SELECT quote_id::text, position, request_text, product_code, source_sheet,
@@ -231,6 +240,10 @@ export class DbQuoteRepository implements QuoteRepository {
              ), 0)::text AS copper_mass_kg
         FROM quote q LEFT JOIN quote_line l ON l.quote_id = q.id
        WHERE q.status IN ('approved', 'sent')
+         -- A replaced quote is not an exposure. The price on it is no longer
+         -- offered, so counting its copper would double the risk on a job
+         -- that was corrected rather than quoted twice.
+         AND NOT EXISTS (SELECT 1 FROM quote r WHERE r.supersedes_id = q.id)
        GROUP BY q.id
        ORDER BY q.priced_at DESC`;
 
@@ -283,9 +296,19 @@ export class DbQuoteRepository implements QuoteRepository {
    * the unique index on `number` refuses the second, and the whole
    * transaction is abandoned rather than half-written.
    */
+  /**
+   * Issues a quote, optionally in place of one already issued.
+   *
+   * `supersedes` carries the id of the quote being replaced. The old row is
+   * not touched: it is what a customer was told, and the correction is a new
+   * document that says so. Which of the two is current is read from the link,
+   * never from a status anyone has to remember to set — two sources of truth
+   * about which price stands is exactly the bug this is here to prevent.
+   */
   async approve(
     assembled: AssembledQuote,
     actor: Actor,
+    supersedes: string | null = null,
   ): Promise<{ readonly number: string; readonly id: string }> {
     return this.db.$transaction(async (tx) => {
       const year = assembled.pricedAt.getUTCFullYear();
@@ -307,6 +330,7 @@ export class DbQuoteRepository implements QuoteRepository {
           marginPercent: assembled.marginPercent.toString(),
           createdById: actor.id,
           approvedAt: new Date(),
+          supersedesId: supersedes,
         },
       });
 
@@ -343,7 +367,7 @@ export class DbQuoteRepository implements QuoteRepository {
           actorEmail: actor.email,
           entity: `quote:${number}`,
           field: 'status',
-          previous: 'draft',
+          previous: supersedes === null ? 'draft' : 'replacing an issued quote',
           next: 'approved',
           // The strike goes in the reason, so the audit trail alone answers
           // "what copper was this approved on" without opening the quote.

@@ -33,6 +33,7 @@ interface JobRow {
   readonly created_at: Date;
   readonly updated_at: Date;
   readonly quote_number: string | null;
+  readonly quote_id: string | null;
 }
 
 interface DecisionRow {
@@ -51,7 +52,7 @@ const SELECT_JOB = `
          j.source::text AS source, j.source_name, j.source_notes, j.raw_text,
          j.source_text, j.line_sources,
          u.name AS created_by, j.created_at, j.updated_at,
-         q.number AS quote_number
+         q.number AS quote_number, q.id::text AS quote_id
     FROM job j
     LEFT JOIN app_user u ON u.id = j.created_by_id
     LEFT JOIN quote q ON q.id = j.quote_id`;
@@ -132,6 +133,7 @@ function hydrate(j: JobRow, decisions: readonly DecisionRow[]): Job {
     createdAt: j.created_at,
     updatedAt: j.updated_at,
     quoteNumber: j.quote_number,
+    quoteId: j.quote_id,
     decisions: decisions
       .filter((d) => d.job_id === j.id)
       .map(toDecision)
@@ -153,11 +155,21 @@ export interface JobSummary {
   readonly createdBy: string | null;
   readonly createdAt: Date;
   readonly quoteNumber: string | null;
+  /**
+   * What the quote came to, for a job that has one.
+   *
+   * Null while a job is still in review, and deliberately not filled in by
+   * pricing the enquiry on the fly: that number moves with copper between one
+   * refresh and the next, which is right on the review screen and wrong in a
+   * list column, and it would put a full costing run behind every page load.
+   */
+  readonly quotedValue: string | null;
 }
 
 interface SummaryRow extends JobRow {
   readonly line_count: number;
   readonly decision_count: bigint;
+  readonly quoted_value: string | null;
 }
 
 export class DbJobRepository {
@@ -178,7 +190,9 @@ export class DbJobRepository {
          array_length(
            array_remove(string_to_array(btrim(j.raw_text), E'\\n'), ''), 1
          ) AS line_count,
-         (SELECT count(*) FROM job_line l WHERE l.job_id = j.id) AS decision_count,`,
+         (SELECT count(*) FROM job_line l WHERE l.job_id = j.id) AS decision_count,
+         (SELECT sum(ql.line_total)::text FROM quote_line ql
+           WHERE ql.quote_id = j.quote_id) AS quoted_value,`,
       )}
        ORDER BY j.created_at DESC LIMIT ${Number(limit)}`,
     );
@@ -195,6 +209,7 @@ export class DbJobRepository {
       createdBy: r.created_by,
       createdAt: r.created_at,
       quoteNumber: r.quote_number,
+      quotedValue: r.quoted_value,
     }));
   }
 
@@ -221,6 +236,29 @@ export class DbJobRepository {
     );
 
     return jobs.map((j) => hydrate(j, decisions));
+  }
+
+  /** How many enquiries are waiting on a person. For the rail's badge. */
+  async awaitingCount(): Promise<number> {
+    const rows = await this.db.$queryRaw<{ count: bigint }[]>`
+      SELECT count(*) FROM job WHERE status = 'review'`;
+    return Number(rows[0]?.count ?? 0);
+  }
+
+  /** The enquiry a quote came from, for the screen that corrects one. */
+  async byQuoteNumber(number: string): Promise<Job | undefined> {
+    const rows = await this.db.$queryRawUnsafe<JobRow[]>(
+      `${SELECT_JOB} WHERE q.number = $1`,
+      number,
+    );
+    const job = rows[0];
+    if (job === undefined) return undefined;
+
+    const decisions = await this.db.$queryRawUnsafe<DecisionRow[]>(
+      `${SELECT_DECISIONS} WHERE l.job_id = $1::uuid`,
+      job.id,
+    );
+    return hydrate(job, decisions);
   }
 
   async byReference(reference: string): Promise<Job | undefined> {
@@ -425,6 +463,41 @@ export class DbJobRepository {
     await this.db.job.update({
       where: { id: jobId },
       data: { status: 'approved', quoteId },
+    });
+  }
+
+  /**
+   * Puts a quoted job back in review so its quote can be corrected.
+   *
+   * `quoteId` is deliberately left pointing at the issued quote. It is what
+   * says *this job has already been out to a customer*, and it is what the
+   * approval path reads to know the next quote supersedes rather than
+   * duplicates. Clearing it here would lose the only link between the mistake
+   * and the correction.
+   *
+   * The quote itself is untouched. It is what the customer was told; the
+   * correction is a new document that says so.
+   */
+  async reopen(reference: string, actor: Actor, reason: string): Promise<void> {
+    await this.db.$transaction(async (tx) => {
+      const job = await tx.job.findUniqueOrThrow({
+        where: { reference },
+        include: { quote: { select: { number: true } } },
+      });
+
+      await tx.job.update({ where: { reference }, data: { status: 'review' } });
+
+      await tx.auditEvent.create({
+        data: {
+          actorId: actor.id,
+          actorEmail: actor.email,
+          entity: `job:${reference}`,
+          field: 'status',
+          previous: 'approved',
+          next: 'review',
+          reason: `Reopened to correct ${job.quote?.number ?? 'its quote'}: ${reason}`,
+        },
+      });
     });
   }
 

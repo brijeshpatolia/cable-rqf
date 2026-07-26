@@ -234,6 +234,8 @@ describe('a quote as a promise', () => {
       createdBy: null,
       createdAt: AT,
       approvedAt: AT,
+      supersedes: null,
+      supersededBy: null,
       lines: result.value.lines.map((l, i) => ({ ...l, position: i })),
     } satisfies Parameters<typeof isExpired>[0];
 

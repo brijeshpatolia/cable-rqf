@@ -75,6 +75,16 @@ export interface Quote {
   readonly createdBy: string | null;
   readonly createdAt: Date;
   readonly approvedAt: Date | null;
+  /**
+   * The quote this one replaced, by number, and the one that replaced it.
+   *
+   * Both are needed on the screen and they say different things. Looking at a
+   * superseded quote, an engineer needs to know the price on it is no longer
+   * the one standing; looking at the correction, they need to know what it was
+   * correcting and be able to read it.
+   */
+  readonly supersedes: string | null;
+  readonly supersededBy: string | null;
   readonly lines: readonly QuoteLine[];
 }
 
