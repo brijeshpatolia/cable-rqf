@@ -181,3 +181,85 @@ describe('extractFromText', () => {
     expect(doc.notes[0]).toContain('no line carried both');
   });
 });
+
+/**
+ * Provenance.
+ *
+ * Phase 3's promise is that an engineer never opens the attachment to check a
+ * number. That only holds if the app kept the answer at the moment it read the
+ * file — a line reads `3Cx50 mm2 XLPE — 12,500 m` afterwards, and nothing in
+ * that string says which row of which sheet it was assembled from.
+ */
+describe('where each line came from', () => {
+  const GRID = [
+    ['MUSCAT ELECTRICALS LLC'],
+    ['Description', 'Qty', 'Unit'],
+    ['3C x 50mm2 Cu XLPE SWA PVC 1kV', '12000', 'M'],
+    ['Total', '', ''],
+    ['4C x 16mm2 Cu XLPE SWA PVC 1kV', '8.5', 'KM'],
+  ];
+
+  it('points at the row a spreadsheet line was read from', () => {
+    const doc = extractFromGrid(GRID);
+
+    expect(doc.lines).toHaveLength(2);
+    expect(doc.sources).toHaveLength(2);
+    // Row index 2 and row index 4 — the "Total" row between them was skipped,
+    // so the second line's source is 4 and not 3.
+    expect(doc.sources.map((s) => s.line)).toEqual([2, 4]);
+    expect(doc.sources[0]?.where).toBe('row 3');
+  });
+
+  it('names the sheet, because row 704 of a workbook is unfindable', () => {
+    const doc = extractFromGrid(GRID, [
+      { name: 'Covering letter', from: 0, to: 1 },
+      { name: 'Schedule of Cables', from: 1, to: 5 },
+    ]);
+
+    expect(doc.sources[0]?.where).toBe('Schedule of Cables, row 2');
+    expect(doc.sources[1]?.where).toBe('Schedule of Cables, row 4');
+    // The note that says where the table started uses the same words.
+    expect(doc.notes[0]).toContain('Schedule of Cables, row 1');
+  });
+
+  it('a source points at the line of rawText the view will scroll to', () => {
+    const doc = extractFromGrid(GRID);
+    const rows = doc.rawText.split('\n');
+
+    for (const [i, source] of doc.sources.entries()) {
+      // The row it points at is the row the line was actually built from.
+      expect(rows[source.line]).toContain(doc.lines[i]!.split(' — ')[0]);
+    }
+  });
+
+  it('names the page a PDF line was read from, skipping the blank lines', () => {
+    const doc = extractFromText(
+      [
+        'MUSCAT ELECTRICALS LLC',
+        '',
+        '1  3C x 50mm2 Cu XLPE SWA PVC 1kV    12,000 m',
+        'Page 1 of 2',
+        '',
+        '2  4C x 16mm2 Cu XLPE SWA PVC 1kV     8,500 m',
+      ].join('\n'),
+      [
+        { name: 'page 1', from: 0, to: 4 },
+        { name: 'page 2', from: 4, to: 6 },
+      ],
+    );
+
+    expect(doc.lines).toHaveLength(2);
+    expect(doc.sources.map((s) => s.where)).toEqual(['page 1, line 3', 'page 2, line 2']);
+
+    // And the index is into rawText, which has had the blanks removed — so it
+    // is 3, not the 5 it sat at in the file.
+    const rows = doc.rawText.split('\n');
+    expect(doc.sources[1]?.line).toBe(3);
+    expect(rows[doc.sources[1]!.line]).toContain('4C x 16mm2');
+  });
+
+  it('offers no sources when it could not read the document', () => {
+    expect(extractFromText('   \n  \n').sources).toEqual([]);
+    expect(extractFromGrid([['Dear sir'], ['Please quote']]).sources).toEqual([]);
+  });
+});

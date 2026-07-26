@@ -303,4 +303,38 @@ describe.skipIf(url === undefined)('invariants the database enforces', () => {
       );
     });
   });
+
+  /**
+   * Provenance.
+   *
+   * The claim being defended is narrow and worth stating: the app may hold a
+   * document with no map into it, but never a map into a document it does not
+   * hold. The second is a set of row numbers pointing at nothing, which the
+   * job screen would render as confident, checkable provenance.
+   */
+  describe('where a line came from', () => {
+    it('refuses sources for a document the job does not hold', async () => {
+      const err = await attempt(
+        `UPDATE job SET line_sources = '[{"line": 3, "where": "row 4"}]'::jsonb
+          WHERE id = '${JOB}'`,
+      );
+      expect(err).toMatch(/job_sources_need_a_document/);
+    });
+
+    it('allows the document without them — unhelpful is not the same as wrong', async () => {
+      const err = await attempt(
+        `UPDATE job SET source_text = 'Dear sir', line_sources = NULL WHERE id = '${JOB}'`,
+      );
+      expect(err).toBeNull();
+    });
+
+    it('allows both together, which is the case that matters', async () => {
+      const err = await attempt(
+        `UPDATE job
+            SET source_text = 'Dear sir\nrow', line_sources = '[{"line": 1, "where": "row 2"}]'::jsonb
+          WHERE id = '${JOB}'`,
+      );
+      expect(err).toBeNull();
+    });
+  });
 });

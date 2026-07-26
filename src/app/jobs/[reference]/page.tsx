@@ -18,6 +18,7 @@ import { CostBreakdownView } from '@/ui/components/CostBreakdownView';
 import { ExpandableRow } from '@/ui/components/ExpandableRow';
 import { NumericCell } from '@/ui/components/NumericCell';
 import { Panel } from '@/ui/components/Panel';
+import { ProvenanceView } from '@/ui/components/ProvenanceView';
 import { ReviseEnquiry } from '@/ui/components/ReviseEnquiry';
 import { SettleLine, type Nearest } from '@/ui/components/SettleLine';
 import { StatusDot, TierLegend } from '@/ui/components/StatusDot';
@@ -76,6 +77,16 @@ export default async function JobPage({
       <header>
         <a href="/" style={{ color: 'var(--color-ink-tertiary)', fontSize: 'var(--text-micro)' }}>
           ← Inbox
+        </a>
+        <a
+          href="/history"
+          style={{
+            marginLeft: 16,
+            color: 'var(--color-copper)',
+            fontSize: 'var(--text-micro)',
+          }}
+        >
+          History →
         </a>
         <div className="mt-2 flex items-baseline gap-4">
           <h1
@@ -174,6 +185,31 @@ export default async function JobPage({
               </p>
             </Panel>
           ) : null}
+
+          {persisted.document === null ? null : (
+            <Panel title="Where each line came from" flush>
+              {/*
+                Phase 3's acceptance criterion, and the reason the document is
+                stored at all: an engineer checking a quantity should never
+                have to go back to the attachment. The reader's own account of
+                what it skipped is above; this is the same claim made line by
+                line, against the file itself.
+              */}
+              <ProvenanceView
+                document={persisted.document.text.split('\n')}
+                sourceName={persisted.sourceName}
+                entries={job.lines.map((line) => {
+                  const source = persisted.document?.sources[line.index];
+                  return {
+                    index: line.index,
+                    text: line.extracted.raw,
+                    where: source?.where ?? '',
+                    line: source?.line ?? null,
+                  };
+                })}
+              />
+            </Panel>
+          )}
 
           <Panel
             title="Enquiry as received"

@@ -14,6 +14,7 @@ const NAV = [
   { label: 'Rate Desk', href: '/rates', phase: 1 },
   { label: 'Vocabulary', href: '/vocabulary', phase: 2 },
   { label: 'Price Watch', href: '/price-watch', phase: 1 },
+  { label: 'History', href: '/history', phase: 1 },
 ] as const;
 
 export default function RootLayout({ children }: { children: ReactNode }) {

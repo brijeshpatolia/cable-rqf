@@ -140,7 +140,13 @@ export default async function RateDeskPage() {
           >
             Every number that drives a price. One edit to copper reprices the
             whole library; every change is logged with who, when, and the
-            previous value.
+            previous value —{' '}
+            {/* The sentence above was a claim nobody could check until this
+                link existed. A promise with no way to verify it is a slogan. */}
+            <a href="/history" style={{ color: 'var(--color-copper)' }}>
+              see the history
+            </a>
+            .
           </p>
         </div>
 

@@ -427,6 +427,25 @@ model Job {
   /// the app — an engineer's corrections live on the lines, not in the text.
   rawText String @map("raw_text")
 
+  /// The document as the reader saw it, before anything was thrown away.
+  ///
+  /// `rawText` above holds the *extracted* lines, which is what the app prices.
+  /// This holds every line of the file they were taken from — the covering
+  /// letter, the terms, the rows with no quantity. Without it there is nothing
+  /// to show an engineer who asks where a number came from, and Phase 3's
+  /// promise is precisely that they never open the attachment to find out.
+  ///
+  /// Null for a pasted enquiry, where the text *is* the document.
+  sourceText String? @map("source_text")
+
+  /// Where each extracted line came from, in line order:
+  /// `[{ "line": 12, "where": "Schedule of Cables, row 4" }, …]`.
+  ///
+  /// JSONB rather than two parallel arrays, so an index and its label cannot
+  /// drift apart. Cleared when the enquiry text is revised: positions move, and
+  /// provenance that points at the wrong row is worse than none.
+  lineSources Json? @map("line_sources")
+
   createdById String?  @map("created_by_id") @db.Uuid
   createdBy   AppUser? @relation(fields: [createdById], references: [id], onDelete: Restrict)
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)

@@ -4,6 +4,7 @@ import type {
   QuoteRepository,
   RateRepository,
 } from '@/modules/rates';
+import { DbAuditRepository } from './db/audit-repository';
 import { DbProductRepository, DbRateRepository } from './db/repository';
 import { DbCatalogueRepository } from './db/catalogue-repository';
 import { DbJobRepository } from './db/job-repository';
@@ -50,10 +51,7 @@ export const repositories: Repositories = useMemory
       rates: new DbRateRepository(),
       products: new DbProductRepository(),
       quotes: new DbQuoteRepository(),
-      // The audit trail has no screen yet, so it keeps the in-memory shape
-      // until the phase that gives it one. Named here rather than hidden, so
-      // the gap is visible — the rows are being written either way.
-      audit: new MemoryAuditRepository(),
+      audit: new DbAuditRepository(),
     };
 
 /** The rate write path. Only meaningful against the database. */
@@ -84,6 +82,17 @@ export const substitutionStore = new DbSubstitutionRepository();
 
 /** The product library's write path — designs and new item codes. */
 export const catalogueStore = new DbCatalogueRepository();
+
+/**
+ * The trail, for the history screen.
+ *
+ * Named separately from `repositories.audit` only because the screen needs
+ * `count()`, which is not on the port and should not be: the port exists so
+ * `modules/` can record and read events without knowing what a database is,
+ * and "how many rows are there in total" is a question only a paginating
+ * screen asks.
+ */
+export const auditStore = new DbAuditRepository();
 
 /** True when the app is reading real data rather than the seeded stand-in. */
 export const isDatabaseBacked = !useMemory;
