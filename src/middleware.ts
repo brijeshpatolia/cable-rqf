@@ -35,10 +35,25 @@ import { SESSION_COOKIE, verify } from '@/infra/auth/token';
  */
 const PUBLIC = new Set(['/sign-in']);
 
+/**
+ * Where the middleware tells the app which path it is answering.
+ *
+ * The layout performs the check this file cannot — whether the account behind
+ * a validly-signed cookie still exists and is still enabled — and to do that
+ * without redirecting the sign-in screen to itself for ever, it has to know
+ * which page it is rendering. Next does not give a layout its own path, so the
+ * perimeter that already knows it says so.
+ */
+export const PATH_HEADER = 'x-cq-pathname';
+
 export async function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
-  if (PUBLIC.has(pathname)) return NextResponse.next();
+  const forward = new Headers(request.headers);
+  forward.set(PATH_HEADER, pathname);
+  const carry = () => NextResponse.next({ request: { headers: forward } });
+
+  if (PUBLIC.has(pathname)) return carry();
 
   const token = request.cookies.get(SESSION_COOKIE)?.value;
 
@@ -52,7 +67,7 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  if (signedIn) return NextResponse.next();
+  if (signedIn) return carry();
 
   const to = request.nextUrl.clone();
   to.pathname = '/sign-in';

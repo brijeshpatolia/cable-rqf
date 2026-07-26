@@ -1,5 +1,9 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import { cookies, headers } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { SESSION_COOKIE } from '@/infra/auth/session';
+import { PATH_HEADER } from '@/middleware';
 import { session } from '@/infra/auth/session';
 import { jobStore } from '@/infra/repositories';
 import { roleLabel } from '@/modules/auth';
@@ -31,6 +35,30 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     Null on the sign-in screen, which is the only place there is nobody yet.
   */
   const actor = await session.currentActor();
+
+  /*
+    The enablement check, in the one place every screen passes through.
+
+    The middleware is a perimeter and can only ask whether a cookie was signed
+    by this app — it runs before the app, on the Edge, with no database. That
+    leaves a gap it cannot close on its own: a session issued to somebody whose
+    account has since been disabled or deleted stays *validly signed* for the
+    rest of its twelve hours. Pages that call `can()` degrade gracefully to a
+    read-only view for such a session, which sounds harmless and is not — the
+    read-only view of the Rate Desk is the entire cost master.
+
+    Screens that already redirect on a null actor were fine; several read-only
+    ones never did, and asking each new page to remember is the habit that put
+    ten screens on the public internet in the first place. So it lives here.
+
+    The sign-in screen is exempt, and finding out why cost a redirect loop: it
+    renders through this same layout, and a stale cookie is not cleared by
+    being turned away, so it bounced to itself for ever. The middleware
+    forwards the path precisely so this one exception can be stated.
+  */
+  const path = (await headers()).get(PATH_HEADER);
+  const presented = (await cookies()).has(SESSION_COOKIE);
+  if (actor === null && presented && path !== '/sign-in') redirect('/sign-in');
 
   /*
     Enquiries waiting on a person, as a small mono number beside Inbox — the

@@ -61,19 +61,39 @@ export async function signIn(
   redirect(safeNext(String(form.get('next') ?? '')) as Route);
 }
 
+/** An origin that cannot exist, used only to resolve a relative path against. */
+const INTERNAL = 'https://internal.invalid';
+
 /**
  * A destination this app is willing to send someone to after signing in.
  *
- * Only a path on this origin, and never back to `/sign-in` itself — which
- * would leave a signed-in user looking at the form they just filled in.
- * `//evil.example` is the case worth naming: browsers read it as an absolute
- * URL with an inherited scheme, so a leading-slash check alone is not enough.
+ * **Parsed, not pattern-matched.** The first version of this checked for a
+ * leading slash and rejected a doubled one, which reads as sufficient and is
+ * not: browsers normalise a backslash to a slash inside a URL, so a path
+ * beginning slash-backslash is a protocol-relative URL to somebody else's site
+ * and passes both tests. An open redirect on a sign-in form is worth a great
+ * deal to an attacker, because the phishing link genuinely begins on Nuhas's
+ * own domain.
+ *
+ * Resolving against a throwaway origin settles every variant at once —
+ * backslashes, encoded slashes, embedded control characters, a scheme with one
+ * slash — because whatever a browser would make of it, the parser has already
+ * made. Anything that lands off that origin is not ours to send people to.
  */
-function safeNext(next: string): '/rates' | `/${string}` {
-  if (!next.startsWith('/')) return '/rates';
-  if (next.startsWith('//')) return '/rates';
-  if (next === '/sign-in' || next.startsWith('/sign-in?')) return '/rates';
-  return next as `/${string}`;
+function safeNext(next: string): `/${string}` {
+  let url: URL;
+  try {
+    url = new URL(next, INTERNAL);
+  } catch {
+    return '/rates';
+  }
+  if (url.origin !== INTERNAL) return '/rates';
+
+  // Never back to the form they have just filled in.
+  if (url.pathname === '/sign-in' || url.pathname === '/sign-in/') return '/rates';
+
+  const path = `${url.pathname}${url.search}`;
+  return path.startsWith('/') ? (path as `/${string}`) : '/rates';
 }
 
 export async function signOut(): Promise<void> {
