@@ -198,6 +198,31 @@ export class DbJobRepository {
     }));
   }
 
+  /**
+   * Every job, whole, for a question that has to look across all of them.
+   *
+   * One query for the jobs and one for every decision, rather than a
+   * `byReference` per job — the coverage screen re-reviews the lot, and doing
+   * that N+1 queries at a time would make an occasional page an expensive one.
+   *
+   * `since` is a floor rather than a window because the question is always
+   * "over the last quarter", never "during March".
+   */
+  async allSince(since: Date): Promise<readonly Job[]> {
+    const jobs = await this.db.$queryRawUnsafe<JobRow[]>(
+      `${SELECT_JOB} WHERE j.created_at >= $1 ORDER BY j.created_at DESC`,
+      since,
+    );
+    if (jobs.length === 0) return [];
+
+    const decisions = await this.db.$queryRawUnsafe<DecisionRow[]>(
+      `${SELECT_DECISIONS} WHERE l.job_id = ANY($1::uuid[])`,
+      jobs.map((j) => j.id),
+    );
+
+    return jobs.map((j) => hydrate(j, decisions));
+  }
+
   async byReference(reference: string): Promise<Job | undefined> {
     const rows = await this.db.$queryRawUnsafe<JobRow[]>(
       `${SELECT_JOB} WHERE j.reference = $1`,
