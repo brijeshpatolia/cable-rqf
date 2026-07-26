@@ -35,10 +35,25 @@ import { SESSION_COOKIE, verify } from '@/infra/auth/token';
  */
 const PUBLIC = new Set(['/sign-in']);
 
+/**
+ * Where the middleware tells the app which path it is answering.
+ *
+ * The layout performs the check this file cannot — whether the account behind
+ * a validly-signed cookie still exists and is still enabled — and to do that
+ * without redirecting the sign-in screen to itself for ever, it has to know
+ * which page it is rendering. Next does not give a layout its own path, so the
+ * perimeter that already knows it says so.
+ */
+export const PATH_HEADER = 'x-cq-pathname';
+
 export async function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
-  if (PUBLIC.has(pathname)) return NextResponse.next();
+  const forward = new Headers(request.headers);
+  forward.set(PATH_HEADER, pathname);
+  const carry = () => NextResponse.next({ request: { headers: forward } });
+
+  if (PUBLIC.has(pathname)) return carry();
 
   const token = request.cookies.get(SESSION_COOKIE)?.value;
 
@@ -52,7 +67,7 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  if (signedIn) return NextResponse.next();
+  if (signedIn) return carry();
 
   const to = request.nextUrl.clone();
   to.pathname = '/sign-in';
@@ -66,12 +81,27 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   /*
-    Everything except Next's own assets.
+    Everything except Next's own build output.
 
     Written as an exclusion rather than a list of protected routes, for the
     same reason the gate is here at all: a new route is protected by default
-    and has to be let out deliberately. `_next/static` and `_next/image` are
-    build output and carry no data of Nuhas's; the favicon likewise.
+    and has to be let out deliberately.
+
+    **The file-extension exclusion is gone, and it was a hole.** It read as
+    "skip static assets" and meant "skip any path that happens to end in
+    `.png`" — which a dynamic segment can. Anonymous, `/catalogue/<code>.png`
+    answered 500 while `/catalogue/<code>` answered a redirect: the 500 is the
+    tell, because a request that never reached the app cannot crash it. That
+    route had run its database queries for a caller with no session.
+
+    Whether anything readable came back depended on no real item code ending
+    in `.png`, which is not a security boundary, it is a coincidence.
+
+    Nothing is lost by dropping it: there is no `public/` directory in this
+    app, so the only static files are under `_next`, which is still excluded.
+    If one is ever added, it will need sign-in — which for a factory's costing
+    tool is the right default, and has to be an explicit decision rather than
+    a side effect of a regex.
   */
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 };
