@@ -1,5 +1,6 @@
 'use server';
 
+import type { Route } from 'next';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/infra/db/client';
@@ -44,9 +45,35 @@ export async function signIn(
   }
 
   const store = await cookies();
-  store.set(SESSION_COOKIE, issue(user.id), cookieOptions);
+  store.set(SESSION_COOKIE, await issue(user.id), cookieOptions);
 
-  redirect('/rates');
+  /*
+    Back to where they were going.
+
+    Middleware turns an anonymous request away and remembers the path it was
+    for. Landing everyone on the Rate Desk instead would mean a link to a quote
+    sent to a colleague works only on their second attempt.
+
+    The destination is checked, not trusted: it comes from a query string, so
+    anything but a path on this app would make the sign-in form an open
+    redirect — a phishing link that genuinely begins on Nuhas's domain.
+  */
+  redirect(safeNext(String(form.get('next') ?? '')) as Route);
+}
+
+/**
+ * A destination this app is willing to send someone to after signing in.
+ *
+ * Only a path on this origin, and never back to `/sign-in` itself — which
+ * would leave a signed-in user looking at the form they just filled in.
+ * `//evil.example` is the case worth naming: browsers read it as an absolute
+ * URL with an inherited scheme, so a leading-slash check alone is not enough.
+ */
+function safeNext(next: string): '/rates' | `/${string}` {
+  if (!next.startsWith('/')) return '/rates';
+  if (next.startsWith('//')) return '/rates';
+  if (next === '/sign-in' || next.startsWith('/sign-in?')) return '/rates';
+  return next as `/${string}`;
 }
 
 export async function signOut(): Promise<void> {
