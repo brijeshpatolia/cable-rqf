@@ -499,13 +499,16 @@ export async function approveJob(
     A job that already carries a quote is being corrected, not quoted for the
     first time. The new document records which one it replaces; the old row is
     never touched, because it is what the customer was told.
+
+    Which one that is comes from the job row inside the write transaction, not
+    from `persisted` — the read at the top of this action happened before the
+    engine ran, and a correction takes long enough to price that "still under
+    review when I looked" is not the same claim as "still under review now".
+    The refusal below is what a second approver sees instead of a P2002.
   */
-  const { number, id } = await quoteStore.approve(
-    assembled.value,
-    permitted.actor,
-    persisted.quoteId,
-  );
-  await jobStore.markQuoted(persisted.id, id);
+  const issued = await quoteStore.approve(assembled.value, permitted.actor, persisted.id);
+  if (!issued.ok) return { error: issued.error };
+  const { number } = issued.value;
 
   revalidatePath('/');
   revalidatePath('/quotes');
@@ -543,6 +546,33 @@ export async function abandonJob(
   const reference = String(form.get('reference') ?? '');
   const reason = String(form.get('reason') ?? '').trim();
   if (reason === '') return { error: 'Say why this enquiry is being closed.' };
+
+  /*
+    An enquiry mid-correction cannot just be dropped.
+
+    Reopening a quote puts the job back in review while its issued quote stays
+    standing — that is the whole design, because the customer has been told a
+    price and nothing has replaced it yet. Closing the enquiry at that point
+    used to leave the quote live: the price watch went on hedging its copper
+    as a promise nobody intended to keep, and the record said the enquiry was
+    closed while the document said the opposite.
+
+    Refused rather than silently withdrawn. Retracting a price a customer is
+    holding is a thing somebody decides and tells them about, not a side
+    effect of tidying an inbox.
+  */
+  const job = await jobStore.byReference(reference);
+  if (job === undefined) return { error: `${reference} was not found.` };
+
+  if (job.status === 'review' && job.quoteNumber !== null) {
+    return {
+      error:
+        `${reference} is correcting ${job.quoteNumber}, which is still the price ` +
+        `${job.customer ?? 'the customer'} is holding. Finish the correction and ` +
+        'approve it, or withdraw the quote first — closing the enquiry here would ' +
+        'leave that promise standing with nothing behind it.',
+    };
+  }
 
   await jobStore.abandon(reference, permitted.actor, reason);
   revalidatePath('/');

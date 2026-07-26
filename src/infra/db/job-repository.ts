@@ -57,6 +57,29 @@ const SELECT_JOB = `
     LEFT JOIN app_user u ON u.id = j.created_by_id
     LEFT JOIN quote q ON q.id = j.quote_id`;
 
+/**
+ * The same job, minus the document it was read from.
+ *
+ * `source_text` is the whole attachment and `line_sources` its per-line map;
+ * together they are far and away the largest thing on the row, and they exist
+ * for exactly one screen — the side-by-side provenance view. A caller that
+ * reads jobs in bulk to count lines has no use for either.
+ *
+ * NULL in both columns hydrates to `sourceDocument: null`, which is the same
+ * shape a pasted enquiry produces and is handled everywhere already. It does
+ * mean a job read this way cannot be asked where its lines came from, so this
+ * is for callers that will not ask — named to say so.
+ */
+const SELECT_JOB_WITHOUT_DOCUMENT = `
+  SELECT j.id::text, j.reference, j.status::text AS status, j.customer, j.terms,
+         j.source::text AS source, j.source_name, j.source_notes, j.raw_text,
+         NULL::text AS source_text, NULL::jsonb AS line_sources,
+         u.name AS created_by, j.created_at, j.updated_at,
+         q.number AS quote_number, q.id::text AS quote_id
+    FROM job j
+    LEFT JOIN app_user u ON u.id = j.created_by_id
+    LEFT JOIN quote q ON q.id = j.quote_id`;
+
 const SELECT_DECISIONS = `
   SELECT l.job_id::text, l.position,
          l.override_rate::text AS override_rate,
@@ -222,10 +245,18 @@ export class DbJobRepository {
    *
    * `since` is a floor rather than a window because the question is always
    * "over the last quarter", never "during March".
+   *
+   * **Not `SELECT_JOB`.** That projection carries `source_text` — the entire
+   * uploaded document, every line of it, kept so an engineer can be shown
+   * where a number came from — and `line_sources` alongside it. The one caller
+   * here is the coverage screen, which re-reviews `rawText` against today's
+   * library and never opens a document. Reading a quarter of attachments out
+   * of Postgres to throw them away on the same tick is the sort of thing that
+   * is invisible until the quarter is a busy one.
    */
   async allSince(since: Date): Promise<readonly Job[]> {
     const jobs = await this.db.$queryRawUnsafe<JobRow[]>(
-      `${SELECT_JOB} WHERE j.created_at >= $1 ORDER BY j.created_at DESC`,
+      `${SELECT_JOB_WITHOUT_DOCUMENT} WHERE j.created_at >= $1 ORDER BY j.created_at DESC`,
       since,
     );
     if (jobs.length === 0) return [];
@@ -458,13 +489,16 @@ export class DbJobRepository {
     });
   }
 
-  /** Marks the job quoted and ties it to the quote it became. */
-  async markQuoted(jobId: string, quoteId: string): Promise<void> {
-    await this.db.job.update({
-      where: { id: jobId },
-      data: { status: 'approved', quoteId },
-    });
-  }
+  /*
+    `markQuoted` used to live here and is deliberately gone.
+
+    It was the second half of an approval — quote written by one repository,
+    job moved by another, two transactions with a window between them where
+    the enquiry was under review and its quote already existed. Deleting it is
+    the fix: there is no longer a way to spell the broken sequence, because
+    moving the job is now part of writing the quote. See
+    `DbQuoteRepository.approve`.
+  */
 
   /**
    * Puts a quoted job back in review so its quote can be corrected.
@@ -477,15 +511,27 @@ export class DbJobRepository {
    *
    * The quote itself is untouched. It is what the customer was told; the
    * correction is a new document that says so.
+   *
+   * **Returns false when there was nothing to reopen**, rather than reopening
+   * a job that is already in review. The action checks the status first, but a
+   * check followed by a write is two statements and two people can get between
+   * them — the second one moved nothing and then wrote an audit row saying the
+   * status went from approved to review. Filtering on the status *in the
+   * update* makes the check and the write one statement, so the row is written
+   * only by whoever actually moved the job.
    */
-  async reopen(reference: string, actor: Actor, reason: string): Promise<void> {
-    await this.db.$transaction(async (tx) => {
+  async reopen(reference: string, actor: Actor, reason: string): Promise<boolean> {
+    return this.db.$transaction(async (tx) => {
       const job = await tx.job.findUniqueOrThrow({
         where: { reference },
         include: { quote: { select: { number: true } } },
       });
 
-      await tx.job.update({ where: { reference }, data: { status: 'review' } });
+      const moved = await tx.job.updateMany({
+        where: { reference, status: 'approved' },
+        data: { status: 'review' },
+      });
+      if (moved.count === 0) return false;
 
       await tx.auditEvent.create({
         data: {
@@ -493,16 +539,27 @@ export class DbJobRepository {
           actorEmail: actor.email,
           entity: `job:${reference}`,
           field: 'status',
-          previous: 'approved',
+          // The status it actually left, read in the same transaction that
+          // moved it. Hard-coding 'approved' made the trail a template rather
+          // than a record.
+          previous: job.status,
           next: 'review',
           reason: `Reopened to correct ${job.quote?.number ?? 'its quote'}: ${reason}`,
         },
       });
+      return true;
     });
   }
 
   async abandon(reference: string, actor: Actor, reason: string): Promise<void> {
     await this.db.$transaction(async (tx) => {
+      // Read before the write, same as `reopen`, and for the same reason: an
+      // abandoned job could have come from any status, and 'review' was a
+      // guess written down as a fact.
+      const job = await tx.job.findUniqueOrThrow({
+        where: { reference },
+        select: { status: true },
+      });
       await tx.job.update({ where: { reference }, data: { status: 'abandoned' } });
       await tx.auditEvent.create({
         data: {
@@ -510,7 +567,7 @@ export class DbJobRepository {
           actorEmail: actor.email,
           entity: `job:${reference}`,
           field: 'status',
-          previous: 'review',
+          previous: job.status,
           next: 'abandoned',
           reason,
         },

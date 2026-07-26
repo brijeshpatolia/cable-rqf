@@ -347,28 +347,29 @@ describe.skipIf(url === undefined)('invariants the database enforces', () => {
    * was told.
    */
   describe('replacing an issued quote', () => {
-    const quote = (id: string, number: string, status: string) =>
+    /*
+      The link is set in the INSERT that creates the quote, exactly as
+      `quoteStore.approve` sets it. These tests used to build it with a
+      follow-up UPDATE, which the immutability guard now refuses — correctly,
+      and it meant every assertion here was really testing that guard rather
+      than the one it named.
+    */
+    const quote = (id: string, number: string, status: string, supersedes?: string) =>
       `INSERT INTO quote (id, number, status, customer, priced_at, valid_until,
-                          lme_struck, fx_struck, margin_percent)
+                          lme_struck, fx_struck, margin_percent, supersedes_id)
        VALUES ('${id}', '${number}', '${status}', 'TEST CUSTOMER',
-               now(), now() + interval '30 days', 9000, 0.3845, 12)`;
+               now(), now() + interval '30 days', 9000, 0.3845, 12,
+               ${supersedes === undefined ? 'NULL' : `'${supersedes}'`})`;
 
     const A = '55555555-5555-5555-5555-555555555555';
     const B = '66666666-6666-6666-6666-666666666666';
     const C = '77777777-7777-7777-7777-777777777777';
 
     it('refuses a quote that supersedes itself', async () => {
-      await withSetup(
-        async () => {
-          await run(quote(A, 'Q-TEST-0001', 'approved'));
-        },
-        async () => {
-          const err = await attempt(
-            `UPDATE quote SET supersedes_id = '${A}' WHERE id = '${A}'`,
-          );
-          expect(err).toMatch(/quote_supersedes_another/);
-        },
-      );
+      // Raised by the trigger rather than by the CHECK of the same name: a
+      // BEFORE trigger is evaluated first. The CHECK still stands behind it.
+      const err = await attempt(quote(A, 'Q-TEST-0001', 'approved', A));
+      expect(err).toMatch(/cannot supersede itself/);
     });
 
     it('refuses a second quote claiming to replace the same one', async () => {
@@ -377,14 +378,10 @@ describe.skipIf(url === undefined)('invariants the database enforces', () => {
       await withSetup(
         async () => {
           await run(quote(A, 'Q-TEST-0001', 'approved'));
-          await run(quote(B, 'Q-TEST-0002', 'approved'));
-          await run(`UPDATE quote SET supersedes_id = '${A}' WHERE id = '${B}'`);
-          await run(quote(C, 'Q-TEST-0003', 'approved'));
+          await run(quote(B, 'Q-TEST-0002', 'approved', A));
         },
         async () => {
-          const err = await attempt(
-            `UPDATE quote SET supersedes_id = '${A}' WHERE id = '${C}'`,
-          );
+          const err = await attempt(quote(C, 'Q-TEST-0003', 'approved', A));
           expect(err).toMatch(/quote_supersedes_id_key|duplicate key/);
         },
       );
@@ -394,12 +391,9 @@ describe.skipIf(url === undefined)('invariants the database enforces', () => {
       await withSetup(
         async () => {
           await run(quote(A, 'Q-TEST-0001', 'draft'));
-          await run(quote(B, 'Q-TEST-0002', 'approved'));
         },
         async () => {
-          const err = await attempt(
-            `UPDATE quote SET supersedes_id = '${A}' WHERE id = '${B}'`,
-          );
+          const err = await attempt(quote(B, 'Q-TEST-0002', 'approved', A));
           expect(err).toMatch(/still a draft/);
         },
       );
@@ -409,15 +403,10 @@ describe.skipIf(url === undefined)('invariants the database enforces', () => {
       await withSetup(
         async () => {
           await run(quote(A, 'Q-TEST-0001', 'approved'));
-          await run(quote(B, 'Q-TEST-0002', 'approved'));
-          await run(`UPDATE quote SET supersedes_id = '${A}' WHERE id = '${B}'`);
-          await run(quote(C, 'Q-TEST-0003', 'approved'));
+          await run(quote(B, 'Q-TEST-0002', 'approved', A));
         },
         async () => {
-          const err = await attempt(
-            `UPDATE quote SET supersedes_id = '${B}' WHERE id = '${C}'`,
-          );
-          expect(err).toBeNull();
+          expect(await attempt(quote(C, 'Q-TEST-0003', 'approved', B))).toBeNull();
         },
       );
     });
@@ -434,6 +423,198 @@ describe.skipIf(url === undefined)('invariants the database enforces', () => {
             `UPDATE quote SET customer = 'SOMEONE ELSE' WHERE id = '${A}'`,
           );
           expect(err).toMatch(/can no longer be edited/);
+        },
+      );
+    });
+  });
+
+  describe('what the supersession chain refuses', () => {
+    const G = 'aaaaaaaa-0000-0000-0000-00000000000';
+    const quote = (n: number, status: string, supersedes: number | null) =>
+      `INSERT INTO quote (id, number, status, customer, priced_at, valid_until,
+                          lme_struck, fx_struck, margin_percent, supersedes_id)
+       VALUES ('${G}${n}', 'Q-GUARD-${n}', '${status}', 'TEST GUARD CO',
+               now(), now() + interval '30 days', 9000, 0.3845, 12,
+               ${supersedes === null ? 'NULL' : `'${G}${supersedes}'`})`;
+
+    /** A ← B ← C, every link set at insert time as the app sets it. */
+    const chain = async () => {
+      await run(quote(1, 'approved', null));
+      await run(quote(2, 'approved', 1));
+      await run(quote(3, 'approved', 2));
+    };
+
+    it('builds a chain of three the way the app does', async () => {
+      await withSetup(chain, async () => {
+        const heads = await db.query(
+          `SELECT number FROM quote q
+            WHERE q.status IN ('approved','sent')
+              AND NOT EXISTS (SELECT 1 FROM quote r WHERE r.supersedes_id = q.id)
+              AND q.customer = 'TEST GUARD CO'`,
+        );
+        // Exactly the head stands. The price watch reads currency from the
+        // link, so anything else here is a quote being swept twice or not at all.
+        expect(heads.rows.map((r: { number: string }) => r.number)).toEqual(['Q-GUARD-3']);
+      });
+    });
+
+    it('refuses to detach the link on an issued quote', async () => {
+      await withSetup(chain, async () => {
+        const err = await attempt(
+          `UPDATE quote SET supersedes_id = NULL WHERE id = '${G}2'`,
+        );
+        expect(err).toMatch(/can no longer be edited/);
+      });
+    });
+
+    it('refuses to close a cycle', async () => {
+      // Stopped by the frozen link rather than by the cycle walk — which is
+      // the point: with the link immutable there is no way to form a ring.
+      await withSetup(chain, async () => {
+        const err = await attempt(
+          `UPDATE quote SET supersedes_id = '${G}3' WHERE id = '${G}1'`,
+        );
+        expect(err).not.toBeNull();
+      });
+    });
+
+    it('refuses to let a draft supersede a live quote', async () => {
+      /*
+        The worst of the four. A draft superseding a live quote drops that
+        quote off the price watch — its copper silently stops being hedged —
+        and takes the UNIQUE slot, so the real correction can never be issued.
+      */
+      await withSetup(chain, async () => {
+        const err = await attempt(quote(4, 'draft', 3));
+        expect(err).toMatch(/draft cannot supersede/);
+      });
+    });
+
+    it('refuses to delete an issued quote, head of a chain or not', async () => {
+      await withSetup(chain, async () => {
+        // The head is the case ON DELETE RESTRICT never covered: nothing
+        // supersedes it, and its lines used to cascade past the immutability
+        // trigger, which reads the parent's status and finds it already gone.
+        expect(await attempt(`DELETE FROM quote WHERE id = '${G}3'`)).toMatch(
+          /cannot be deleted/,
+        );
+        expect(await attempt(`DELETE FROM quote WHERE id = '${G}1'`)).not.toBeNull();
+      });
+    });
+
+    it('still lets a draft be deleted, lines and all', async () => {
+      // The guard is on the quote rather than on its lines precisely so this
+      // keeps working: a draft is not a promise anyone made to a customer.
+      await withSetup(
+        async () => {
+          await run(quote(9, 'draft', null));
+        },
+        async () => {
+          expect(await attempt(`DELETE FROM quote WHERE id = '${G}9'`)).toBeNull();
+        },
+      );
+    });
+  });
+
+  /**
+   * Signing out.
+   *
+   * The cookie is a signed statement and cannot be withdrawn; the row it names
+   * is what makes it live. That only holds if ending the row is final — an
+   * "un-revoke" a single UPDATE away would mean a session somebody ended
+   * because they thought it was compromised could be quietly reopened.
+   */
+  describe('a session that has ended has ended', () => {
+    const S = '77777777-7777-7777-7777-77777777777';
+
+    /** An open session, and one already revoked. */
+    const openSession = (n: number) =>
+      `INSERT INTO app_session (id, user_id, expires_at)
+       VALUES ('${S}${n}', '${ACTOR}', now() + interval '12 hours')`;
+
+    it('will not reopen a session that was signed out of', async () => {
+      await withSetup(
+        async () => {
+          await run(openSession(1));
+          await run(`UPDATE app_session SET revoked_at = now() WHERE id = '${S}1'`);
+        },
+        async () => {
+          expect(
+            await attempt(`UPDATE app_session SET revoked_at = NULL WHERE id = '${S}1'`),
+          ).toMatch(/already ended/);
+
+          // Nor by moving the end further out, which is the same thing said
+          // more quietly: a session that ended at nine is not one that ends at
+          // six tomorrow.
+          expect(
+            await attempt(
+              `UPDATE app_session SET revoked_at = now() + interval '1 day' WHERE id = '${S}1'`,
+            ),
+          ).toMatch(/already ended/);
+        },
+      );
+    });
+
+    it('will not hand a live session to a different account', async () => {
+      await withSetup(
+        async () => {
+          await run(openSession(2));
+          await run(
+            `INSERT INTO app_user (id, email, name, role)
+             VALUES ('${S}9', 'someone-else@test.invalid', 'Someone Else', 'engineer')`,
+          );
+        },
+        async () => {
+          // The token names the session; the session names the user. Repointing
+          // the row is how one person's live cookie becomes another person's
+          // authority, with nothing in the audit trail to show for it.
+          expect(
+            await attempt(`UPDATE app_session SET user_id = '${S}9' WHERE id = '${S}2'`),
+          ).toMatch(/cannot be rewritten/);
+
+          expect(
+            await attempt(
+              `UPDATE app_session SET expires_at = now() + interval '1 year' WHERE id = '${S}2'`,
+            ),
+          ).toMatch(/cannot be rewritten/);
+        },
+      );
+    });
+
+    it('still lets a live session be ended, which is the point', async () => {
+      await withSetup(
+        async () => {
+          await run(openSession(3));
+        },
+        async () => {
+          expect(
+            await attempt(`UPDATE app_session SET revoked_at = now() WHERE id = '${S}3'`),
+          ).toBeNull();
+        },
+      );
+    });
+
+    it('goes when the account does', async () => {
+      // ON DELETE CASCADE. There is nothing to keep in a session row whose
+      // account no longer exists, and an orphan would outlive every check that
+      // could refuse it.
+      await withSetup(
+        async () => {
+          await run(
+            `INSERT INTO app_user (id, email, name, role)
+             VALUES ('${S}8', 'transient@test.invalid', 'Transient', 'engineer')`,
+          );
+          await run(
+            `INSERT INTO app_session (id, user_id, expires_at)
+             VALUES ('${S}4', '${S}8', now() + interval '12 hours')`,
+          );
+        },
+        async () => {
+          await run(`DELETE FROM app_user WHERE id = '${S}8'`);
+          const left = await db.query(
+            `SELECT count(*)::int AS n FROM app_session WHERE id = '${S}4'`,
+          );
+          expect(left.rows[0].n).toBe(0);
         },
       );
     });

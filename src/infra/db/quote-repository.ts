@@ -1,5 +1,6 @@
 import { Prisma, type PrismaClient } from '@prisma/client';
 import { dec } from '@/core/decimal';
+import { type Result, err, ok } from '@/core/result';
 import { omr, usdPerTonne } from '@/core/units';
 import type { Actor } from '@/modules/auth';
 import type { CostBreakdown } from '@/modules/costing';
@@ -289,28 +290,92 @@ export class DbQuoteRepository implements QuoteRepository {
   }
 
   /**
-   * Writes an assembled quote and its lines in one transaction, approved.
+   * Issues a quote for a job, in place of one already issued if there is one.
+   *
+   * **The job is moved in the same transaction, and moved first.** It used to
+   * be two: `approve()` wrote the quote, then the action called
+   * `jobStore.markQuoted()`. Between those two statements the job was still in
+   * review while its quote existed and already claimed to supersede the old
+   * one — and `supersedes_id` is UNIQUE, so a crash, a timeout or a closed tab
+   * in that window wedged the enquiry permanently. Every retry built the same
+   * link, every retry was refused by the index, and the only way out was psql.
+   * The same window let two engineers approve one job twice: both read
+   * `status = 'review'`, both wrote a quote, and the second `markQuoted`
+   * overwrote the first — leaving a quote that no enquiry pointed at and that
+   * `quote_is_undeletable_once_issued` now, correctly, will not let anyone
+   * delete.
+   *
+   * `UPDATE ... WHERE status = 'review'` is the whole fix: the check and the
+   * write are one statement, so the second approval finds nothing to move and
+   * the transaction that would have written the duplicate rolls back with it.
+   *
+   * Which quote is being replaced is read from the job *inside* the
+   * transaction rather than passed in, because a value the caller read a
+   * moment ago is a value that can have changed. The old row is not touched:
+   * it is what a customer was told, and the correction is a new document that
+   * says so. Which of the two is current is read from the link, never from a
+   * status anyone has to remember to set.
    *
    * The number is derived inside the transaction from the count so far this
-   * year, so two engineers approving at once cannot both take Q-2026-0148 —
-   * the unique index on `number` refuses the second, and the whole
-   * transaction is abandoned rather than half-written.
-   */
-  /**
-   * Issues a quote, optionally in place of one already issued.
-   *
-   * `supersedes` carries the id of the quote being replaced. The old row is
-   * not touched: it is what a customer was told, and the correction is a new
-   * document that says so. Which of the two is current is read from the link,
-   * never from a status anyone has to remember to set — two sources of truth
-   * about which price stands is exactly the bug this is here to prevent.
+   * year. Two engineers approving *different* jobs at once can still read the
+   * same count and reach for the same number; the unique index refuses the
+   * second, and `issue` retries rather than showing anyone a database error
+   * for what is only a numbering race.
    */
   async approve(
     assembled: AssembledQuote,
     actor: Actor,
-    supersedes: string | null = null,
+    jobId: string,
+  ): Promise<Result<{ readonly number: string; readonly id: string }, string>> {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        return ok(await this.issueOnce(assembled, actor, jobId));
+      } catch (e) {
+        if (e instanceof Conflict) return err(e.message);
+        if (isNumberCollision(e) && attempt < 4) continue;
+        if (isUniqueViolation(e)) {
+          return err(
+            'Someone approved this at the same moment. Nothing was written — ' +
+              'reload the enquiry and check whether it is already quoted.',
+          );
+        }
+        throw e;
+      }
+    }
+  }
+
+  private async issueOnce(
+    assembled: AssembledQuote,
+    actor: Actor,
+    jobId: string,
   ): Promise<{ readonly number: string; readonly id: string }> {
     return this.db.$transaction(async (tx) => {
+      /*
+        First, and conditionally. Under read-committed a second transaction
+        blocks here until the first commits and then re-evaluates the WHERE,
+        so it sees `approved` and moves nothing — which is exactly the answer
+        wanted, and it costs nothing to find out before writing the quote.
+      */
+      const job = await tx.job.findUnique({
+        where: { id: jobId },
+        select: { reference: true, status: true, quoteId: true },
+      });
+      if (job === null) throw new Conflict('That enquiry no longer exists.');
+
+      const moved = await tx.job.updateMany({
+        where: { id: jobId, status: 'review' },
+        data: { status: 'approved' },
+      });
+      if (moved.count === 0) {
+        throw new Conflict(
+          `${job.reference} is no longer under review — someone else approved or ` +
+            'closed it while this screen was open. Nothing was written. Reload ' +
+            'it to see where it stands.',
+        );
+      }
+
+      const supersedes = job.quoteId;
+
       const year = assembled.pricedAt.getUTCFullYear();
       const counted = await tx.$queryRaw<{ count: bigint }[]>`
         SELECT count(*) FROM quote WHERE number LIKE ${`Q-${year}-%`}`;
@@ -333,6 +398,10 @@ export class DbQuoteRepository implements QuoteRepository {
           supersedesId: supersedes,
         },
       });
+
+      // Now that the quote exists, point the job at it. Same transaction as
+      // the status move above, so the enquiry is never approved-but-unquoted.
+      await tx.job.update({ where: { id: jobId }, data: { quoteId: created.id } });
 
       await tx.quoteLine.createMany({
         data: assembled.lines.map((l, position) => ({
@@ -381,4 +450,33 @@ export class DbQuoteRepository implements QuoteRepository {
       return { number, id: created.id };
     });
   }
+}
+
+/**
+ * A refusal, thrown so the transaction rolls back with it.
+ *
+ * Prisma's interactive transaction commits when the callback returns, so
+ * "decline and undo" has to leave by throwing. The message is written for an
+ * engineer, not for a log: it is shown verbatim on the review screen.
+ */
+class Conflict extends Error {}
+
+function isUniqueViolation(e: unknown): boolean {
+  return e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002';
+}
+
+/**
+ * Two jobs reaching for the same quote number — the one conflict worth
+ * retrying, because nothing about it is a disagreement over what should
+ * happen. Both quotes are wanted; they just cannot both be Q-2026-0148.
+ *
+ * Narrowed by target so a genuine conflict — a second correction of the same
+ * quote hitting `quote_supersedes_id_key` — is never retried into a loop that
+ * would fail identically five times before giving the same answer.
+ */
+function isNumberCollision(e: unknown): boolean {
+  if (!isUniqueViolation(e)) return false;
+  const target = (e as Prisma.PrismaClientKnownRequestError).meta?.['target'];
+  const named = Array.isArray(target) ? target.join(',') : String(target ?? '');
+  return named.includes('number');
 }
