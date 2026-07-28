@@ -6,6 +6,18 @@ export interface Column<T> {
   readonly align?: 'left' | 'right';
   /** Reserved so a data refresh causes no layout shift. */
   readonly width?: number;
+  /**
+   * This column renders its own links or controls, so the row link must not
+   * wrap it.
+   *
+   * An anchor inside an anchor is not merely discouraged, it is a parse error:
+   * the browser closes the outer one when it meets the inner, so the tree it
+   * builds is not the tree the server rendered. React sees the mismatch,
+   * throws away the whole tree and re-renders it on the client — the #418 this
+   * flag exists to prevent. The Export column on the Quotes screen is the case
+   * that found it.
+   */
+  readonly interactive?: boolean;
   readonly render: (row: T) => ReactNode;
 }
 
@@ -135,8 +147,12 @@ export function DataTable<T>({
                       Only the first is in the tab order: eight columns would
                       otherwise cost eight tab stops per row to reach the same
                       destination.
+
+                      A column that carries its own links or controls opts out,
+                      because nesting one anchor in another is a parse error
+                      rather than a style question — see `interactive` above.
                     */}
-                    {link !== undefined ? (
+                    {link !== undefined && c.interactive !== true ? (
                       <a
                         href={link}
                         tabIndex={i === 0 ? undefined : -1}

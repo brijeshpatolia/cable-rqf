@@ -147,6 +147,10 @@ export default async function QuotesPage() {
               key: 'export',
               header: 'Export',
               width: 110,
+              // Its own two links, so the row link must not wrap it. Nesting
+              // one anchor in another is a parse error, and the tree the
+              // browser builds then differs from the one the server sent.
+              interactive: true,
               render: (q) => (
                 <span className="flex gap-3">
                   <a href={`/quotes/${q.number}/pdf`} style={link}>PDF</a>
