@@ -1,5 +1,6 @@
 import { formatInstant, formatDate, formatNumber } from '@/core/format';
 import type { CostBreakdown } from '@/modules/costing';
+import { CompositionBar } from './CompositionBar';
 import { ExpandableRow, Provenance, StrikeFooter } from './ExpandableRow';
 import { NumericCell } from './NumericCell';
 
@@ -19,6 +20,12 @@ export function CostBreakdownView({
 
   return (
     <div>
+      {/*
+        The shape before the figures. It is a proportion of numbers that all
+        appear below it, so it can be removed without losing anything.
+      */}
+      <CompositionBar breakdown={b} />
+
       {/* ── Materials ─────────────────────────────────────────────── */}
       <ExpandableRow
         depth={0}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useState } from 'react';
 import type { ActionResult } from '@/app/jobs/actions';
 
 type Action = (p: ActionResult | null, f: FormData) => Promise<ActionResult>;
@@ -22,6 +22,10 @@ export function NewJob({
   readonly uploadAction: Action;
 }) {
   const [state, submit, pending] = useActionState(action, {});
+  // Named here so the label can show it — the input itself is visually
+  // hidden, so nothing else would say which file is about to be read.
+  const [fileName, setFileName] = useState<string | null>(null);
+
   const [upload, sendFile, uploading] = useActionState(uploadAction, {});
 
   return (
@@ -118,24 +122,51 @@ export function NewJob({
         borderTop: '1px solid var(--color-line-hairline)',
       }}
     >
-      <span
-        style={{ color: 'var(--color-ink-tertiary)', fontSize: 'var(--text-micro)' }}
-      >
-        …or upload the enquiry
-      </span>
+      {/*
+        The browser's own file control, styled by wrapping it in a label and
+        hiding the input rather than by fighting it. `::file-selector-button`
+        can be restyled but the "No file chosen" text beside it cannot, and on
+        an intake panel that is the most prominent thing on the screen it read
+        as an unfinished form.
 
-      <input
-        type="file"
-        name="document"
-        accept=".xlsx,.xlsm,.xls,.csv,.tsv,.pdf,.txt"
-        required
-        style={{
-          color: 'var(--color-ink-secondary)',
-          fontSize: 'var(--text-micro)',
-          flex: 1,
-          minWidth: 220,
-        }}
-      />
+        The dashed border is the one place a dashed line appears in the app,
+        and it is doing a job: it says "drop target" in a way a solid button
+        does not.
+      */}
+      <label className="file-drop flex items-center" style={fileDrop}>
+        <input
+          type="file"
+          name="document"
+          accept=".xlsx,.xlsm,.xls,.csv,.tsv,.pdf,.txt"
+          required
+          className="sr-only"
+          onChange={(e) => setFileName(e.target.files?.[0]?.name ?? null)}
+        />
+        <svg
+          aria-hidden
+          width="12"
+          height="12"
+          viewBox="0 0 12 12"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          style={{ flexShrink: 0 }}
+        >
+          <path d="M6 8V1M6 1 3.5 3.5M6 1l2.5 2.5M1 8v2a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V8" />
+        </svg>
+        <span
+          style={{
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            maxWidth: 260,
+          }}
+        >
+          {fileName ?? 'Upload spreadsheet or PDF'}
+        </span>
+      </label>
 
       <button type="submit" disabled={uploading} style={quietButton}>
         {uploading ? 'Reading the file…' : 'Read it'}
@@ -160,6 +191,17 @@ export function NewJob({
     </>
   );
 }
+
+const fileDrop: React.CSSProperties = {
+  height: 34,
+  padding: '0 12px',
+  gap: 8,
+  border: '1px dashed var(--color-line-key)',
+  borderRadius: 'var(--radius-input)',
+  color: 'var(--color-ink-secondary)',
+  fontSize: 12,
+  cursor: 'pointer',
+};
 
 const quietButton: React.CSSProperties = {
   border: '1px solid var(--color-line-strong)',

@@ -164,12 +164,52 @@ Consistency here is most of the "premium" perception. Applied by the `<NumericCe
 
 --radius-sm: 2px;   /* dots, chips, inputs */
 --radius-md: 3px;   /* buttons */
---radius-lg: 4px;   /* panels, drawers — the maximum in the app */
+--radius-lg: 4px;   /* panels, drawers — the maximum on a dense screen */
 
 --border-hairline: 1px solid var(--line-hairline);
 --border-strong:   1px solid var(--line-strong);
 --shadow-popover:  0 8px 24px rgba(0, 0, 0, 0.55);  /* the only shadow */
 ```
+
+### Two scales, and when each applies
+
+The values above are the **dense** scale and they remain the default. A second
+**shell** scale was added in the 2026 redesign:
+
+```css
+--row-height-shell: 44px;
+--cell-pad-x-shell: 16px;
+--radius-control:    7px;   /* rail items, chips, section cards */
+--radius-input:      8px;   /* inputs, buttons */
+--radius-card:       9px;   /* cards inside a build-up */
+--radius-panel:     12px;   /* panels */
+--panel-highlight:  inset 0 1px 0 rgba(255,255,255,0.035);
+```
+
+| | Dense | Shell |
+|---|---|---|
+| Rows | 32px | 44px |
+| Panel radius | 4px | 12px |
+| Used by | Rate Desk, Catalogue, Price Watch, Vocabulary, Coverage, History, Quotes list | Inbox, Quote detail |
+
+**The distinction is what a row is.** On a dense screen a row is a *record* in
+a list of many — the Rate Desk shows 167, the Catalogue 99 — and a third fewer
+rows per screen is a cost paid by whoever is reading them. On the Inbox a row
+is a *thing you act on*, a dozen of them, and the height is what makes the
+Match column and the two-line Quoted cell legible.
+
+Opt in per screen, never globally: `<Panel scale="shell">`, `<DataTable
+scale="shell">`, `<ExpandableRow scale="shell">`. A screen that does not ask
+gets the dense scale, which is the right default for a screen nobody has
+thought about yet.
+
+The `radius ≤ 4px` rule below still holds on the dense scale. It was written
+when every screen was a table; the shell scale is the exception, and it is an
+exception with a name rather than a drift.
+
+**Depth is still never a drop shadow.** The shell scale adds one 1px inner top
+highlight on a panel and an inset surface behind table headers and footers.
+`--shadow-popover` remains the only shadow in the app.
 
 **Space groups, it does not fill.** A panel's internal padding is `--space-4`; the gap *between* related rows is 0 (they share a hairline); the gap between unrelated panels is `--space-5`. Generous space around numbers means the number has room to breathe within its cell — not that the table is loose.
 

@@ -76,7 +76,7 @@ export default async function DesignPage({
   const spec = product.spec;
 
   return (
-    <div style={{ padding: 24 }} className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6">
       <header>
         <a
           href={`/catalogue/${product.id}`}

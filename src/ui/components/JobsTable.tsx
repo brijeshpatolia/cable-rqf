@@ -15,6 +15,7 @@ export interface JobRowView {
 }
 
 const STATUSES = [
+  { key: null, label: 'All' },
   { key: 'review', label: 'In review' },
   { key: 'approved', label: 'Quoted' },
   { key: 'abandoned', label: 'Closed' },
@@ -29,25 +30,38 @@ const AGES = [
 /**
  * The inbox, filterable.
  *
- * PROJECT_PLAN.md asks for status, customer and date range "as muted chips" —
- * muted because a filter is a way of looking at the list, not a status of
- * anything in it. Only the active one takes the copper underline, the same
- * treatment the catalogue's family chips already use.
+ * **Status is a segmented control, not chips.** The three states are mutually
+ * exclusive and cover the list between them, which is exactly what a segmented
+ * control says and exactly what a row of independent chips does not — three
+ * chips invite you to try selecting two and then do nothing when you do. `All`
+ * is a real segment rather than the absence of a selection, so the control is
+ * never in a state that has no visible answer.
+ *
+ * Age stays a set of toggles, because those *are* independent of status and
+ * clicking the active one clears it.
  *
  * Customers come from the rows rather than a fixed list: an inbox with two
- * customers in it should not offer forty, and a customer who has never sent an
- * enquiry is not something to filter by.
+ * customers in it should not offer forty. The 2026 handoff moves these into a
+ * `⌘K` palette — they stay here until that palette exists, because moving a
+ * working filter into something unbuilt is not a redesign, it is a deletion.
  *
  * All three narrow together and the count says what is left, so filtering to
- * nothing reads as *nothing matches these three* rather than as an empty inbox.
+ * nothing reads as *nothing matches these* rather than as an empty inbox.
  */
 export function JobsTable({
   rows,
   columns,
+  footer,
 }: {
   readonly rows: readonly JobRowView[];
   /** Headers and widths; the cells themselves arrive already rendered. */
-  readonly columns: readonly { readonly header: string; readonly width?: number; readonly align?: 'left' | 'right' }[];
+  readonly columns: readonly {
+    readonly header: string;
+    readonly width?: number;
+    readonly align?: 'left' | 'right';
+  }[];
+  /** The tier legend. Rendered inside the panel, under the last row. */
+  readonly footer?: ReactNode;
 }) {
   const [status, setStatus] = useState<JobRowView['status'] | null>(null);
   const [customer, setCustomer] = useState<string | null>(null);
@@ -86,40 +100,71 @@ export function JobsTable({
 
   const filtered = status !== null || customer !== null || days !== null;
 
+  const clear = () => {
+    setStatus(null);
+    setCustomer(null);
+    setDays(null);
+  };
+
   return (
     <div>
       <div
-        className="flex flex-wrap items-center gap-2"
+        className="flex flex-wrap items-center"
         style={{
-          padding: '8px var(--cell-pad-x)',
-          borderBottom: '1px solid var(--color-line-strong)',
+          padding: '12px var(--cell-pad-x-shell)',
+          borderBottom: '1px solid var(--color-line-panel)',
+          gap: 10,
         }}
       >
-        {STATUSES.map((s) => (
-          <Chip
-            key={s.key}
-            active={status === s.key}
-            onClick={() => setStatus(status === s.key ? null : s.key)}
-          >
-            {s.label}
-          </Chip>
-        ))}
+        <div
+          role="group"
+          aria-label="Filter by status"
+          className="flex items-center"
+          style={{
+            padding: 2,
+            gap: 2,
+            backgroundColor: 'var(--color-surface-base)',
+            border: '1px solid var(--color-line-panel)',
+            borderRadius: 9,
+          }}
+        >
+          {STATUSES.map((s) => {
+            const selected = status === s.key;
+            return (
+              <button
+                key={s.label}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => setStatus(s.key)}
+                style={{
+                  height: 28,
+                  padding: '0 12px',
+                  borderRadius: 'var(--radius-control)',
+                  fontSize: 12,
+                  color: selected ? 'var(--color-ink-primary)' : 'var(--color-ink-secondary)',
+                  backgroundColor: selected ? 'var(--color-surface-active)' : 'transparent',
+                }}
+              >
+                {s.label}
+              </button>
+            );
+          })}
+        </div>
 
-        <Divider />
-
-        {AGES.map((a) => (
-          <Chip
-            key={a.key}
-            active={days === a.key}
-            onClick={() => setDays(days === a.key ? null : a.key)}
-          >
-            {a.label}
-          </Chip>
-        ))}
+        <div className="flex items-center" style={{ gap: 6 }}>
+          {AGES.map((a) => (
+            <Chip
+              key={a.key}
+              active={days === a.key}
+              onClick={() => setDays(days === a.key ? null : a.key)}
+            >
+              {a.label}
+            </Chip>
+          ))}
+        </div>
 
         {customers.length < 2 ? null : (
-          <>
-            <Divider />
+          <div className="flex flex-wrap items-center" style={{ gap: 6 }}>
             {customers.map((c) => (
               <Chip
                 key={c}
@@ -129,47 +174,48 @@ export function JobsTable({
                 {c}
               </Chip>
             ))}
-          </>
+          </div>
         )}
 
-        <span
-          className="numeric ml-auto"
-          style={{
-            color: 'var(--color-ink-tertiary)',
-            fontSize: 'var(--text-micro)',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {shown.length} of {rows.length}
-        </span>
+        <div className="flex items-center ml-auto" style={{ gap: 12 }}>
+          {/* Only rendered when there is something to clear — a permanently
+              visible Clear is a control that does nothing most of the time. */}
+          {filtered ? (
+            <button
+              type="button"
+              onClick={clear}
+              style={{ fontSize: 11.5, color: 'var(--color-ink-secondary)' }}
+            >
+              Clear filters
+            </button>
+          ) : null}
+          <span
+            className="numeric"
+            style={{
+              color: 'var(--color-ink-tertiary)',
+              fontSize: 11,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {shown.length} / {rows.length}
+          </span>
+        </div>
       </div>
 
       <DataTable
+        scale="shell"
         columns={cols}
         rows={shown}
         rowKey={(r) => r.reference}
         href={(r) => r.href}
+        {...(footer === undefined ? {} : { footer })}
         empty={
           filtered
-            ? 'No enquiry matches all three filters. Clear one to widen it.'
+            ? 'No enquiry matches these filters. Clear one to widen it.'
             : 'No enquiries yet. Paste one above, or upload the customer’s file.'
         }
       />
     </div>
-  );
-}
-
-function Divider() {
-  return (
-    <span
-      aria-hidden
-      style={{
-        width: 1,
-        height: 16,
-        backgroundColor: 'var(--color-line-hairline)',
-        margin: '0 2px',
-      }}
-    />
   );
 }
 
@@ -185,19 +231,19 @@ function Chip({
   return (
     <button
       type="button"
+      aria-pressed={active}
       onClick={onClick}
       style={{
-        padding: '3px 10px',
-        borderRadius: 'var(--radius-sm)',
+        height: 28,
+        padding: '0 11px',
+        borderRadius: 'var(--radius-control)',
+        fontSize: 12,
         color: active ? 'var(--color-ink-primary)' : 'var(--color-ink-secondary)',
-        backgroundColor: 'var(--color-surface-panel)',
-        border: '1px solid var(--color-line-hairline)',
-        // The only mark an active chip carries. A filled chip would read as a
-        // status, and this app spends its three status colours elsewhere.
-        borderBottom: active
-          ? '1px solid var(--color-copper)'
-          : '1px solid var(--color-line-hairline)',
-        fontSize: 'var(--text-micro)',
+        // Copper marks the active filter and nothing else in this bar. A
+        // filled chip would read as a status, and the three status colours
+        // are spent on match tiers.
+        border: `1px solid var(${active ? '--color-copper' : '--color-line-panel'})`,
+        backgroundColor: active ? 'var(--color-copper-wash)' : 'transparent',
         maxWidth: 200,
         overflow: 'hidden',
         textOverflow: 'ellipsis',

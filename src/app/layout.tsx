@@ -2,29 +2,18 @@ import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { SESSION_COOKIE } from '@/infra/auth/session';
+import { now } from '@/infra/clock';
+import { SESSION_COOKIE, session } from '@/infra/auth/session';
 import { PATH_HEADER } from '@/middleware';
-import { session } from '@/infra/auth/session';
-import { jobStore } from '@/infra/repositories';
-import { roleLabel } from '@/modules/auth';
-import { WhoAmI } from '@/ui/components/WhoAmI';
+import { jobStore, repositories } from '@/infra/repositories';
+import { Rail } from '@/ui/shell/Rail';
+import { Ticker } from '@/ui/shell/Ticker';
 import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Cable Quoting',
   description: 'RFQ to priced quotation, on live copper.',
 };
-
-const NAV = [
-  { label: 'Inbox', href: '/', phase: 2 },
-  { label: 'Catalogue', href: '/catalogue', phase: 1 },
-  { label: 'Quotes', href: '/quotes', phase: 2 },
-  { label: 'Rate Desk', href: '/rates', phase: 1 },
-  { label: 'Vocabulary', href: '/vocabulary', phase: 2 },
-  { label: 'Price Watch', href: '/price-watch', phase: 1 },
-  { label: 'History', href: '/history', phase: 1 },
-  { label: 'Coverage', href: '/coverage', phase: 2 },
-] as const;
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   /*
@@ -61,15 +50,21 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   if (actor === null && presented && path !== '/sign-in') redirect('/sign-in');
 
   /*
-    Enquiries waiting on a person, as a small mono number beside Inbox — the
-    plan is explicit that it is not a red circle. Red is one of this app's
-    three status colours and it means *the app will not price this*; spending
-    it on "there is work" would make the two indistinguishable at a glance.
+    Enquiries waiting on a person, and the copper the app prices against.
 
-    Only read when there is somebody to read it for, so the sign-in screen
-    costs no query.
+    Only read when there is somebody to read them for, so the sign-in screen
+    costs no query. The LME series is a short history — enough for a sparkline
+    to show a direction, not enough to be a chart.
   */
-  const waiting = actor === null ? 0 : await jobStore.awaitingCount();
+  const asOf = now();
+  const [waiting, ticks] =
+    actor === null
+      ? ([0, []] as const)
+      : await Promise.all([jobStore.awaitingCount(), repositories.rates.lmeHistory(23)]);
+
+  // `lmeHistory` is newest-first; a sparkline reads left to right in time.
+  const series = [...ticks].reverse();
+  const latest = series.at(-1);
 
   return (
     <html lang="en">
@@ -83,81 +78,50 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
             out" a couple of thousand pixels below the fold on the Rate Desk.
             Nobody scrolls to the end of a rate table to leave.
           */}
-          <nav
-            className="shrink-0 flex flex-col sticky top-0"
-            style={{
-              width: 'var(--rail-width)',
-              height: '100vh',
-              borderRight: '1px solid var(--color-line-hairline)',
-              backgroundColor: 'var(--color-surface-panel)',
-            }}
-          >
-            <div
-              style={{
-                padding: '16px',
-                borderBottom: '1px solid var(--color-line-hairline)',
-              }}
-            >
-              <div
+          <Rail actor={actor} waiting={waiting} path={path} />
+
+          <div className="min-w-0 flex-1 flex flex-col">
+            {actor === null || latest === undefined ? null : (
+              <header
+                className="sticky top-0 flex items-center"
                 style={{
-                  fontFamily: 'var(--font-display)',
-                  fontSize: 'var(--text-heading)',
-                  fontWeight: 550,
-                  letterSpacing: '-0.01em',
+                  height: 'var(--topbar-height)',
+                  padding: '0 24px',
+                  zIndex: 5,
+                  borderBottom: '1px solid var(--color-line-panel)',
+                  backgroundColor: 'rgba(11, 14, 19, 0.92)',
+                  backdropFilter: 'blur(12px)',
+                  WebkitBackdropFilter: 'blur(12px)',
                 }}
               >
-                Cable Quoting
-              </div>
-            </div>
-
-            {/* Labels always visible — no icons-only mode. */}
-            <ul className="flex-1" style={{ padding: '8px 0', overflowY: 'auto' }}>
-              {NAV.map((item) => (
-                <li key={item.href}>
-                  <a
-                    href={item.href}
-                    className="flex items-center justify-between transition-colors"
-                    style={{
-                      padding: '6px 16px',
-                      color: 'var(--color-ink-secondary)',
-                      minHeight: 'var(--row-height)',
-                    }}
-                  >
-                    {item.label}
-                    {item.href === '/' && waiting > 0 ? (
-                      <span
-                        className="numeric"
-                        style={{
-                          color: 'var(--color-ink-primary)',
-                          fontSize: 'var(--text-micro)',
-                        }}
-                        title={`${waiting} ${waiting === 1 ? 'enquiry is' : 'enquiries are'} waiting on a person`}
-                      >
-                        {waiting}
-                      </span>
-                    ) : (
-                      <span
-                        className="numeric"
-                        style={{
-                          color: 'var(--color-ink-tertiary)',
-                          fontSize: 'var(--text-micro)',
-                        }}
-                        title={`Ships in phase ${item.phase}`}
-                      >
-                        P{item.phase}
-                      </span>
-                    )}
-                  </a>
-                </li>
-              ))}
-            </ul>
-
-            {actor === null ? null : (
-              <WhoAmI name={actor.name} role={roleLabel(actor.role)} />
+                {/*
+                  The handoff draws a search field and a ⌘K key cap here and
+                  says both are chrome — drawn, not built. They are left out
+                  rather than drawn dead: this app's own rule is that a
+                  disabled action states its condition, and a search box that
+                  silently does nothing is the loudest possible breach of it.
+                  The bar reads correctly without them, because the ticker is
+                  right-aligned regardless.
+                */}
+                <Ticker
+                  points={series.map((t) => Number(t.lme.toString()))}
+                  lme={latest.lme}
+                  asOf={asOf}
+                />
+              </header>
             )}
-          </nav>
 
-          <main className="min-w-0 flex-1">{children}</main>
+            <main
+              className="min-w-0 flex-1 flex flex-col w-full"
+              style={{
+                maxWidth: 'var(--content-max)',
+                padding: '28px 24px 40px',
+                gap: 24,
+              }}
+            >
+              {children}
+            </main>
+          </div>
         </div>
       </body>
     </html>

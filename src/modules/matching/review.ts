@@ -392,4 +392,25 @@ export function byReviewOrder(a: ReviewLine, b: ReviewLine): number {
   return d !== 0 ? d : a.index - b.index;
 }
 
+/**
+ * The worst line on an enquiry — what the Inbox shows in one cell.
+ *
+ * The same ordering the review screen sorts by, so the word in the list and
+ * the first row you land on after clicking it are always the same thing. An
+ * enquiry is only as good as its worst line: nine Exact lines and one No match
+ * is a job that needs a person, and reporting it as Exact would be the list
+ * quietly disagreeing with the screen behind it.
+ *
+ * Undefined for an enquiry with no lines, which is not the same as a good one.
+ */
+export function worstStatus(lines: readonly ReviewLine[]): LineStatus | undefined {
+  let worst: LineStatus | undefined;
+  for (const line of lines) {
+    if (worst === undefined || STATUS_ORDER.indexOf(line.status) < STATUS_ORDER.indexOf(worst)) {
+      worst = line.status;
+    }
+  }
+  return worst;
+}
+
 export type { Candidate };

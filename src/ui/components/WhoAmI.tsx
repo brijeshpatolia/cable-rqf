@@ -27,24 +27,40 @@ export function WhoAmI({
   readonly role: string;
 }) {
   return (
-    <div
-      style={{
-        padding: '10px 16px',
-        borderTop: '1px solid var(--color-line-hairline)',
-      }}
-    >
-      <div
-        style={{
-          color: 'var(--color-ink-secondary)',
-          fontSize: 'var(--text-micro)',
-          lineHeight: 'var(--text-micro--line-height)',
-          overflowWrap: 'anywhere',
-        }}
-      >
-        {name}
-      </div>
-      <div className="label" style={{ marginTop: 2 }}>
-        {role}
+    <div style={{ padding: 12, borderTop: '1px solid var(--color-line-panel)' }}>
+      <div className="flex items-center" style={{ gap: 10 }}>
+        {/* Initials rather than an avatar: there are no photographs in a
+            costing tool, and a coloured circle would be a second accent. */}
+        <span
+          aria-hidden
+          className="numeric flex items-center justify-center"
+          style={{
+            width: 26,
+            height: 26,
+            flexShrink: 0,
+            borderRadius: 'var(--radius-input)',
+            backgroundColor: 'var(--color-surface-raised)',
+            border: '1px solid var(--color-line-key)',
+            fontSize: 'var(--text-mono-micro)',
+            color: 'var(--color-ink-secondary)',
+            textAlign: 'center',
+          }}
+        >
+          {initialsOf(name)}
+        </span>
+        <div style={{ minWidth: 0 }}>
+          <div
+            style={{
+              fontSize: 'var(--text-body-sm)',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {name}
+          </div>
+          <div className="label">{role}</div>
+        </div>
       </div>
       <form action={signOut}>
         <button
@@ -52,9 +68,9 @@ export function WhoAmI({
           className="mt-2"
           style={{
             border: '1px solid var(--color-line-strong)',
-            borderRadius: 'var(--radius-sm)',
+            borderRadius: 'var(--radius-input)',
             color: 'var(--color-ink-secondary)',
-            padding: '3px 10px',
+            padding: '4px 10px',
             fontSize: 'var(--text-micro)',
             width: '100%',
           }}
@@ -64,4 +80,13 @@ export function WhoAmI({
       </form>
     </div>
   );
+}
+
+/** First and last initial. One letter when there is only one word. */
+function initialsOf(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return '?';
+  const first = words[0]![0] ?? '';
+  const last = words.length > 1 ? (words.at(-1)![0] ?? '') : '';
+  return (first + last).toUpperCase();
 }

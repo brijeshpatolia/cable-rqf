@@ -48,88 +48,111 @@ export default async function QuotePage({
   const lapsed = isExpired(quote, asOf);
 
   return (
-    <div style={{ padding: 24 }} className="flex flex-col gap-6">
-      <header className="flex items-start justify-between gap-8">
-        <div>
-          <a href="/quotes" style={{ color: 'var(--color-ink-tertiary)', fontSize: 'var(--text-micro)' }}>
-            ← Quotes
+    <div className="flex flex-col gap-6">
+      <header>
+        <div className="flex items-center" style={{ gap: 8, fontSize: 11.5 }}>
+          <a href="/quotes" style={{ color: 'var(--color-ink-secondary)' }}>
+            Quotes
           </a>
-          <a
-            href="/history"
-            style={{
-              marginLeft: 16,
-              color: 'var(--color-copper)',
-              fontSize: 'var(--text-micro)',
-            }}
-          >
-            History →
-          </a>
-          <h1
-            className="mt-2"
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 'var(--text-display-lg)',
-              lineHeight: 'var(--text-display-lg--line-height)',
-              letterSpacing: 'var(--text-display-lg--letter-spacing)',
-              fontWeight: 500,
-            }}
-          >
-            {quote.customer}
-          </h1>
-          <div className="mt-3 flex flex-wrap gap-x-8 gap-y-3">
-            <Field label="Quote">
-              <span className="numeric">{quote.number}</span>
-            </Field>
-            <Field label="Priced">
-              <span className="numeric" style={{ fontSize: 'var(--text-micro)' }}>
-                {formatInstant(quote.pricedAt)}
-              </span>
-            </Field>
-            <Field label="Valid until">
-              <span
-                className="numeric"
-                style={{
-                  fontSize: 'var(--text-micro)',
-                  color: lapsed ? 'var(--color-status-review)' : 'var(--color-ink-primary)',
-                }}
-              >
-                {formatDate(quote.validUntil)}{lapsed ? ' — lapsed' : ''}
-              </span>
-            </Field>
-            <Field label="Approved by">
-              <span style={{ color: 'var(--color-ink-secondary)' }}>
-                {quote.createdBy ?? '—'}
-              </span>
-            </Field>
-          </div>
+          <span style={{ color: 'var(--color-ink-faint)' }}>/</span>
+          <span className="numeric" style={{ color: 'var(--color-ink-bright)' }}>
+            {quote.number}
+          </span>
         </div>
 
-        <div className="flex shrink-0 gap-2">
-          <a href={`/quotes/${quote.number}/pdf`} style={exportButton}>PDF</a>
-          <a href={`/quotes/${quote.number}/xlsx`} style={exportButton}>Excel</a>
+        <div
+          className="flex flex-wrap items-end justify-between"
+          style={{ marginTop: 10, gap: 32 }}
+        >
+          <div>
+            <h1
+              style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: 'var(--text-display-lg)',
+                lineHeight: 'var(--text-display-lg--line-height)',
+                letterSpacing: 'var(--text-display-lg--letter-spacing)',
+                fontWeight: 600,
+              }}
+            >
+              {quote.customer}
+            </h1>
+
+            {/*
+              Metadata as pills rather than a row of labelled fields. They are
+              facts about the document, not values to be read off it — the
+              values live in the aside — and a pill says "context" where a
+              label-over-value block says "data".
+
+              Timestamps are absolute with a timezone, always. Never "2 hours
+              ago": a quote is a dated promise and the date is the promise.
+            */}
+            <div className="flex flex-wrap" style={{ marginTop: 12, gap: '8px 10px' }}>
+              <Pill label="Priced" value={formatInstant(quote.pricedAt)} mono />
+              <Pill
+                label="Valid until"
+                value={`${formatDate(quote.validUntil)}${lapsed ? ' — lapsed' : ''}`}
+                mono
+                {...(lapsed ? { tone: 'review' as const } : {})}
+              />
+              {quote.createdBy === null ? null : (
+                <Pill label="Approved by" value={quote.createdBy} />
+              )}
+              {overriddenCount(quote.lines) + uncostedCount(quote.lines) === 0 ? null : (
+                <Pill
+                  label="M"
+                  value={`${overriddenCount(quote.lines) + uncostedCount(quote.lines)} line${
+                    overriddenCount(quote.lines) + uncostedCount(quote.lines) === 1 ? '' : 's'
+                  } priced by hand`}
+                  tone="review"
+                />
+              )}
+            </div>
+          </div>
+
+          <div className="flex shrink-0" style={{ gap: 8 }}>
+            <a href={`/quotes/${quote.number}/pdf`} style={exportButton}>
+              PDF
+            </a>
+            <a href={`/quotes/${quote.number}/xlsx`} style={exportButton}>
+              Excel
+            </a>
+            <a href="/history" style={exportButton}>
+              History
+            </a>
+          </div>
         </div>
       </header>
 
-      <div className="flex gap-6">
+      <div className="flex flex-wrap items-start" style={{ gap: 24 }}>
         <div className="min-w-0 flex-1">
-          <Panel title="Lines" flush>
+          <Panel
+            title="Lines"
+            note="Open a line for its full build-up — every figure to the rate row it came from"
+            scale="shell"
+            flush
+          >
             <div
-              className="label flex items-center gap-3"
-              style={{ padding: '6px 12px', borderBottom: '1px solid var(--color-line-strong)' }}
+              className="panel-inset label flex items-center"
+              style={{
+                padding: '8px 18px',
+                gap: 14,
+                borderBottom: '1px solid var(--color-line-panel)',
+              }}
             >
-              <span style={{ width: 8 }} />
+              <span style={{ width: 9 }} />
               <span className="flex-1">Description</span>
-              <span style={{ width: 110, textAlign: 'right' }}>Quantity</span>
-              <span style={{ width: 100, textAlign: 'right' }}>Unit rate</span>
-              <span style={{ width: 130, textAlign: 'right' }}>Amount</span>
+              <span style={{ width: 116, textAlign: 'right' }}>Quantity</span>
+              <span style={{ width: 104, textAlign: 'right' }}>Unit rate</span>
+              <span style={{ width: 136, textAlign: 'right' }}>Amount</span>
             </div>
 
             {quote.lines.map((line) => (
               <ExpandableRow
                 key={line.position}
+                scale="shell"
                 summary={
-                  <span className="flex items-center gap-3">
-                    <span className="min-w-0 flex-1">
+                  <span className="flex items-center" style={{ gap: 14 }}>
+                    <span className="min-w-0 flex-1 flex flex-col" style={{ gap: 3 }}>
                       <span className="block truncate">{line.designation}</span>
                       <span
                         className="numeric block"
@@ -138,7 +161,7 @@ export default async function QuotePage({
                             line.decision === null
                               ? 'var(--color-ink-tertiary)'
                               : 'var(--color-status-review)',
-                          fontSize: 'var(--text-micro)',
+                          fontSize: 'var(--text-mono-micro)',
                           textAlign: 'left',
                         }}
                       >
@@ -149,13 +172,13 @@ export default async function QuotePage({
                             : `M · ${line.productCode}`}
                       </span>
                     </span>
-                    <span style={{ width: 110, textAlign: 'right' }}>
+                    <span style={{ width: 116, textAlign: 'right' }}>
                       <NumericCell value={line.quantityMetres} decimals={0} unit="m" />
                     </span>
-                    <span style={{ width: 100, textAlign: 'right' }}>
+                    <span style={{ width: 104, textAlign: 'right' }}>
                       <NumericCell value={line.unitRate} kind="unitRate" />
                     </span>
-                    <span style={{ width: 130, textAlign: 'right' }}>
+                    <span style={{ width: 136, textAlign: 'right' }}>
                       <NumericCell value={line.lineTotal} kind="total" weight="strong" />
                     </span>
                   </span>
@@ -226,26 +249,63 @@ export default async function QuotePage({
           </Panel>
         </div>
 
-        <aside style={{ width: 300 }} className="shrink-0 flex flex-col gap-6">
-          <Panel title="Total">
-            <NumericCell
-              value={totalOf(quote.lines)}
-              kind="total"
-              unit="OMR"
-              weight="strong"
-              size="numeric-lg"
-            />
-            <div className="mt-4 flex flex-col gap-3">
-              <Field label="Lines">
-                <span className="numeric">{quote.lines.length}</span>
-              </Field>
-              <Field label="Margin">
-                <NumericCell value={quote.marginPercent} kind="percent" unit="%" />
-              </Field>
+        <aside
+          style={{ width: 'var(--aside-width)', flexShrink: 0 }}
+          className="flex flex-col"
+        >
+          {/*
+            The total is the largest figure on the screen and it is the only
+            one that needs to be. Everything else on this page exists to
+            explain it.
+          */}
+          <div className="panel-shell" style={{ padding: 18, marginBottom: 16 }}>
+            <div className="label">Quote total</div>
+            <div className="flex items-baseline" style={{ gap: 8, marginTop: 6 }}>
+              <span
+                className="numeric"
+                style={{
+                  fontSize: 'var(--text-numeric-xl)',
+                  lineHeight: 'var(--text-numeric-xl--line-height)',
+                  letterSpacing: 'var(--text-numeric-xl--letter-spacing)',
+                  fontWeight: 500,
+                }}
+              >
+                {formatNumber(totalOf(quote.lines), 2)}
+              </span>
+              <span
+                className="numeric"
+                style={{ fontSize: 11, color: 'var(--color-ink-tertiary)' }}
+              >
+                OMR
+              </span>
             </div>
-          </Panel>
 
-          <Panel title="The strike">
+            <div
+              className="grid"
+              style={{
+                gridTemplateColumns: '1fr 1fr',
+                marginTop: 18,
+                paddingTop: 16,
+                borderTop: '1px solid var(--color-line-panel)',
+                gap: 12,
+              }}
+            >
+              <div>
+                <div className="label">Lines</div>
+                <div className="numeric" style={{ fontSize: 15, textAlign: 'left' }}>
+                  {quote.lines.length}
+                </div>
+              </div>
+              <div>
+                <div className="label">Margin</div>
+                <div className="numeric" style={{ fontSize: 15, textAlign: 'left' }}>
+                  {formatNumber(quote.marginPercent, 1)}%
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <Panel title="The strike" scale="shell">
             <div className="flex flex-col gap-3">
               <Field label="LME copper">
                 <NumericCell value={quote.lmeStruck} kind="lme" unit="USD/t" />
@@ -274,32 +334,6 @@ export default async function QuotePage({
               This quote was struck on copper at {formatNumber(quote.lmeStruck, 2)}.
               Every figure above can be expanded to the rate row it came from.
             </p>
-            {copperMassIsPartial(quote.lines) ? (
-              <p
-                className="mt-2"
-                style={{
-                  color: 'var(--color-status-review)',
-                  fontSize: 'var(--text-micro)',
-                  lineHeight: 'var(--text-micro--line-height)',
-                }}
-              >
-                {/*
-                  `uncostedCount`, not `handPricedCount` — the same distinction
-                  the PDF and the workbook needed. A line the engine costed and
-                  a person then re-priced is hand-priced, but its copper *was*
-                  weighed and is inside the figure above. Counting it here said
-                  nobody costed a line whose cost is in the total on the line
-                  before, which is the contradiction this screen exists to
-                  avoid.
-                */}
-                {uncostedCount(quote.lines)} line
-                {uncostedCount(quote.lines) === 1 ? '' : 's'} priced by hand with
-                no build-up. Nobody costed{' '}
-                {uncostedCount(quote.lines) === 1 ? 'its' : 'their'} copper, so
-                the figure above is a floor rather than a total — and the price
-                watch understates this quote&rsquo;s exposure by the same amount.
-              </p>
-            ) : null}
             {/*
               Stated separately and outside the gate above, because it is a
               different fact and it is true of quotes whose copper figure is
@@ -325,18 +359,84 @@ export default async function QuotePage({
             ) : null}
           </Panel>
 
-          {quote.terms !== null && quote.terms !== '' ? (
-            <Panel title="Terms">
+          {/*
+            Its own card, in amber, rather than a paragraph at the foot of the
+            strike panel.
+
+            It is a consequence of a match tier — a line nobody costed — which
+            is the one thing the app's amber is for, and it changes how the
+            figure above it should be read. A caveat that changes the meaning
+            of a number should not be quieter than the number.
+
+            `uncostedCount`, never `handPricedCount`: a line the engine costed
+            and a person then re-priced has its copper inside the figure above,
+            and counting it here would say nobody weighed something that was
+            weighed.
+          */}
+          {copperMassIsPartial(quote.lines) ? (
+            <div
+              className="mt-4"
+              style={{
+                padding: '16px 18px',
+                borderRadius: 'var(--radius-panel)',
+                border: '1px solid rgba(210, 153, 34, 0.28)',
+                backgroundColor: 'rgba(210, 153, 34, 0.045)',
+              }}
+            >
+              <div className="flex items-center" style={{ gap: 8 }}>
+                <span
+                  aria-hidden
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: '50%',
+                    backgroundColor: 'var(--color-status-review)',
+                    flexShrink: 0,
+                  }}
+                />
+                <span
+                  style={{
+                    fontSize: 'var(--text-body-sm)',
+                    fontWeight: 500,
+                    color: 'var(--color-status-review)',
+                  }}
+                >
+                  Copper content is a floor
+                </span>
+              </div>
               <p
+                className="mt-2"
                 style={{
                   color: 'var(--color-ink-secondary)',
-                  fontSize: 'var(--text-micro)',
-                  lineHeight: 'var(--text-micro--line-height)',
+                  fontSize: 11.5,
+                  lineHeight: '18px',
                 }}
               >
-                {quote.terms}
+                {uncostedCount(quote.lines)} line
+                {uncostedCount(quote.lines) === 1 ? ' was' : 's were'} priced by
+                hand with no build-up. Nobody costed{' '}
+                {uncostedCount(quote.lines) === 1 ? 'its' : 'their'} copper, so{' '}
+                {formatNumber(copperMassOf(quote.lines), 1)} kg is a floor rather
+                than a total — and the price watch understates this quote by the
+                same amount.
               </p>
-            </Panel>
+            </div>
+          ) : null}
+
+          {quote.terms !== null && quote.terms !== '' ? (
+            <div className="mt-4">
+              <Panel title="Terms" scale="shell">
+                <p
+                  style={{
+                    color: 'var(--color-ink-secondary)',
+                    fontSize: 'var(--text-micro)',
+                    lineHeight: 'var(--text-micro--line-height)',
+                  }}
+                >
+                  {quote.terms}
+                </p>
+              </Panel>
+            </div>
           ) : null}
 
           {/*
@@ -344,7 +444,8 @@ export default async function QuotePage({
             thing anyone does on this screen and the most consequential — a
             customer gets a second document out of it.
           */}
-          <Panel title="Correcting this quote">
+          <div className="mt-4">
+            <Panel title="Correcting this quote" scale="shell">
             {quote.supersedes === null ? null : (
               <p className="mb-3" style={{
                 color: 'var(--color-ink-secondary)',
@@ -365,7 +466,8 @@ export default async function QuotePage({
               canCorrect={can(actor, 'quote.approve')}
               reference={job?.reference ?? null}
             />
-          </Panel>
+            </Panel>
+          </div>
         </aside>
       </div>
     </div>
@@ -373,10 +475,63 @@ export default async function QuotePage({
 }
 
 const exportButton: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
   border: '1px solid var(--color-line-strong)',
-  borderRadius: 'var(--radius-md)',
+  borderRadius: 'var(--radius-input)',
   color: 'var(--color-ink-primary)',
-  padding: '7px 14px',
-  fontSize: 'var(--text-body)',
-  minHeight: 'var(--row-height)',
+  padding: '0 14px',
+  fontSize: 'var(--text-body-sm)',
+  height: 34,
 };
+
+/**
+ * A fact about the document, not a value on it.
+ *
+ * The values — total, strike, copper content — live in the aside, where they
+ * are read. These are the things you check once on opening: when it was
+ * priced, when it lapses, who approved it. `tone="review"` is the app's amber,
+ * used here for exactly two states: a quote past its date, and a quote
+ * carrying a price a person set.
+ */
+function Pill({
+  label,
+  value,
+  mono = false,
+  tone,
+}: {
+  readonly label: string;
+  readonly value: string;
+  readonly mono?: boolean;
+  readonly tone?: 'review';
+}) {
+  const amber = tone === 'review';
+  return (
+    <span
+      className="inline-flex items-center"
+      style={{
+        height: 26,
+        padding: '0 10px',
+        gap: 6,
+        borderRadius: 'var(--radius-control)',
+        fontSize: 11.5,
+        backgroundColor: amber
+          ? 'var(--color-status-review-wash)'
+          : 'var(--color-surface-panel)',
+        border: `1px solid ${
+          amber ? 'var(--color-status-review)' : 'var(--color-line-panel)'
+        }`,
+        color: amber ? 'var(--color-status-review)' : 'var(--color-ink-secondary)',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      <span className={amber ? 'numeric' : undefined}>{label}</span>
+      <span
+        className={mono ? 'numeric' : undefined}
+        style={{ color: amber ? 'var(--color-status-review)' : 'var(--color-ink-bright)' }}
+      >
+        {value}
+      </span>
+    </span>
+  );
+}

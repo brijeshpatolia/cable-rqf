@@ -60,23 +60,52 @@ export function StatusDot({ tier, withLabel = true }: StatusDotProps) {
   );
 }
 
-/** Rendered from the same definitions, so the legend can never drift. */
-export function TierLegend() {
+/**
+ * The four tiers the app produces on its own.
+ *
+ * `chosen` and `hand-priced` are left out on purpose: they describe a line a
+ * *person* settled, which needs no legend to whoever just settled it, and
+ * their `M` marker already says so wherever they appear. `pending` is a
+ * transitional state nobody reads a legend for.
+ *
+ * Stated as a constant rather than inlined so a caller can widen it, and so
+ * the omission is a decision on the page rather than an accident in a map.
+ */
+export const AUTOMATIC_TIERS: readonly Tier[] = ['exact', 'close', 'partial', 'no-match'];
+
+/**
+ * Rendered from the same definitions as the dots, so the legend cannot drift.
+ *
+ * `short` drops the sentence to its first clause — the inbox footer wants
+ * "Spot-check", not "Priced automatically. Spot-check."
+ */
+export function TierLegend({
+  tiers = AUTOMATIC_TIERS,
+  short = false,
+}: {
+  readonly tiers?: readonly Tier[];
+  readonly short?: boolean;
+} = {}) {
   return (
     <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-      {(['exact', 'close', 'partial', 'no-match'] as const).map((tier) => (
+      {tiers.map((tier) => (
         <div key={tier} className="flex items-baseline gap-2">
           <StatusDot tier={tier} />
           <span
             style={{
-              color: 'var(--color-ink-tertiary)',
+              color: 'var(--color-ink-faint)',
               fontSize: 'var(--text-micro)',
             }}
           >
-            {TIERS[tier].action}
+            {short ? firstClause(TIERS[tier].action) : TIERS[tier].action}
           </span>
         </div>
       ))}
     </div>
   );
+}
+
+/** "Not priced. Nearest products shown." → "Not priced" */
+function firstClause(action: string): string {
+  return action.split('.')[0] ?? action;
 }

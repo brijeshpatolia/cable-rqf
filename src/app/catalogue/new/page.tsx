@@ -32,7 +32,7 @@ export default async function NewProductPage() {
       .sort((a, b) => a.code.localeCompare(b.code));
 
   return (
-    <div style={{ padding: 24 }} className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6">
       <header>
         <a href="/catalogue" style={{ color: 'var(--color-ink-tertiary)', fontSize: 'var(--text-micro)' }}>
           ← Catalogue
