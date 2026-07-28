@@ -120,9 +120,29 @@ export function copperMassOf(lines: readonly QuoteLine[]): Decimal {
   );
 }
 
-/** Lines whose price a person set outright. These carry no build-up. */
+/**
+ * Lines whose price a person set outright.
+ *
+ * **Not the same set as "lines with no build-up", and the two were confused.**
+ * A line the matcher priced and a person then overrode has both a decision and
+ * a breakdown. The documents used this count to say "copper content above
+ * excludes them" — but `copperMassOf` excludes on `breakdown === null`, so an
+ * overridden *matched* line was counted in the copper figure and disclaimed
+ * out of it in the same footer. Use `uncostedCount` for anything the copper
+ * total turns on; this one answers "who set this price".
+ */
 export function handPricedCount(lines: readonly QuoteLine[]): number {
   return lines.filter((l) => l.decision?.unitRate != null).length;
+}
+
+/** Lines with no cost build-up behind them — the set `copperMassOf` skips. */
+export function uncostedCount(lines: readonly QuoteLine[]): number {
+  return lines.filter((l) => l.breakdown === null).length;
+}
+
+/** Lines the engine costed whose rate a person then replaced. */
+export function overriddenCount(lines: readonly QuoteLine[]): number {
+  return lines.filter((l) => l.breakdown !== null && l.decision?.unitRate != null).length;
 }
 
 /** Lines a person settled at all — a hand price or a named product. */

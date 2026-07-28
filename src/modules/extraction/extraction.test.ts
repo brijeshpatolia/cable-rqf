@@ -62,12 +62,67 @@ describe('findHeaderRow', () => {
     ];
     const header = findHeaderRow(grid);
     expect(header?.index).toBe(5);
+    // `S/N` is a serial column, not an unrecognised one. Naming it is what
+    // keeps it from competing with the description column beside it.
     expect(header?.columns).toEqual([
-      'ignore',
+      'serial',
       'description',
       'quantity',
       'unit',
     ]);
+  });
+
+  /**
+   * The commonest RFQ layout there is, and it used to be read wrong.
+   *
+   * `item` sat in the description vocabulary, so both of the first two columns
+   * classified as description and the column was chosen with `indexOf` — the
+   * leftmost won. Every cable description came back as its own row number, and
+   * the document reported itself readable with two lines successfully read.
+   */
+  it('reads the description column, not the item-number column beside it', () => {
+    const grid = [
+      ['Item', 'Description', 'Qty', 'Unit'],
+      ['1', '3C x 50mm2 Cu XLPE SWA PVC 1kV', '12500', 'M'],
+      ['2', '4C x 25mm2 Cu XLPE SWA PVC 1kV', '3500', 'M'],
+    ];
+    const header = findHeaderRow(grid);
+    expect(header?.columns).toEqual(['serial', 'description', 'quantity', 'unit']);
+
+    const doc = extractFromGrid(grid);
+    expect(doc.unreadable).toBe(false);
+    expect(doc.lines).toEqual([
+      '3C x 50mm2 Cu XLPE SWA PVC 1kV — 12,500 m',
+      '4C x 25mm2 Cu XLPE SWA PVC 1kV — 3,500 m',
+    ]);
+  });
+
+  it('falls back to the item column when nothing is headed description, and says so', () => {
+    // A sheet where `Item` really does hold the cable. Reading it is right;
+    // reading it silently is not, because the same header on a different sheet
+    // holds a row number.
+    const doc = extractFromGrid([
+      ['Item', 'Qty', 'Unit'],
+      ['3C x 50mm2 Cu XLPE SWA PVC 1kV', '12500', 'M'],
+    ]);
+    expect(doc.lines).toEqual(['3C x 50mm2 Cu XLPE SWA PVC 1kV — 12,500 m']);
+    expect(doc.notes.join(' ')).toMatch(/no column was headed “description”/i);
+  });
+
+  it('finds a header past the thirtieth row', () => {
+    /*
+      The grid is every sheet of the workbook end to end, so a covering letter
+      pushes the schedule down. The scan stopped at thirty rows and the file
+      came back unreadable — the exact case the reader claims to handle.
+    */
+    const letter = Array.from({ length: 35 }, (_, i) => [`Covering letter line ${i + 1}`]);
+    const grid = [
+      ...letter,
+      ['S/N', 'Description', 'Qty', 'Unit'],
+      ['1', '3C x 50mm2 Cu XLPE SWA PVC 1kV', '12000', 'M'],
+    ];
+    expect(findHeaderRow(grid)?.index).toBe(35);
+    expect(extractFromGrid(grid).unreadable).toBe(false);
   });
 
   it('refuses a table with a description but no quantity', () => {

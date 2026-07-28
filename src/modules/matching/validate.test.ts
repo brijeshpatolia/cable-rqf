@@ -62,6 +62,44 @@ describe('plausibility bounds', () => {
     expect(violations[0]!.message).toContain('implausible');
   });
 
+  /**
+   * The half of the gate that was never working.
+   *
+   * `widen` padded both ends by half the span, so the copper floor came out at
+   * **−2.44** per core-mm² and every price family with a low minimum came out
+   * negative too. Nothing has negative mass, so the too-light branch could not
+   * fire on any input — a decimal slipped one place the wrong way, which is
+   * the single most likely way to get this wrong, was priced and shown to an
+   * engineer as if the app had checked it.
+   */
+  it('has a floor above zero on every band, or the too-light check is decorative', () => {
+    expect(BOUNDS.copperPerCoreMm2.low.greaterThan(0)).toBe(true);
+    for (const [family, band] of BOUNDS.ratePerCoreMm2ByFamily) {
+      expect(band.low.greaterThan(0), `${family} floor is ${band.low.toString()}`).toBe(
+        true,
+      );
+    }
+  });
+
+  it('rejects a cable an order of magnitude too light', () => {
+    const product = LIBRARY.find(
+      (p) => p.spec.cores === 3 && p.spec.sizeMm2.equals(dec(50)),
+    )!;
+    const result = cost(product);
+    if (!result.ok) throw new Error('expected ok');
+
+    // The true mass is ~1,233 kg/km. This is the same number with the decimal
+    // in the wrong place — the error a person actually makes.
+    const tooLight: CostBreakdown = {
+      ...result.value,
+      copperMassPerKm: kg(result.value.copperMassPerKm.dividedBy(10).toString()),
+    };
+
+    expect(validate(tooLight, product, BOUNDS).map((v) => v.code)).toContain(
+      'COPPER_MASS',
+    );
+  });
+
   it('holds a price that falls outside its family band', () => {
     const product = LIBRARY[0]!;
     const result = cost(product);

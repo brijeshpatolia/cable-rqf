@@ -3,8 +3,9 @@ import { format, formatDate, formatInstant, formatNumber } from '@/core/format';
 import {
   copperMassIsPartial,
   copperMassOf,
-  handPricedCount,
+  overriddenCount,
   totalOf,
+  uncostedCount,
   type Quote,
 } from '@/modules/quoting';
 
@@ -228,14 +229,33 @@ export async function renderQuotePdf(quote: Quote): Promise<Uint8Array> {
     'Prices are subject to the copper market. A lapsed quote is re-priced on request.',
   ];
 
-  const byHand = handPricedCount(quote.lines);
-  if (byHand > 0) {
-    strike.splice(
-      2,
-      0,
-      `${byHand} line${byHand === 1 ? '' : 's'} priced to order — copper content above excludes ${byHand === 1 ? 'it' : 'them'}.`,
+  /*
+    Two different statements, and they used to be one.
+
+    `handPricedCount` counts every line a person priced, including ones the
+    engine had already costed. `copperMassOf` skips lines with no build-up. So
+    an overridden *matched* line was inside the copper figure and disclaimed
+    out of it by the same sentence — the document contradicting itself about
+    what it had weighed.
+
+    The exclusion sentence now counts the set that is genuinely excluded. The
+    override is stated separately, because a customer reading a rate the
+    build-up does not derive is owed the fact that a person set it.
+  */
+  const uncosted = uncostedCount(quote.lines);
+  const overridden = overriddenCount(quote.lines);
+  const extra: string[] = [];
+  if (uncosted > 0) {
+    extra.push(
+      `${uncosted} line${uncosted === 1 ? '' : 's'} priced to order — copper content above excludes ${uncosted === 1 ? 'it' : 'them'}.`,
     );
   }
+  if (overridden > 0) {
+    extra.push(
+      `${overridden} line${overridden === 1 ? '' : 's'} priced by hand against our own build-up.`,
+    );
+  }
+  strike.splice(2, 0, ...extra);
   for (const text of strike) {
     page.drawText(text, { x: MARGIN, y, size: 7, font: fonts.mono, color: MUTED });
     y -= 9;

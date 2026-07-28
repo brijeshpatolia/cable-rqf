@@ -130,6 +130,8 @@ export function parseLine(
    */
   const insulation = pick(occurrences, 'insulation', 'first');
   const sheath = pick(occurrences, 'sheath', 'last', insulation.occurrence);
+  const screen = pick(occurrences, 'screen', 'only').field;
+  const armour = pick(occurrences, 'armour', 'only').field;
 
   return {
     raw: text,
@@ -138,13 +140,56 @@ export function parseLine(
     quantityMetres: quantity,
     conductor: pick(occurrences, 'conductor', 'only').field,
     insulation: insulation.field,
-    screen: pick(occurrences, 'screen', 'only').field,
-    armour: pick(occurrences, 'armour', 'only').field,
+    screen,
+    armour,
     sheath: sheath.field,
     voltage: pick(occurrences, 'voltage', 'only').field,
     standard: pick(occurrences, 'standard', 'only').field,
-    unknownTerms: findUnknownTerms(folded, occurrences),
+    unknownTerms: [
+      ...findUnknownTerms(folded, occurrences),
+      ...unresolvedAssertions(folded, { screen, armour }),
+    ],
   };
+}
+
+/**
+ * Words that say a cable *has* something without saying which.
+ *
+ * "armoured" is not noise. It is a statement about the armour axis that this
+ * parser cannot resolve — the library holds SWA, AWA and STA, and the word
+ * chooses none of them. Treating it as noise meant it was deleted, the axis
+ * stayed null, and `specOf` then coerced that null to `''`, which compares
+ * equal to an unarmoured product. A request for armoured cable came back
+ * `exact` against an unarmoured one, priced, with nothing on the screen to
+ * say so. Armour is a large fraction of a cable's cost and a different
+ * product entirely; that is a wrong price and a wrong cable.
+ *
+ * Reported as an unknown term rather than guessed at. That path already
+ * exists, already pauses exactly this line, and already routes to the
+ * Vocabulary screen — so if Nuhas do mean SWA when they write "armoured", the
+ * Rate Owner says so once, it is audited, and every later line resolves. The
+ * app never makes that call itself.
+ *
+ * Only reported when the axis is *unresolved*. "SWA armoured" and "steel wire
+ * armoured" both name their armour, so the word is merely redundant there and
+ * pausing on it would be noise of a different kind.
+ */
+const ASSERTIONS: readonly { readonly word: RegExp; readonly axis: 'screen' | 'armour' }[] = [
+  { word: /(?:^|[^a-z])armou?red(?:[^a-z]|$)/, axis: 'armour' },
+  { word: /(?:^|[^a-z])screened(?:[^a-z]|$)/, axis: 'screen' },
+];
+
+function unresolvedAssertions(
+  folded: string,
+  fields: { readonly screen: ExtractedField<string>; readonly armour: ExtractedField<string> },
+): readonly string[] {
+  const out: string[] = [];
+  for (const { word, axis } of ASSERTIONS) {
+    if (fields[axis].value !== null) continue;
+    const m = word.exec(folded);
+    if (m !== null) out.push(m[0].replace(/[^a-z]/g, ''));
+  }
+  return out;
 }
 
 /**

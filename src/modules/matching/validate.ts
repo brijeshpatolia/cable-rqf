@@ -45,10 +45,33 @@ export interface Range {
  */
 const TOLERANCE = dec('0.5');
 
+/**
+ * The floor is proportional to itself; the ceiling still moves by the span.
+ *
+ * Both ends used to be padded by `span × TOLERANCE`, which is a sensible
+ * widening only when the end is large relative to the span. At the ceiling it
+ * is, and that end was working. At the floor it is not: copper mass per
+ * core-mm² observed 0.98–17.05 gave a floor of **−2.44**, and two of the six
+ * price families came out negative as well (INSTRU CABLE −0.00386, CONTROL
+ * CABLE −0.01221).
+ *
+ * A negative floor is not a wide gate, it is no gate. Nothing has negative
+ * mass, so the too-light check could never fire — and too light is exactly the
+ * shape of error this exists to catch. A decimal slipped one place the wrong
+ * way (123.3 kg/km where the cable is 1233.1) sailed through and was shown to
+ * an engineer as a price.
+ *
+ * Scaling the floor by its own value — half the observed minimum — keeps the
+ * gate deliberately wide while making it impossible to push through zero. The
+ * ceiling is deliberately left alone: widening it proportionally instead moved
+ * the copper band from 24.62 to 26.79 and let the spec's own example, a 3-core
+ * 50 mm² at 4,000 kg/km, back through at 26.67. One end was broken; fixing the
+ * other too would have been a change nobody asked for and a test caught.
+ */
 function widen(range: Range): Range {
-  const span = range.high.minus(range.low);
-  const pad = span.times(TOLERANCE);
-  return { low: range.low.minus(pad), high: range.high.plus(pad) };
+  const low = range.low.minus(range.low.abs().times(TOLERANCE));
+  const high = range.high.plus(range.high.minus(range.low).times(TOLERANCE));
+  return { low: low.lessThan(0) ? dec('0') : low, high };
 }
 
 function rangeOf(values: readonly Decimal[]): Range | undefined {
