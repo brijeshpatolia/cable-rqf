@@ -28,6 +28,37 @@ const AGES = [
 ] as const;
 
 /**
+ * Where a key press moves the selection in a radiogroup, or `null` if the key
+ * is not one this control handles.
+ *
+ * A radiogroup takes one tab stop and the arrows move within it. That is not
+ * decoration: the roving `tabIndex` that buys the single tab stop is exactly
+ * what makes the other three segments unreachable without this, because they
+ * carry `tabIndex={-1}`. Half the pattern is worse than neither half — an ARIA
+ * role does not bring the native keyboard behaviour with it.
+ *
+ * Pulled out as a pure function because the arithmetic — wrapping at both
+ * ends, Home and End, which keys count — is the part that can be wrong, and
+ * testing it needs no DOM. Moving focus afterwards is glue.
+ */
+export function nextRadioIndex(key: string, at: number, count: number): number | null {
+  switch (key) {
+    case 'ArrowRight':
+    case 'ArrowDown':
+      return (at + 1) % count;
+    case 'ArrowLeft':
+    case 'ArrowUp':
+      return (at - 1 + count) % count;
+    case 'Home':
+      return 0;
+    case 'End':
+      return count - 1;
+    default:
+      return null;
+  }
+}
+
+/**
  * The inbox, filterable.
  *
  * **Status is a segmented control, not chips.** The three states are mutually
@@ -112,6 +143,19 @@ export function JobsTable({
     statusGroup.current?.querySelector<HTMLButtonElement>('button')?.focus();
   };
 
+  /**
+   * Arrow keys move the selection, as a radiogroup must. Focus follows it,
+   * because the segment that is checked is the one that carries the tab stop.
+   */
+  const onStatusKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const at = STATUSES.findIndex((s) => s.key === status);
+    const to = nextRadioIndex(e.key, at, STATUSES.length);
+    if (to === null) return;
+    e.preventDefault();
+    setStatus(STATUSES[to]!.key);
+    statusGroup.current?.querySelectorAll('button')[to]?.focus();
+  };
+
   return (
     <div>
       <div
@@ -134,6 +178,7 @@ export function JobsTable({
           ref={statusGroup}
           role="radiogroup"
           aria-label="Filter by status"
+          onKeyDown={onStatusKeyDown}
           className="flex items-center"
           style={{
             padding: 2,
