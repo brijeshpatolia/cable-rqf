@@ -87,7 +87,9 @@ describe('findHeaderRow', () => {
       ['2', '4C x 25mm2 Cu XLPE SWA PVC 1kV', '3500', 'M'],
     ];
     const header = findHeaderRow(grid);
-    expect(header?.columns).toEqual(['serial', 'description', 'quantity', 'unit']);
+    // `item` is its own kind: ambiguous, and so eligible to stand in for a
+    // description when there is none. `S/N` in the test above is not.
+    expect(header?.columns).toEqual(['item', 'description', 'quantity', 'unit']);
 
     const doc = extractFromGrid(grid);
     expect(doc.unreadable).toBe(false);
@@ -95,6 +97,28 @@ describe('findHeaderRow', () => {
       '3C x 50mm2 Cu XLPE SWA PVC 1kV — 12,500 m',
       '4C x 25mm2 Cu XLPE SWA PVC 1kV — 3,500 m',
     ]);
+  });
+
+  /**
+   * The second door into the same defect.
+   *
+   * Naming `item` a serial column fixed the collision, but folding `S/N` and
+   * friends into that one kind made them eligible for the description fallback
+   * too — so `S/N | Qty | Unit` scored as a readable table and produced
+   * `1 — 12,500 m` again. `Item` is ambiguous; `S/N` is not. Only the ambiguous
+   * one may stand in for a description.
+   */
+  it('refuses a sheet whose only text column is an unambiguous row number', () => {
+    for (const header of [
+      ['S/N', 'Qty', 'Unit'],
+      ['Sr No', 'Qty', 'Unit'],
+      ['Serial', 'Quantity'],
+      ['Item No', 'Qty', 'Unit'],
+    ]) {
+      const grid = [header, ['1', '12500', 'M']];
+      expect(findHeaderRow(grid), header.join(' | ')).toBeNull();
+      expect(extractFromGrid(grid).unreadable, header.join(' | ')).toBe(true);
+    }
   });
 
   it('falls back to the item column when nothing is headed description, and says so', () => {

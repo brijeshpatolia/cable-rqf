@@ -83,7 +83,7 @@ function placeOf(
 }
 
 /** Column meanings the importer knows how to use. */
-export type ColumnKind = 'description' | 'serial' | 'quantity' | 'unit' | 'ignore';
+export type ColumnKind = 'description' | 'item' | 'serial' | 'quantity' | 'unit' | 'ignore';
 
 /**
  * Header vocabularies.
@@ -92,19 +92,22 @@ export type ColumnKind = 'description' | 'serial' | 'quantity' | 'unit' | 'ignor
  * does not recognise makes the column `ignore`, which is visible and fixable; a
  * header it *mis*recognises silently quotes the wrong quantity.
  *
- * **`item` is a serial column, not a description one.** It used to sit in the
- * description list, and on the commonest RFQ layout of all — `Item |
- * Description | Qty | Unit` — both of the first two columns classified as
- * description. The column was then chosen with `indexOf`, so the leftmost won
- * and every cable description was replaced by its row number: the file read as
- * `1 — 12,500 m`, `2 — 3,500 m`, with `unreadable: false` and a note saying
- * two lines had been read successfully. Wrong data, presented as a clean
- * result — the one failure mode this app is built to refuse.
+ * **`item` is not a description column.** It used to sit in the description
+ * list, and on the commonest RFQ layout of all — `Item | Description | Qty |
+ * Unit` — both of the first two columns classified as description. The column
+ * was then chosen with `indexOf`, so the leftmost won and every cable
+ * description was replaced by its row number: the file read as `1 — 12,500 m`,
+ * `2 — 3,500 m`, with `unreadable: false` and a note saying two lines had been
+ * read successfully. Wrong data, presented as a clean result — the one failure
+ * mode this app is built to refuse.
  *
- * Kept as its own kind rather than deleted, because a sheet whose *only*
- * text column is headed `Item` is a real layout too. `extractFromGrid` falls
- * back to it when there is no description column and says in the notes that
- * it did.
+ * **`item` and `serial` are two kinds, and the difference is the whole point.**
+ * `Item` is genuinely ambiguous: on one sheet it numbers the rows, on another
+ * it holds the cable. `S/N`, `Sr No` and `Serial` are not ambiguous at all —
+ * they are row numbers, always. Only the ambiguous one is eligible for the
+ * description fallback below. Collapsing them into a single kind reopened the
+ * defect through a second door: `S/N | Qty | Unit` scored as a readable table
+ * and produced `1 — 12,500 m` again, which is where this started.
  */
 const HEADERS: Readonly<Record<Exclude<ColumnKind, 'ignore'>, readonly string[]>> = {
   description: [
@@ -117,7 +120,10 @@ const HEADERS: Readonly<Record<Exclude<ColumnKind, 'ignore'>, readonly string[]>
     'spec',
     'particulars',
   ],
-  serial: ['item', 'item no', 'items', 'sn', 's/n', 'sr', 'sr no', 'sl no', 'serial', 'no'],
+  /** Ambiguous: may number the rows, may hold the cable. */
+  item: ['item', 'items'],
+  /** Never a description. A sheet with only these has no cable text in it. */
+  serial: ['item no', 'sn', 's/n', 'sr', 'sr no', 'sl no', 'serial', 'no'],
   quantity: ['qty', 'quantity', 'quantity required', 'qty.', 'length', 'total qty', 'reqd qty'],
   unit: ['unit', 'uom', 'units', 'u.o.m'],
 };
@@ -163,7 +169,10 @@ export function findHeaderRow(
   */
   for (let i = 0; i < grid.length; i++) {
     const columns = (grid[i] ?? []).map(classifyHeader);
-    const hasText = columns.includes('description') || columns.includes('serial');
+    // `serial` deliberately does not count. A sheet headed `S/N | Qty | Unit`
+    // holds no cable text at all, and scoring it as a table is what turns row
+    // numbers into descriptions.
+    const hasText = columns.includes('description') || columns.includes('item');
     const score = (hasText ? 2 : 0) + (columns.includes('quantity') ? 2 : 0);
     if (score === 0) continue;
     if (best === null || score > best.score) best = { index: i, columns, score };
@@ -224,7 +233,7 @@ export function extractFromGrid(
     `Item | Description | Qty` reads column 1, not column 0.
   */
   const namedAt = col('description');
-  const descriptionAt = namedAt >= 0 ? namedAt : col('serial');
+  const descriptionAt = namedAt >= 0 ? namedAt : col('item');
   const quantityAt = col('quantity');
   const unitAt = col('unit');
 
