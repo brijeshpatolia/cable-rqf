@@ -61,6 +61,42 @@ describe('parsing', () => {
     const l = parseLine('3C x 50mm2 Cu XLPE SWA PVC 1kV with unobtainium bedding');
     expect(l.unknownTerms).toContain('unobtainium');
   });
+
+  /**
+   * "armoured" said which axis, not which value — and was thrown away.
+   *
+   * It sat in `KNOWN_NOISE` beside "supply" and "delivery", so the word was
+   * deleted, the armour axis stayed null, and `specOf` coerced that null to
+   * `''` — which compares equal to an unarmoured product. A request for
+   * armoured cable came back **exact** against an unarmoured one, priced, with
+   * nothing on any screen to say so. Armour is a large share of a cable's cost
+   * and a different product; that is a wrong price and a wrong cable.
+   */
+  it('will not swallow "armoured" as noise when it does not know which armour', () => {
+    const l = parseLine('1C x 16mm2 Cu armoured screened PVC PVC 450/750V');
+    expect(l.armour.value).toBeNull();
+    expect(l.unknownTerms).toContain('armoured');
+    expect(l.unknownTerms).toContain('screened');
+  });
+
+  it('says nothing when the armour is named, however redundantly', () => {
+    // "SWA armoured" and "steel wire armoured" both resolve the axis, so the
+    // extra word is redundant rather than ambiguous. Pausing on it would be a
+    // different kind of noise.
+    for (const raw of [
+      '3C x 50mm2 Cu XLPE SWA armoured PVC 1kV',
+      '3C x 50mm2 Cu XLPE steel wire armoured PVC 1kV',
+    ]) {
+      const l = parseLine(raw);
+      expect(l.armour.value).toBe('SWA');
+      expect(l.unknownTerms).toHaveLength(0);
+    }
+  });
+
+  it('leaves "unarmoured" alone — it is a definite statement, not an ambiguous one', () => {
+    const l = parseLine('3C x 50mm2 Cu XLPE unarmoured PVC 1kV');
+    expect(l.unknownTerms).toHaveLength(0);
+  });
 });
 
 describe('tiers', () => {

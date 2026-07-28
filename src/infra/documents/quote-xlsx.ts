@@ -119,6 +119,31 @@ export function renderQuoteXlsx(quote: Quote): Uint8Array {
       continue;
     }
 
+    /*
+      The line was costed, and then a person replaced the rate.
+
+      Without this row the workbook argues with itself: the Quotation sheet
+      carries the human's rate while every row below carries the engine's, and
+      the two sum to different numbers with nothing to say why. The reason, the
+      author and the date were recorded at approval and written nowhere — on
+      the one sheet whose entire purpose is showing where a number came from.
+
+      Stated first, before the build-up it overrides, so the rows underneath
+      are read as what the line *would* have cost rather than as what is being
+      charged.
+    */
+    if (line.decision?.unitRate != null) {
+      buildup.push([
+        n, line.productCode, 'Priced by hand', line.decision.reason,
+        null, null, cell(line.decision.unitRate, PRECISION.quotedRate), null,
+        line.decision.by, line.decision.at,
+      ]);
+      buildup.push([
+        n, line.productCode, 'Build-up below is the engine’s own cost for this ' +
+          'product, kept for comparison. It is not what is being charged.',
+      ]);
+    }
+
     for (const m of b.materials) {
       buildup.push([
         n, line.productCode, 'Material', m.materialName,

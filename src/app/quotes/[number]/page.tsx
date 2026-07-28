@@ -5,9 +5,10 @@ import { jobStore, quoteStore } from '@/infra/repositories';
 import {
   copperMassIsPartial,
   copperMassOf,
-  handPricedCount,
   isExpired,
+  overriddenCount,
   totalOf,
+  uncostedCount,
 } from '@/modules/quoting';
 import { CostBreakdownView } from '@/ui/components/CostBreakdownView';
 import { ExpandableRow } from '@/ui/components/ExpandableRow';
@@ -282,12 +283,44 @@ export default async function QuotePage({
                   lineHeight: 'var(--text-micro--line-height)',
                 }}
               >
-                {handPricedCount(quote.lines)} line
-                {handPricedCount(quote.lines) === 1 ? '' : 's'} priced by hand.
-                Nobody costed {handPricedCount(quote.lines) === 1 ? 'its' : 'their'}{' '}
-                copper, so the figure above is a floor rather than a total — and
-                the price watch understates this quote&rsquo;s exposure by the
-                same amount.
+                {/*
+                  `uncostedCount`, not `handPricedCount` — the same distinction
+                  the PDF and the workbook needed. A line the engine costed and
+                  a person then re-priced is hand-priced, but its copper *was*
+                  weighed and is inside the figure above. Counting it here said
+                  nobody costed a line whose cost is in the total on the line
+                  before, which is the contradiction this screen exists to
+                  avoid.
+                */}
+                {uncostedCount(quote.lines)} line
+                {uncostedCount(quote.lines) === 1 ? '' : 's'} priced by hand with
+                no build-up. Nobody costed{' '}
+                {uncostedCount(quote.lines) === 1 ? 'its' : 'their'} copper, so
+                the figure above is a floor rather than a total — and the price
+                watch understates this quote&rsquo;s exposure by the same amount.
+              </p>
+            ) : null}
+            {/*
+              Stated separately and outside the gate above, because it is a
+              different fact and it is true of quotes whose copper figure is
+              complete. The engineer looking at this screen is the one who
+              needs to know a price on it is not the one the build-up derives.
+            */}
+            {overriddenCount(quote.lines) > 0 ? (
+              <p
+                className="mt-2"
+                style={{
+                  color: 'var(--color-status-review)',
+                  fontSize: 'var(--text-micro)',
+                  lineHeight: 'var(--text-micro--line-height)',
+                }}
+              >
+                {overriddenCount(quote.lines)} line
+                {overriddenCount(quote.lines) === 1 ? ' was' : 's were'} costed by
+                the engine and then priced by hand.{' '}
+                {overriddenCount(quote.lines) === 1 ? 'Its' : 'Their'} copper is
+                in the figure above, but the rate charged is not the one the
+                build-up derives — expand the line to see both.
               </p>
             ) : null}
           </Panel>
