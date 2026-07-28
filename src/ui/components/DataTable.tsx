@@ -34,8 +34,6 @@ interface DataTableProps<T> {
    * legible. Opt in per screen, never globally.
    */
   readonly scale?: 'dense' | 'shell';
-  /** Rendered under the last row, inside the same scroll box. */
-  readonly footer?: ReactNode;
 }
 
 /**
@@ -54,25 +52,21 @@ export function DataTable<T>({
   empty = 'Nothing here.',
   maxHeight,
   scale = 'dense',
-  footer,
 }: DataTableProps<T>) {
   const shell = scale === 'shell';
   const padX = shell ? 'var(--cell-pad-x-shell)' : 'var(--cell-pad-x)';
   const rowHeight = shell ? 'var(--row-height-shell)' : 'var(--row-height)';
   if (rows.length === 0) {
     return (
-      <>
-        <div
-          style={{
-            padding: 24,
-            color: 'var(--color-ink-tertiary)',
-            textAlign: 'center',
-          }}
-        >
-          {empty}
-        </div>
-        {footer}
-      </>
+      <div
+        style={{
+          padding: 24,
+          color: 'var(--color-ink-tertiary)',
+          textAlign: 'center',
+        }}
+      >
+        {empty}
+      </div>
     );
   }
 
@@ -160,7 +154,6 @@ export function DataTable<T>({
           })}
         </tbody>
       </table>
-      {footer}
     </div>
   );
 }

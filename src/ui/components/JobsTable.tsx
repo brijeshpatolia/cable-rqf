@@ -51,7 +51,6 @@ const AGES = [
 export function JobsTable({
   rows,
   columns,
-  footer,
 }: {
   readonly rows: readonly JobRowView[];
   /** Headers and widths; the cells themselves arrive already rendered. */
@@ -60,8 +59,6 @@ export function JobsTable({
     readonly width?: number;
     readonly align?: 'left' | 'right';
   }[];
-  /** The tier legend. Rendered inside the panel, under the last row. */
-  readonly footer?: ReactNode;
 }) {
   const [status, setStatus] = useState<JobRowView['status'] | null>(null);
   const [customer, setCustomer] = useState<string | null>(null);
@@ -228,7 +225,6 @@ export function JobsTable({
         rows={shown}
         rowKey={(r) => r.reference}
         href={(r) => r.href}
-        {...(footer === undefined ? {} : { footer })}
         empty={
           filtered
             ? 'No enquiry matches these filters. Clear one to widen it.'

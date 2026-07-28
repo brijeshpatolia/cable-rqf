@@ -305,18 +305,25 @@ export default async function InboxPage() {
             { header: 'Received', width: 176 },
           ]}
           rows={rows}
-          footer={
-            <div
-              className="panel-inset"
-              style={{
-                padding: '12px var(--cell-pad-x-shell)',
-                borderTop: '1px solid var(--color-line-panel)',
-              }}
-            >
-              <TierLegend short />
-            </div>
-          }
         />
+        {/*
+          The legend belongs to the panel, not to the table.
+
+          It used to be threaded through `JobsTable` into a `footer` prop on
+          `DataTable`, which put a second child beside `<table>` and produced a
+          missing-key warning in development. Rendering it here removes the
+          prop from two components and says the right thing about ownership: a
+          table renders rows, and what the dots mean is the panel's business.
+        */}
+        <div
+          className="panel-inset"
+          style={{
+            padding: '12px var(--cell-pad-x-shell)',
+            borderTop: '1px solid var(--color-line-panel)',
+          }}
+        >
+          <TierLegend short />
+        </div>
       </Panel>
     </>
   );
