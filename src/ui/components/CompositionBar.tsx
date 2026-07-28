@@ -17,8 +17,13 @@ import type { CostBreakdown } from '@/modules/costing';
  * grey. If it ever reads as decoration, delete it — the numbers are the record
  * and this is only a way in to them.
  *
- * Percentages are of `costPerKm`, not of the unit rate, because commercial
- * terms are applied on top of that figure rather than being a slice of it.
+ * Percentages are of the composed rate — `unitRate × 1000` — because the bar
+ * has a Commercial segment, and a share has to be a share of a figure that
+ * includes every segment drawn. This comment used to say `costPerKm`, which
+ * was the intent of an earlier design and was never what the code did; it
+ * survived the move of the arithmetic into `modules/costing` and was caught in
+ * review. A comment that names the wrong denominator is worse than none: the
+ * next person reads it instead of the code.
  */
 
 /**
