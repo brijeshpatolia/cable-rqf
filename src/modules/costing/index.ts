@@ -6,6 +6,8 @@
  * (ARCHITECTURE.md rule 2, enforced by `pnpm lint:arch`).
  */
 export { computeCost, breakdownLeaves } from './engine';
+export { compositionOf } from './composition';
+export type { CostPart } from './composition';
 export {
   COPPER_FORMULA_CONFIRMED,
   DEFAULT_FX,

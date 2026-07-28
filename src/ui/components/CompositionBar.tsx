@@ -1,4 +1,5 @@
 import { type Decimal, ZERO } from '@/core/decimal';
+import { compositionOf, type CostPart } from '@/modules/costing';
 import type { CostBreakdown } from '@/modules/costing';
 
 /**
@@ -20,36 +21,21 @@ import type { CostBreakdown } from '@/modules/costing';
  * terms are applied on top of that figure rather than being a slice of it.
  */
 
-interface Segment {
-  readonly label: string;
-  readonly value: Decimal;
-  readonly color: string;
-}
+/**
+ * Which grey each part takes. Materials gets the accent because materials are
+ * where copper lives; the rest are grey. The parts themselves — and the
+ * arithmetic that makes them reconcile to the unit rate — belong to
+ * `modules/costing`, not here.
+ */
+const COLOUR: Readonly<Record<CostPart['key'], string>> = {
+  materials: 'var(--color-copper)',
+  machine: 'var(--color-composition-machine)',
+  overheads: 'var(--color-composition-overhead)',
+  commercial: 'var(--color-ink-secondary)',
+};
 
 export function CompositionBar({ breakdown }: { readonly breakdown: CostBreakdown }) {
-  const b = breakdown;
-
-  /*
-    Commercial is what the unit rate carries over and above the built cost.
-    Derived by subtraction rather than read from a field, because the engine's
-    commercial block is expressed per metre and the rest of this bar is per km
-    — converting one to the other here would be a second place that arithmetic
-    lives. The floor at zero is for the case a margin rule is ever negative.
-  */
-  const perKm = b.costPerKm;
-  const ratePerKm = b.unitRate.times(1000);
-  const commercial = ratePerKm.minus(perKm);
-
-  const segments: readonly Segment[] = [
-    { label: 'Materials', value: b.materialsSubtotal, color: 'var(--color-copper)' },
-    { label: 'Machine', value: b.operationsSubtotal, color: 'var(--color-composition-machine)' },
-    { label: 'Overheads & tooling', value: b.overheadsSubtotal, color: 'var(--color-composition-overhead)' },
-    {
-      label: 'Commercial',
-      value: commercial.greaterThan(ZERO) ? commercial : ZERO,
-      color: 'var(--color-ink-secondary)',
-    },
-  ];
+  const segments = compositionOf(breakdown).map((p) => ({ ...p, color: COLOUR[p.key] }));
 
   const total = segments.reduce<Decimal>((acc, s) => acc.plus(s.value), ZERO);
   if (!total.greaterThan(ZERO)) return null;

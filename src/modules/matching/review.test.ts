@@ -18,6 +18,7 @@ import {
   isPriced,
   pricedValueOf,
   reviewJob,
+  worstStatus,
 } from './review';
 import { BUILT_IN_TERMS, buildDictionary, mergeTerms } from './vocabulary';
 
@@ -313,5 +314,59 @@ describe('decisions a human makes about a line', () => {
     expect(pricedValueOf(job.lines).toFixed(6)).toBe(
       priced[0]!.lineTotal.toFixed(6),
     );
+  });
+});
+
+/**
+ * The word the Inbox shows for a whole enquiry.
+ *
+ * It has to agree with the review screen's sort — an enquiry the list calls
+ * Exact must not open onto a No match row at the top. Both read the same
+ * `STATUS_ORDER`, and these assertions are what makes that coupling load-
+ * bearing rather than incidental.
+ */
+describe('worstStatus', () => {
+  const job = (input: string) =>
+    reviewJob(input, LIBRARY, RATES, SOURCE_TERMS, BOUNDS, {});
+
+  it('is undefined for an enquiry with no lines', () => {
+    // Not the same as a good enquiry. The Inbox renders an em-dash, not a tier.
+    expect(worstStatus([])).toBeUndefined();
+  });
+
+  it('reports the single line of a one-line enquiry', () => {
+    const one = job(realLine(' — 1,000 m'));
+    expect(one.lines).toHaveLength(1);
+    expect(worstStatus(one.lines)).toBe(one.lines[0]!.status);
+  });
+
+  it('takes the worst line, not the first or the most common', () => {
+    // Nine good lines and one the app will not price is an enquiry that needs
+    // a person, and reporting it as Exact is the failure this guards.
+    const many = job(
+      [
+        realLine(' — 1,000 m'),
+        realLine(' — 2,000 m'),
+        '3C x 50mm2 aluminium XLPE SWA PVC 1kV — 4,000 m',
+        realLine(' — 3,000 m'),
+      ].join('\n'),
+    );
+
+    expect(many.lines.length).toBeGreaterThan(1);
+    expect(worstStatus(many.lines)).toBe('no-match');
+    // And the review screen agrees: the worst line sorts to the top.
+    expect([...many.lines].sort(byReviewOrder)[0]!.status).toBe('no-match');
+  });
+
+  it('agrees with the review sort on every enquiry, whatever the mix', () => {
+    for (const input of [
+      realLine(' — 1,000 m'),
+      [realLine(' — 1,000 m'), '3C x 50mm2 aluminium XLPE SWA PVC 1kV — 4,000 m'].join('\n'),
+      ['3C x 50mm2 aluminium XLPE SWA PVC 1kV — 4,000 m', realLine(' — 1,000 m')].join('\n'),
+      [realLine(' — 1,000 m'), realLine(' — 2,000 m')].join('\n'),
+    ]) {
+      const j = job(input);
+      expect(worstStatus(j.lines)).toBe([...j.lines].sort(byReviewOrder)[0]!.status);
+    }
   });
 });
