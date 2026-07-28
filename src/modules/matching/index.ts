@@ -23,6 +23,7 @@ export type {
 } from './match';
 export {
   byReviewOrder,
+  worstStatus,
   hasBreakdown,
   isHeld,
   isManual,

@@ -6,6 +6,18 @@ export interface Column<T> {
   readonly align?: 'left' | 'right';
   /** Reserved so a data refresh causes no layout shift. */
   readonly width?: number;
+  /**
+   * This column renders its own links or controls, so the row link must not
+   * wrap it.
+   *
+   * An anchor inside an anchor is not merely discouraged, it is a parse error:
+   * the browser closes the outer one when it meets the inner, so the tree it
+   * builds is not the tree the server rendered. React sees the mismatch,
+   * throws away the whole tree and re-renders it on the client — the #418 this
+   * flag exists to prevent. The Export column on the Quotes screen is the case
+   * that found it.
+   */
+  readonly interactive?: boolean;
   readonly render: (row: T) => ReactNode;
 }
 
@@ -21,15 +33,28 @@ interface DataTableProps<T> {
    * to whichever box scrolls.
    */
   readonly maxHeight?: number;
+  /**
+   * `dense` — 32px rows, the default, and what every list of records uses.
+   * `shell` — 44px rows on the inset header surface, for the two screens the
+   * 2026 redesign covers.
+   *
+   * Two scales rather than one because the argument for each is real and they
+   * disagree. The Rate Desk shows 167 rows and the Catalogue 99: a third fewer
+   * rows per screen is a cost paid by whoever is reading them. The Inbox is a
+   * worklist of a dozen enquiries where a row is a thing you act on, and the
+   * extra height is what makes the Match column and the two-line Quoted cell
+   * legible. Opt in per screen, never globally.
+   */
+  readonly scale?: 'dense' | 'shell';
 }
 
 /**
- * The dense table.
+ * The table.
  *
- * Sticky header on the panel surface with a strong underline; rows separated
- * by hairlines. Column widths are reserved, so a refresh never shifts the
- * layout. Virtualisation is added when a table first exceeds ~200 rows — the
- * markup here is already the shape TanStack Virtual expects.
+ * Sticky header, rows separated by hairlines, column widths reserved so a
+ * refresh never shifts the layout. Virtualisation is added when a table first
+ * exceeds ~200 rows — the markup here is already the shape TanStack Virtual
+ * expects.
  */
 export function DataTable<T>({
   columns,
@@ -38,7 +63,21 @@ export function DataTable<T>({
   href,
   empty = 'Nothing here.',
   maxHeight,
+  scale = 'dense',
 }: DataTableProps<T>) {
+  const shell = scale === 'shell';
+  /*
+    Which cell carries the row's tab stop.
+
+    Not index 0: if the first column opts out with `interactive`, cell 0 never
+    becomes an anchor, every remaining anchor takes `tabIndex={-1}`, and the
+    row link is unreachable by keyboard while still showing a pointer cursor
+    and a hover wash. No screen does that today — which is exactly why it would
+    have sat there until one did.
+  */
+  const tabStop = columns.findIndex((c) => c.interactive !== true);
+  const padX = shell ? 'var(--cell-pad-x-shell)' : 'var(--cell-pad-x)';
+  const rowHeight = shell ? 'var(--row-height-shell)' : 'var(--row-height)';
   if (rows.length === 0) {
     return (
       <div
@@ -69,9 +108,9 @@ export function DataTable<T>({
                 className="label"
                 style={{
                   textAlign: c.align ?? 'left',
-                  padding: 'var(--cell-pad-y) var(--cell-pad-x)',
-                  borderBottom: '1px solid var(--color-line-strong)',
-                  backgroundColor: 'var(--color-surface-panel)',
+                  padding: shell ? `9px ${padX}` : `var(--cell-pad-y) ${padX}`,
+                  borderBottom: `1px solid var(${shell ? '--color-line-panel' : '--color-line-strong'})`,
+                  backgroundColor: `var(${shell ? '--color-surface-inset' : '--color-surface-panel'})`,
                   position: 'sticky',
                   top: 0,
                   width: c.width,
@@ -89,20 +128,46 @@ export function DataTable<T>({
             return (
               <tr
                 key={rowKey(row)}
-                style={{ borderBottom: '1px solid var(--color-line-hairline)' }}
+                className={shell && link !== undefined ? 'row-hover' : undefined}
+                style={{
+                  borderBottom: '1px solid var(--color-line-hairline)',
+                  ...(shell && link !== undefined ? { cursor: 'pointer' } : {}),
+                }}
               >
                 {columns.map((c, i) => (
                   <td
                     key={c.key}
                     style={{
                       textAlign: c.align ?? 'left',
-                      padding: 'var(--cell-pad-y) var(--cell-pad-x)',
-                      height: 'var(--row-height)',
+                      padding: shell ? `0 ${padX}` : `var(--cell-pad-y) ${padX}`,
+                      height: rowHeight,
                       width: c.width,
                     }}
                   >
-                    {link !== undefined && i === 0 ? (
-                      <a href={link} style={{ color: 'inherit' }}>
+                    {/*
+                      Every cell carries the link, not just the first.
+
+                      The row takes a pointer cursor and a hover wash across
+                      its full width, so clicking the Customer or Match cell
+                      and having nothing happen is worse than a row that never
+                      looked clickable at all. A real anchor rather than a
+                      row-level `onClick` because middle-click, right-click and
+                      "copy link address" all need an href.
+
+                      Only the first is in the tab order: eight columns would
+                      otherwise cost eight tab stops per row to reach the same
+                      destination.
+
+                      A column that carries its own links or controls opts out,
+                      because nesting one anchor in another is a parse error
+                      rather than a style question — see `interactive` above.
+                    */}
+                    {link !== undefined && c.interactive !== true ? (
+                      <a
+                        href={link}
+                        tabIndex={i === tabStop ? undefined : -1}
+                        style={{ color: 'inherit', display: 'block' }}
+                      >
                         {c.render(row)}
                       </a>
                     ) : (

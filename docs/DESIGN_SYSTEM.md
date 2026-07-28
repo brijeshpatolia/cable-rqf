@@ -164,16 +164,60 @@ Consistency here is most of the "premium" perception. Applied by the `<NumericCe
 
 --radius-sm: 2px;   /* dots, chips, inputs */
 --radius-md: 3px;   /* buttons */
---radius-lg: 4px;   /* panels, drawers — the maximum in the app */
+--radius-lg: 4px;   /* panels, drawers — the maximum on a dense screen */
 
 --border-hairline: 1px solid var(--line-hairline);
 --border-strong:   1px solid var(--line-strong);
 --shadow-popover:  0 8px 24px rgba(0, 0, 0, 0.55);  /* the only shadow */
 ```
 
+### Two scales, and when each applies
+
+The values above are the **dense** scale and they remain the default. A second
+**shell** scale was added in the 2026 redesign:
+
+```css
+--row-height-shell: 44px;
+--cell-pad-x-shell: 16px;
+--radius-control:    7px;   /* rail items, chips, section cards */
+--radius-input:      8px;   /* inputs, buttons */
+--radius-card:       9px;   /* cards inside a build-up */
+--radius-panel:     12px;   /* panels */
+--panel-highlight:  inset 0 1px 0 rgba(255,255,255,0.035);
+```
+
+| | Dense | Shell |
+|---|---|---|
+| Rows | 32px | 44px |
+| Panel radius | 4px | 12px |
+| Used by | Rate Desk, Catalogue, Price Watch, Vocabulary, Coverage, History, Quotes list | Inbox, Quote detail |
+
+**The distinction is what a row is.** On a dense screen a row is a *record* in
+a list of many — the Rate Desk shows 167, the Catalogue 99 — and a third fewer
+rows per screen is a cost paid by whoever is reading them. On the Inbox a row
+is a *thing you act on*, a dozen of them, and the height is what makes the
+Match column and the two-line Quoted cell legible.
+
+Opt in per screen, never globally: `<Panel scale="shell">`, `<DataTable
+scale="shell">`, `<ExpandableRow scale="shell">`. A screen that does not ask
+gets the dense scale, which is the right default for a screen nobody has
+thought about yet.
+
+The `radius ≤ 4px` rule below still holds on the dense scale. It was written
+when every screen was a table; the shell scale is the exception, and it is an
+exception with a name rather than a drift.
+
+**Depth is still never a drop shadow.** The shell scale adds one 1px inner top
+highlight on a panel and an inset surface behind table headers and footers.
+`--shadow-popover` remains the only shadow in the app.
+
 **Space groups, it does not fill.** A panel's internal padding is `--space-4`; the gap *between* related rows is 0 (they share a hairline); the gap between unrelated panels is `--space-5`. Generous space around numbers means the number has room to breathe within its cell — not that the table is loose.
 
-**Layout shell:** a fixed 200px left rail (navigation, no icons-only mode — labels always visible), fluid content, and an optional 320px right rail for totals, provenance, or audit. Content max-width is unconstrained; this is a terminal, and a costing engineer with a 32" monitor should get 32" of columns.
+**Layout shell:** a fixed **236px** left rail (navigation, no icons-only mode — labels always visible), a 56px sticky top bar carrying the copper ticker, fluid content, and an optional 316px right rail for totals, provenance, or audit.
+
+**Content is capped at 1560px and centred.** This revises the original rule — *"unconstrained; a costing engineer with a 32\" monitor should get 32\" of columns"* — which was written when every screen was a table. It still holds for tables: a wide Rate Desk should use the width it is given, and the cap is generous enough never to bind on one. What it stops is a two-column screen like a quote stretching its prose to 2,400px, where a line of text becomes unreadable long before the monitor runs out. Centred, or the content pins to the rail while the ticker stays flush right and the two stop sharing an edge.
+
+**Contrast is checked, not assumed.** `--color-ink-faint` (#4A505A) is 2.27:1 on the panel surface and is for non-text only — a rail group heading, a breadcrumb separator. Anything a person reads uses `--color-ink-secondary` (5.88:1) or, for units and column headers at 11px or above, `--color-ink-tertiary` (2.95:1). Provenance lines are *read*, so they take secondary: the app's claim is that every figure carries its origin, and an origin nobody can make out is the claim without the substance.
 
 ---
 

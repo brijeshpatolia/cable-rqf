@@ -16,6 +16,15 @@ interface ExpandableRowProps {
   readonly depth?: number;
   /** Sets the interior surface. Only the outermost level steps up a shade. */
   readonly raised?: boolean;
+  /**
+   * `shell` swaps the raised interior for a left rule.
+   *
+   * The nesting then reads from alignment alone, which is what the rest of the
+   * app already claims to do — a second surface behind an open row was the one
+   * place depth came from a fill rather than from structure. It also stops the
+   * interior competing with the inset section cards inside it.
+   */
+  readonly scale?: 'dense' | 'shell';
 }
 
 /**
@@ -32,9 +41,11 @@ export function ExpandableRow({
   defaultOpen = false,
   depth = 0,
   raised = true,
+  scale = 'dense',
 }: ExpandableRowProps) {
   const [open, setOpen] = useState(defaultOpen);
   const regionId = useId();
+  const shell = scale === 'shell';
 
   return (
     <div style={{ borderBottom: '1px solid var(--color-line-hairline)' }}>
@@ -43,32 +54,49 @@ export function ExpandableRow({
         aria-expanded={open}
         aria-controls={regionId}
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-3 text-left transition-colors"
+        data-open={open}
+        className={`row-hover flex w-full items-center text-left ${shell ? 'gap-4' : 'gap-3'}`}
         style={{
-          minHeight: 'var(--row-height)',
-          padding: `var(--cell-pad-y) var(--cell-pad-x)`,
-          paddingLeft: `calc(var(--cell-pad-x) + ${depth * 16}px)`,
-          backgroundColor: open ? 'var(--color-surface-hover)' : 'transparent',
+          minHeight: shell ? undefined : 'var(--row-height)',
+          padding: shell ? '11px 18px' : 'var(--cell-pad-y) var(--cell-pad-x)',
+          paddingLeft: shell
+            ? `calc(18px + ${depth * 16}px)`
+            : `calc(var(--cell-pad-x) + ${depth * 16}px)`,
         }}
       >
-        <Chevron open={open} />
+        <Chevron open={open} size={shell ? 9 : 8} />
         <span className="min-w-0 flex-1">{summary}</span>
       </button>
 
       <div id={regionId} className="expand-region" data-open={open} role="region">
         <div>
           <div
-            style={{
-              backgroundColor: raised
-                ? 'var(--color-surface-raised)'
-                : 'transparent',
-              paddingLeft: `calc(var(--cell-pad-x) + ${(depth + 1) * 16}px)`,
-              paddingRight: 'var(--cell-pad-x)',
-              paddingTop: 4,
-              paddingBottom: 8,
-            }}
+            style={
+              shell
+                ? {
+                    padding: '4px 18px 18px 41px',
+                  }
+                : {
+                    backgroundColor: raised ? 'var(--color-surface-raised)' : 'transparent',
+                    paddingLeft: `calc(var(--cell-pad-x) + ${(depth + 1) * 16}px)`,
+                    paddingRight: 'var(--cell-pad-x)',
+                    paddingTop: 4,
+                    paddingBottom: 8,
+                  }
+            }
           >
-            {children}
+            {shell ? (
+              <div
+                style={{
+                  borderLeft: '1px solid var(--color-line-strong)',
+                  paddingLeft: 18,
+                }}
+              >
+                {children}
+              </div>
+            ) : (
+              children
+            )}
           </div>
         </div>
       </div>
@@ -76,12 +104,12 @@ export function ExpandableRow({
   );
 }
 
-function Chevron({ open }: { readonly open: boolean }) {
+function Chevron({ open, size = 8 }: { readonly open: boolean; readonly size?: number }) {
   return (
     <svg
       aria-hidden
-      width="8"
-      height="8"
+      width={size}
+      height={size}
       viewBox="0 0 8 8"
       style={{
         color: 'var(--color-ink-tertiary)',
@@ -125,14 +153,25 @@ export function Provenance({ children }: { readonly children: ReactNode }) {
   return (
     <div
       style={{
-        color: 'var(--color-ink-tertiary)',
+        /*
+          Quiet, but readable — which `--color-ink-faint` was not. Measured
+          against the panel surface it is 2.27:1, and this is the line that
+          answers "where did this number come from". The app's whole claim is
+          that every figure carries its origin; an origin nobody can read is
+          the claim without the substance. `--color-ink-secondary` is 5.88:1.
+
+          The `└` glyph this used to carry is gone — the indent already says
+          "belongs to the line above", and a box-drawing character at 10px is
+          a smudge in most fonts.
+        */
+        color: 'var(--color-ink-secondary)',
         fontFamily: 'var(--font-mono)',
-        fontSize: 'var(--text-micro)',
-        lineHeight: 'var(--text-micro--line-height)',
-        paddingLeft: 16,
+        fontSize: 'var(--text-mono-nano)',
+        lineHeight: '15px',
+        marginTop: 2,
       }}
     >
-      └ {children}
+      {children}
     </div>
   );
 }

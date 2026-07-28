@@ -58,16 +58,98 @@
 
 @layer components {
   /*
-   * The signature interaction. Height and opacity only, 140ms. No slide, no
+   * The panel, as one rule rather than four inline styles per use.
+   *
+   * Depth comes from a 1px inner top highlight and an inset surface behind
+   * headers and footers — never a drop shadow. The app still has exactly one
+   * shadow and it belongs to popovers.
+   */
+  .panel-shell {
+    border: 1px solid var(--color-line-panel);
+    border-radius: var(--radius-panel);
+    background-color: var(--color-surface-panel);
+    box-shadow: var(--panel-highlight);
+  }
+
+  /* Table headers, panel footers, and the nested cards inside a build-up. */
+  .panel-inset {
+    background-color: var(--color-surface-inset);
+  }
+
+  /*
+   * Rail items. The marker carries the active state so colour is never the
+   * only signal, and the transition is colour only — nothing moves.
+   */
+  .rail-item {
+    color: var(--color-ink-secondary);
+    background-color: transparent;
+    transition:
+      background-color var(--duration-fade) var(--ease-expand),
+      color var(--duration-fade) var(--ease-expand);
+  }
+
+  .rail-item:hover {
+    background-color: var(--color-surface-hover-strong);
+    color: var(--color-ink-primary);
+  }
+
+  .rail-item[data-active='true'] {
+    background-color: var(--color-surface-active);
+    color: var(--color-ink-primary);
+  }
+
+  .rail-marker {
+    background-color: transparent;
+  }
+
+  .rail-item[data-active='true'] .rail-marker {
+    background-color: var(--color-copper);
+  }
+
+  /*
+   * A row that can be clicked. Hover is the quietest of the two washes; the
+   * stronger one is reserved for a row that is *open*, so the two states are
+   * distinguishable when both are on screen.
+   */
+  .row-hover {
+    transition: background-color var(--duration-fade) var(--ease-expand);
+  }
+
+  .row-hover:hover {
+    background-color: var(--color-surface-hover);
+  }
+
+  .row-hover[data-open='true'],
+  .row-hover[data-open='true']:hover {
+    background-color: var(--color-surface-hover-strong);
+  }
+
+  /* The one dashed border in the app: it reads as a drop target. */
+  .file-drop {
+    transition:
+      border-color var(--duration-fade) var(--ease-expand),
+      color var(--duration-fade) var(--ease-expand);
+  }
+
+  .file-drop:hover,
+  .file-drop:focus-within {
+    border-color: var(--color-copper);
+    color: var(--color-ink-primary);
+  }
+
+  /*
+   * The signature interaction. Height and opacity only, 160ms. No slide, no
    * scale, no bounce, no stagger. (DESIGN_SYSTEM.md §6)
    */
   .expand-region {
     display: grid;
     grid-template-rows: 0fr;
     opacity: 0;
+    /* Opacity settles a little sooner than the height, so the content is
+       readable a frame before the fold finishes rather than after. */
     transition:
       grid-template-rows var(--duration-expand) var(--ease-expand),
-      opacity var(--duration-expand) var(--ease-expand);
+      opacity var(--duration-fade) var(--ease-expand);
   }
 
   .expand-region[data-open='true'] {

@@ -8,29 +8,66 @@
 
 @theme {
   /* ── Surface ──────────────────────────────────────────────────────── */
-  --color-surface-base: #0e1116;
-  --color-surface-panel: #161a21;
+  --color-surface-base: #0b0e13;
+  --color-surface-panel: #10141a;
+  /* Table headers, panel footers, nested cards — one step *below* the panel. */
+  --color-surface-inset: #0e1116;
   --color-surface-raised: #1c212a;
-  --color-surface-hover: rgba(255, 255, 255, 0.03);
+  --color-surface-hover: rgba(255, 255, 255, 0.022);
+  --color-surface-hover-strong: rgba(255, 255, 255, 0.035);
   --color-surface-active: rgba(255, 255, 255, 0.055);
   --color-surface-selected: rgba(200, 121, 65, 0.07);
 
   /* ── Line ─────────────────────────────────────────────────────────── */
-  --color-line-hairline: #232833;
-  --color-line-strong: #2e3542;
+  /*
+    Three weights now, not two. The old `hairline` was doing both jobs — row
+    separators and panel borders — and at #232833 a table of forty rows read as
+    a grid of boxes. A separator wants to be quieter than the border around the
+    thing it is inside.
+  */
+  --color-line-hairline: #161a21;
+  --color-line-panel: #1b1f28;
+  --color-line-strong: #232833;
+  --color-line-key: #2e3542;
   --color-line-focus: #c87941;
 
   /* ── Ink ──────────────────────────────────────────────────────────── */
   --color-ink-primary: #e6e8eb;
+  /* Values inside chips and pills, where primary would shout. */
+  --color-ink-bright: #c2c7ce;
   --color-ink-secondary: #8b929c;
   --color-ink-tertiary: #5a616b;
-  --color-ink-on-copper: #0e1116;
+  /*
+    Non-text only: a rail group heading, a breadcrumb separator.
+
+    It is **2.27:1 on the panel surface** and must never carry a word somebody
+    has to read. It was introduced for provenance lines and the quote number
+    under an inbox total, which are exactly the two places it does not belong —
+    both are read, and both now use tertiary or secondary. If a use of this
+    token is something you would ever squint at, it is the wrong token.
+  */
+  --color-ink-faint: #4a505a;
+  /* The em-dash for an absent value. Quieter than anything that is a value. */
+  --color-ink-disabled: #3b414b;
+  --color-ink-on-copper: #0b0e13;
 
   /* ── Copper — the one colour ──────────────────────────────────────── */
   --color-copper: #c87941;
   --color-copper-hover: #d68a55;
   --color-copper-press: #b66a36;
   --color-copper-wash: rgba(200, 121, 65, 0.12);
+
+  /*
+    ── Composition — the cost bar on a quote line, and nowhere else ────
+
+    Two greys, so the bar can show four parts without inventing a palette.
+    Materials take the copper accent because materials are where copper lives;
+    these two carry machine time and overheads, and Commercial reuses
+    `--color-ink-secondary`. Named for what they are so nobody reaches for them
+    as general-purpose fills.
+  */
+  --color-composition-machine: #6e7783;
+  --color-composition-overhead: #3f4650;
 
   /* ── Status — match tiers only, never anything else ───────────────── */
   --color-status-exact: #3fb950;
@@ -48,26 +85,40 @@
   --font-mono: 'Berkeley Mono', 'JetBrains Mono', ui-monospace, 'SF Mono',
     monospace;
 
-  --text-display-lg: 28px;
-  --text-display-lg--line-height: 32px;
-  --text-display-lg--letter-spacing: -0.02em;
+  --text-display-lg: 30px;
+  --text-display-lg--line-height: 34px;
+  --text-display-lg--letter-spacing: -0.025em;
   --text-display-sm: 20px;
   --text-display-sm--line-height: 26px;
   --text-display-sm--letter-spacing: -0.015em;
-  --text-heading: 14px;
+  --text-heading: 13.5px;
   --text-heading--line-height: 20px;
   --text-heading--letter-spacing: -0.005em;
   --text-body: 13.5px;
   --text-body--line-height: 20px;
-  --text-label: 11px;
+  --text-body-sm: 12.5px;
+  --text-body-sm--line-height: 18px;
+  --text-label: 10px;
   --text-label--line-height: 14px;
-  --text-label--letter-spacing: 0.08em;
-  --text-numeric: 13px;
+  --text-label--letter-spacing: 0.1em;
+  --text-numeric: 12.5px;
   --text-numeric--line-height: 20px;
-  --text-numeric-lg: 28px;
-  --text-numeric-lg--line-height: 32px;
+  --text-numeric-lg: 24px;
+  --text-numeric-lg--line-height: 26px;
+  --text-numeric-lg--letter-spacing: -0.015em;
+  --text-numeric-xl: 32px;
+  --text-numeric-xl--line-height: 34px;
+  --text-numeric-xl--letter-spacing: -0.02em;
+  /* The LME figure in the top bar. */
+  --text-ticker: 18px;
+  /* The one row that closes a cost build-up. */
+  --text-unit-rate: 16px;
   --text-micro: 11px;
-  --text-micro--line-height: 15px;
+  --text-micro--line-height: 17px;
+  /* Timestamps and the strike footer. */
+  --text-mono-micro: 10.5px;
+  /* Provenance, key caps, unit suffixes. */
+  --text-mono-nano: 10px;
 
   /* ── Space — 4px base, every value a multiple ─────────────────────── */
   --spacing: 4px;
@@ -77,9 +128,28 @@
   --radius-md: 3px;
   --radius-lg: 4px;
 
+  /*
+    The 2026 shell scale.
+    ---------------------
+    `docs/DESIGN_SYSTEM.md` capped radius at 4px and made 32px rows the
+    default, and both rules still hold on the dense data screens — the Rate
+    Desk shows 167 rows and the Catalogue 99, where a third fewer rows per
+    screen is a real cost to the person reading them.
+
+    These are the values for the two screens where the app talks to a person
+    rather than lists records: the Inbox and a quote. Named separately rather
+    than raising the originals so the two scales cannot be confused, and so a
+    screen has to opt in.
+  */
+  --radius-control: 7px;
+  --radius-input: 8px;
+  --radius-card: 9px;
+  --radius-panel: 12px;
+
   /* ── Motion — almost none, and that's deliberate ──────────────────── */
   --ease-expand: cubic-bezier(0.2, 0, 0, 1);
-  --duration-expand: 140ms;
+  --duration-expand: 160ms;
+  --duration-fade: 120ms;
   --duration-tick: 600ms;
 }
 
@@ -88,12 +158,24 @@
     /* Row heights aren't Tailwind scale values; they're layout constants. */
     --row-height: 32px;
     --row-height-comfy: 38px;
+    /* The Inbox and quote-line scale. See the radius note above. */
+    --row-height-shell: 44px;
     --cell-pad-x: 12px;
     --cell-pad-y: 6px;
-    --rail-width: 200px;
+    --cell-pad-x-shell: 16px;
+    --rail-width: 236px;
+    --topbar-height: 56px;
+    --content-max: 1560px;
+    --aside-width: 316px;
     --drawer-width: 400px;
 
     /* The only shadow in the app. Popovers must float above content. */
     --shadow-popover: 0 8px 24px rgba(0, 0, 0, 0.55);
+
+    /*
+      Not a shadow — a 1px inner top highlight. It is the whole of how a panel
+      reads as raised, and the reason the app still has no drop shadows.
+    */
+    --panel-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.035);
   }
 }

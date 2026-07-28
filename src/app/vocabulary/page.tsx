@@ -46,7 +46,7 @@ export default async function VocabularyPage() {
   }
 
   return (
-    <div style={{ padding: 24 }} className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6">
       <header>
         <h1
           style={{
