@@ -45,6 +45,19 @@ export function CompositionBar({ breakdown }: { readonly breakdown: CostBreakdow
   const total = segments.reduce<Decimal>((acc, s) => acc.plus(s.value), ZERO);
   if (!total.greaterThan(ZERO)) return null;
 
+  /*
+    A line sold below what it costs to make has a negative Commercial part,
+    and a stacked bar has no way to say that — a negative `flexGrow` is not a
+    backwards segment, it is no segment, so the bar would silently redistribute
+    the shortfall across the other three and read as if the price were healthy.
+
+    Declining is the honest answer, and it belongs here rather than in
+    `compositionOf`: the arithmetic is right either way, it is the drawing that
+    cannot represent it. The four subtotals underneath still state the figures,
+    which is where the record was always kept.
+  */
+  if (segments.some((s) => s.value.lessThan(ZERO))) return null;
+
   const shares = segments.map((s) => ({
     ...s,
     percent: Number(s.value.dividedBy(total).times(100).toFixed(1)),

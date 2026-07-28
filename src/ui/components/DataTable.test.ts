@@ -95,6 +95,27 @@ describe('DataTable row links', () => {
     expect(nestedAnchors(html)).toBe(1);
   });
 
+  it('puts the tab stop on the first cell that is actually wrapped', () => {
+    /*
+      With an interactive column first, index 0 is never an anchor. Pinning the
+      tab stop to index 0 would leave every anchor in the row at `tabIndex=-1`
+      and the row link unreachable by keyboard, on a row that still shows a
+      pointer cursor.
+    */
+    const html = renderToStaticMarkup(
+      createElement(DataTable<Row>, {
+        columns: [withOwnLinks(true), plain],
+        rows: ROWS,
+        rowKey: (r) => r.id,
+        href: (r) => `/quotes/${r.id}`,
+      }),
+    );
+    const rowLink = html.match(/<a href="\/quotes\/Q-1"[^>]*>/);
+    expect(rowLink, 'the row link was not rendered at all').not.toBeNull();
+    expect(rowLink?.[0]).not.toContain('tabindex="-1"');
+    expect(nestedAnchors(html)).toBe(0);
+  });
+
   it('leaves cells alone when the table has no row link', () => {
     const html = renderToStaticMarkup(
       createElement(DataTable<Row>, {

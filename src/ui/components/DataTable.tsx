@@ -66,6 +66,16 @@ export function DataTable<T>({
   scale = 'dense',
 }: DataTableProps<T>) {
   const shell = scale === 'shell';
+  /*
+    Which cell carries the row's tab stop.
+
+    Not index 0: if the first column opts out with `interactive`, cell 0 never
+    becomes an anchor, every remaining anchor takes `tabIndex={-1}`, and the
+    row link is unreachable by keyboard while still showing a pointer cursor
+    and a hover wash. No screen does that today — which is exactly why it would
+    have sat there until one did.
+  */
+  const tabStop = columns.findIndex((c) => c.interactive !== true);
   const padX = shell ? 'var(--cell-pad-x-shell)' : 'var(--cell-pad-x)';
   const rowHeight = shell ? 'var(--row-height-shell)' : 'var(--row-height)';
   if (rows.length === 0) {
@@ -155,7 +165,7 @@ export function DataTable<T>({
                     {link !== undefined && c.interactive !== true ? (
                       <a
                         href={link}
-                        tabIndex={i === 0 ? undefined : -1}
+                        tabIndex={i === tabStop ? undefined : -1}
                         style={{ color: 'inherit', display: 'block' }}
                       >
                         {c.render(row)}

@@ -69,9 +69,7 @@ describe('the cost composition bar', () => {
     expect(overheads?.value.greaterThan(result.value.overheadsSubtotal)).toBe(true);
   });
 
-  it('never renders a negative segment', () => {
-    // Commercial is a subtraction, so a margin rule that ever went negative
-    // would otherwise draw a bar segment with a negative flex-grow.
+  it('has no negative segment at the terms the app actually prices on', () => {
     for (const product of LIBRARY.slice(0, 12)) {
       const result = computeCost(product, { metres: metres(1000) }, RATES, SOURCE_TERMS);
       if (!result.ok) continue;
@@ -79,5 +77,45 @@ describe('the cost composition bar', () => {
         expect(s.value.greaterThanOrEqualTo(ZERO), `${product.id} ${s.label}`).toBe(true);
       }
     }
+  });
+
+  it('keeps the identity below cost, where it used to floor and stop holding', () => {
+    /*
+      The branch that broke the contract. Commercial used to be floored at
+      zero, on the reasoning that a share cannot be negative — but the floor
+      made the parts sum to `costPerKm` rather than to `unitRate × 1000`, so
+      the function silently stopped satisfying the one identity it documents
+      and the bar's percentages changed denominator without changing label.
+
+      Reached by pricing a real product under its own cost rather than by
+      hand-building a breakdown, so the rest of the figures stay consistent
+      with each other.
+    */
+    const product = LIBRARY[0];
+    expect(product).toBeDefined();
+    if (product === undefined) return;
+
+    const result = computeCost(product, { metres: metres(1000) }, RATES, SOURCE_TERMS);
+    if (!result.ok) throw new Error(result.error.message);
+
+    // Half of cost: below cost by any measure, whatever the pass-throughs.
+    const belowCost = {
+      ...result.value,
+      unitRate: result.value.costPerKm.dividedBy(2000) as typeof result.value.unitRate,
+    };
+
+    const parts = compositionOf(belowCost);
+    const commercial = parts.find((p) => p.key === 'commercial');
+
+    expect(commercial?.value.lessThan(ZERO), 'the case is not actually below cost').toBe(
+      true,
+    );
+
+    const total = sum(parts.map((p) => p.value));
+    const ratePerKm = belowCost.unitRate.times(1000);
+    expect(
+      total.minus(ratePerKm).abs().lessThan('0.000001'),
+      `segments ${total.toString()} vs rate/km ${ratePerKm.toString()}`,
+    ).toBe(true);
   });
 });
