@@ -76,8 +76,8 @@ export const AUTOMATIC_TIERS: readonly Tier[] = ['exact', 'close', 'partial', 'n
 /**
  * Rendered from the same definitions as the dots, so the legend cannot drift.
  *
- * `short` drops the sentence to its first clause — the inbox footer wants
- * "Spot-check", not "Priced automatically. Spot-check."
+ * `short` keeps the first sentence only — the inbox footer wants "Priced
+ * automatically", not "Priced automatically. Spot-check."
  */
 export function TierLegend({
   tiers = AUTOMATIC_TIERS,
@@ -93,7 +93,8 @@ export function TierLegend({
           <StatusDot tier={tier} />
           <span
             style={{
-              color: 'var(--color-ink-faint)',
+              // The words the legend exists for. Faint ink is 2.27:1.
+              color: 'var(--color-ink-secondary)',
               fontSize: 'var(--text-micro)',
             }}
           >

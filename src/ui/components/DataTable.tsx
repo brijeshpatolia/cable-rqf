@@ -92,7 +92,7 @@ export function DataTable<T>({
                 className="label"
                 style={{
                   textAlign: c.align ?? 'left',
-                  padding: shell ? `9px ${'var(--cell-pad-x-shell)'}` : 'var(--cell-pad-y) var(--cell-pad-x)',
+                  padding: shell ? `9px ${padX}` : `var(--cell-pad-y) ${padX}`,
                   borderBottom: `1px solid var(${shell ? '--color-line-panel' : '--color-line-strong'})`,
                   backgroundColor: `var(${shell ? '--color-surface-inset' : '--color-surface-panel'})`,
                   position: 'sticky',
@@ -123,19 +123,31 @@ export function DataTable<T>({
                     key={c.key}
                     style={{
                       textAlign: c.align ?? 'left',
-                      padding: shell ? `0 ${'var(--cell-pad-x-shell)'}` : 'var(--cell-pad-y) var(--cell-pad-x)',
+                      padding: shell ? `0 ${padX}` : `var(--cell-pad-y) ${padX}`,
                       height: rowHeight,
                       width: c.width,
                     }}
                   >
                     {/*
-                      The anchor stays on the first cell even when the whole
-                      row is clickable: middle-click, right-click and "copy
-                      link address" all need a real href, and a row-level
-                      onClick gives none of them.
+                      Every cell carries the link, not just the first.
+
+                      The row takes a pointer cursor and a hover wash across
+                      its full width, so clicking the Customer or Match cell
+                      and having nothing happen is worse than a row that never
+                      looked clickable at all. A real anchor rather than a
+                      row-level `onClick` because middle-click, right-click and
+                      "copy link address" all need an href.
+
+                      Only the first is in the tab order: eight columns would
+                      otherwise cost eight tab stops per row to reach the same
+                      destination.
                     */}
-                    {link !== undefined && i === 0 ? (
-                      <a href={link} style={{ color: 'inherit' }}>
+                    {link !== undefined ? (
+                      <a
+                        href={link}
+                        tabIndex={i === 0 ? undefined : -1}
+                        style={{ color: 'inherit', display: 'block' }}
+                      >
                         {c.render(row)}
                       </a>
                     ) : (

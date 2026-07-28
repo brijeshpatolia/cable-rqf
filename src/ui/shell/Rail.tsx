@@ -1,3 +1,5 @@
+import type { Route } from 'next';
+import Link from 'next/link';
 import { roleLabel, type Actor } from '@/modules/auth';
 import { WhoAmI } from '@/ui/components/WhoAmI';
 
@@ -27,7 +29,12 @@ import { WhoAmI } from '@/ui/components/WhoAmI';
 
 interface Item {
   readonly label: string;
-  readonly href: string;
+  /**
+   * Typed routes are on, so this is the app's own route union rather than a
+   * string — a rail item pointing at a page that does not exist is a build
+   * failure, which is the right place to find out.
+   */
+  readonly href: Route;
 }
 
 const GROUPS: readonly { readonly heading: string; readonly items: readonly Item[] }[] = [
@@ -152,8 +159,15 @@ export function Rail({
               <ul className="flex flex-col" style={{ gap: 2 }}>
                 {group.items.map((item) => (
                   <li key={item.href}>
-                    <a
+                    {/*
+                      `next/link`, not an anchor: the root layout now reads the
+                      actor, the waiting count and the copper history on every
+                      render, and a full document load re-runs all three plus a
+                      fresh parse. A client-side RSC navigation does not.
+                    */}
+                    <Link
                       href={item.href}
+                      prefetch={false}
                       aria-current={item.href === active ? 'page' : undefined}
                       className="rail-item flex items-center justify-between"
                       data-active={item.href === active}
@@ -192,7 +206,7 @@ export function Rail({
                           {waiting}
                         </span>
                       ) : null}
-                    </a>
+                    </Link>
                   </li>
                 ))}
               </ul>

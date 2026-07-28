@@ -60,7 +60,18 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const [waiting, ticks] =
     actor === null
       ? ([0, []] as const)
-      : await Promise.all([jobStore.awaitingCount(), repositories.rates.lmeHistory(23)]);
+      : await Promise.all([
+          jobStore.awaitingCount(),
+          /*
+            Caught, because the ticker is chrome and the shell is not. Both of
+            these are awaited in the root layout, so an unreadable copper
+            history would otherwise propagate out of the layout and take down
+            every authenticated screen — including the Rate Desk, which does
+            not depend on copper history at all. A ticker that cannot be drawn
+            hides itself; it does not hide the screen behind it.
+          */
+          repositories.rates.lmeHistory(23).catch(() => []),
+        ]);
 
   // `lmeHistory` is newest-first; a sparkline reads left to right in time.
   const series = [...ticks].reverse();
@@ -112,8 +123,11 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
             )}
 
             <main
-              className="min-w-0 flex-1 flex flex-col w-full"
+              className="min-w-0 flex-1 flex flex-col w-full mx-auto"
               style={{
+                // Centred, or the content pins to the rail on a wide display
+                // while the ticker stays flush right and the two stop sharing
+                // an edge.
                 maxWidth: 'var(--content-max)',
                 padding: '28px 24px 40px',
                 gap: 24,

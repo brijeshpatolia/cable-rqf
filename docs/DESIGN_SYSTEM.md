@@ -213,7 +213,11 @@ highlight on a panel and an inset surface behind table headers and footers.
 
 **Space groups, it does not fill.** A panel's internal padding is `--space-4`; the gap *between* related rows is 0 (they share a hairline); the gap between unrelated panels is `--space-5`. Generous space around numbers means the number has room to breathe within its cell — not that the table is loose.
 
-**Layout shell:** a fixed 200px left rail (navigation, no icons-only mode — labels always visible), fluid content, and an optional 320px right rail for totals, provenance, or audit. Content max-width is unconstrained; this is a terminal, and a costing engineer with a 32" monitor should get 32" of columns.
+**Layout shell:** a fixed **236px** left rail (navigation, no icons-only mode — labels always visible), a 56px sticky top bar carrying the copper ticker, fluid content, and an optional 316px right rail for totals, provenance, or audit.
+
+**Content is capped at 1560px and centred.** This revises the original rule — *"unconstrained; a costing engineer with a 32\" monitor should get 32\" of columns"* — which was written when every screen was a table. It still holds for tables: a wide Rate Desk should use the width it is given, and the cap is generous enough never to bind on one. What it stops is a two-column screen like a quote stretching its prose to 2,400px, where a line of text becomes unreadable long before the monitor runs out. Centred, or the content pins to the rail while the ticker stays flush right and the two stop sharing an edge.
+
+**Contrast is checked, not assumed.** `--color-ink-faint` (#4A505A) is 2.27:1 on the panel surface and is for non-text only — a rail group heading, a breadcrumb separator. Anything a person reads uses `--color-ink-secondary` (5.88:1) or, for units and column headers at 11px or above, `--color-ink-tertiary` (2.95:1). Provenance lines are *read*, so they take secondary: the app's claim is that every figure carries its origin, and an origin nobody can make out is the claim without the substance.
 
 ---
 

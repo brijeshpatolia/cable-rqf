@@ -153,12 +153,18 @@ export function Provenance({ children }: { readonly children: ReactNode }) {
   return (
     <div
       style={{
-        // Faint and small on purpose: present under every terminal number,
-        // read only when somebody asks where a figure came from. The `└` glyph
-        // this used to carry is gone — the indent and the colour already say
-        // "belongs to the line above", and a box-drawing character at 10px is
-        // a smudge in most fonts.
-        color: 'var(--color-ink-faint)',
+        /*
+          Quiet, but readable — which `--color-ink-faint` was not. Measured
+          against the panel surface it is 2.27:1, and this is the line that
+          answers "where did this number come from". The app's whole claim is
+          that every figure carries its origin; an origin nobody can read is
+          the claim without the substance. `--color-ink-secondary` is 5.88:1.
+
+          The `└` glyph this used to carry is gone — the indent already says
+          "belongs to the line above", and a box-drawing character at 10px is
+          a smudge in most fonts.
+        */
+        color: 'var(--color-ink-secondary)',
         fontFamily: 'var(--font-mono)',
         fontSize: 'var(--text-mono-nano)',
         lineHeight: '15px',

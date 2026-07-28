@@ -185,7 +185,9 @@ export default async function InboxPage() {
               className="numeric"
               style={{
                 fontSize: 'var(--text-mono-nano)',
-                color: 'var(--color-ink-faint)',
+                // A quote number is read and repeated back to a customer, so
+                // it does not get the faint ink (2.27:1 on this surface).
+                color: 'var(--color-ink-tertiary)',
               }}
             >
               {j.quoteNumber}
@@ -210,10 +212,21 @@ export default async function InboxPage() {
   });
 
   const waiting = summaries.filter((j) => j.status === 'review').length;
+
+  /*
+    Of the enquiries that arrived this month, how many now carry a quote.
+
+    Not "quotes issued this month", which is what the label used to say and
+    what `JobSummary` cannot answer: it exposes `createdAt` for the enquiry and
+    `quoteNumber` for its quote, but no instant at which the quoting happened.
+    A June enquiry quoted in July would have been missed and a July enquiry
+    quoted in August counted, so the label named a measure the data does not
+    carry. Stating the measure the data does carry is both honest and more
+    useful on an inbox — it is a conversion rate on this month's intake.
+  */
   const monthStart = new Date(Date.UTC(asOf.getUTCFullYear(), asOf.getUTCMonth(), 1));
-  const quotedThisMonth = summaries.filter(
-    (j) => j.quoteNumber !== null && j.createdAt >= monthStart,
-  ).length;
+  const thisMonth = summaries.filter((j) => j.createdAt >= monthStart);
+  const quotedOfIntake = thisMonth.filter((j) => j.quoteNumber !== null).length;
 
   return (
     <>
@@ -246,7 +259,16 @@ export default async function InboxPage() {
 
         <div className="flex flex-wrap" style={{ gap: 32 }}>
           <Metric label="Waiting on you" value={String(waiting)} unit="enquiries" />
-          <Metric label="Quoted this month" value={String(quotedThisMonth)} unit="quotes" />
+          <Metric
+            label="Quoted, this month’s intake"
+            value={`${quotedOfIntake}/${thisMonth.length}`}
+            unit="enquiries"
+            title={
+              `${quotedOfIntake} of the ${thisMonth.length} ${
+                thisMonth.length === 1 ? 'enquiry' : 'enquiries'
+              } received since ${monthStart.toISOString().slice(0, 10)} now carry a quote.`
+            }
+          />
           {/*
             Exposure is a delta, which is the one place a negative is red. It
             comes from the same sweep that drives the Price Watch and is never
@@ -306,14 +328,17 @@ function Metric({
   value,
   unit,
   negative = false,
+  title,
 }: {
   readonly label: string;
   readonly value: string;
   readonly unit: string;
   readonly negative?: boolean;
+  /** Spells out the measure where the label alone would be ambiguous. */
+  readonly title?: string;
 }) {
   return (
-    <div className="flex flex-col" style={{ gap: 6 }}>
+    <div className="flex flex-col" style={{ gap: 6 }} title={title}>
       <span className="label">{label}</span>
       <span className="flex items-baseline" style={{ gap: 6 }}>
         <span

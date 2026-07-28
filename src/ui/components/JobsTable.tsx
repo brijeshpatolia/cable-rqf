@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useRef, useState, type ReactNode } from 'react';
 import { DataTable, type Column } from './DataTable';
 
 export interface JobRowView {
@@ -100,10 +100,19 @@ export function JobsTable({
 
   const filtered = status !== null || customer !== null || days !== null;
 
+  const statusGroup = useRef<HTMLDivElement>(null);
+
   const clear = () => {
     setStatus(null);
     setCustomer(null);
     setDays(null);
+    /*
+      The Clear button unmounts on this state change — it only renders while
+      something is filtered. Without moving focus deliberately it falls back to
+      <body>, and a keyboard user has to tab in from the top of the document
+      to get back to where they were.
+    */
+    statusGroup.current?.querySelector<HTMLButtonElement>('button')?.focus();
   };
 
   return (
@@ -116,8 +125,17 @@ export function JobsTable({
           gap: 10,
         }}
       >
+        {/*
+          A radiogroup, not a group of toggles. The four states are mutually
+          exclusive and cover the list between them, and `aria-pressed` says
+          the opposite — a screen reader hears four independent toggles with
+          no indication that choosing one clears the others. The roving
+          tabIndex is the other half: without it the bar costs four tab stops
+          to make one choice.
+        */}
         <div
-          role="group"
+          ref={statusGroup}
+          role="radiogroup"
           aria-label="Filter by status"
           className="flex items-center"
           style={{
@@ -134,7 +152,9 @@ export function JobsTable({
               <button
                 key={s.label}
                 type="button"
-                aria-pressed={selected}
+                role="radio"
+                aria-checked={selected}
+                tabIndex={selected ? 0 : -1}
                 onClick={() => setStatus(s.key)}
                 style={{
                   height: 28,

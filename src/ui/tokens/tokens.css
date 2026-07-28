@@ -37,7 +37,15 @@
   --color-ink-bright: #c2c7ce;
   --color-ink-secondary: #8b929c;
   --color-ink-tertiary: #5a616b;
-  /* Provenance lines and rail group headings — present, not competing. */
+  /*
+    Non-text only: a rail group heading, a breadcrumb separator.
+
+    It is **2.27:1 on the panel surface** and must never carry a word somebody
+    has to read. It was introduced for provenance lines and the quote number
+    under an inbox total, which are exactly the two places it does not belong —
+    both are read, and both now use tertiary or secondary. If a use of this
+    token is something you would ever squint at, it is the wrong token.
+  */
   --color-ink-faint: #4a505a;
   /* The em-dash for an absent value. Quieter than anything that is a value. */
   --color-ink-disabled: #3b414b;
