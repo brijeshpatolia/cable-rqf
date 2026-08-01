@@ -1,7 +1,7 @@
 import type { PrismaClient } from '@prisma/client';
 import type { AccessChange, AccountView, NewAccount, RoleChange } from '@/modules/accounts';
 import type { Role } from '@/modules/auth';
-import { generatePassword, hashPassword } from '@/infra/auth/password';
+import { hashPassword } from '@/infra/auth/password';
 import { prisma as defaultClient } from './client';
 
 /**
@@ -11,12 +11,14 @@ import { prisma as defaultClient } from './client';
  * a request is allowed and well-formed, and handed back a plan with the audit
  * row attached. This performs it.
  *
- * **The password is generated here and nowhere else.** It is created, hashed,
- * and returned exactly once to be shown on screen; it is never stored in
- * plaintext, never logged, and never passes through a module. If it is lost,
- * it is reset by generating another. That is the same guarantee the
- * command-line script has always given, moved behind a screen so granting a
- * colleague access no longer needs a checkout of the repository.
+ * **The password arrives already chosen and is hashed here.** It is never
+ * stored in plaintext, never logged, and never held after this call returns.
+ * The administrator types it and passes it on themselves, which is what they
+ * asked for and is how a handover actually works in a small office — a
+ * generated string has to be copied somewhere before it can be told to
+ * somebody, and that somewhere is usually worse than the person's memory.
+ *
+ * A lost password is replaced, not recovered. Nothing here can read one back.
  *
  * **Nothing is deleted.** Withdrawing access sets `disabled_at`, which keeps
  * the row, the name, and every audit event that account ever wrote. Deleting a
@@ -67,8 +69,7 @@ export class DbAccountRepository {
    * is precisely the row an audit is for, and a trail claiming an account that
    * was never made is worse than no trail.
    */
-  async create(plan: NewAccount): Promise<{ readonly password: string }> {
-    const password = generatePassword();
+  async create(plan: NewAccount, password: string): Promise<void> {
     const passwordHash = await hashPassword(password);
 
     await this.prisma.$transaction(async (tx) => {
@@ -95,8 +96,6 @@ export class DbAccountRepository {
       });
       return user;
     });
-
-    return { password };
   }
 
   async setAccess(plan: AccessChange): Promise<void> {
@@ -126,13 +125,19 @@ export class DbAccountRepository {
     });
   }
 
-  /** Reset a lost password. Returns the new one, shown once. */
-  async resetPassword(id: string): Promise<{ readonly password: string }> {
-    const password = generatePassword();
+  /**
+   * Replace a password.
+   *
+   * Sessions already signed in are left alone, deliberately: this is used far
+   * more often to help somebody who forgot theirs than to lock somebody out,
+   * and signing a colleague out of the screen they are working on to fix
+   * their password would be its own small unkindness. Withdrawing access is
+   * the control for the other case, and it is one click away.
+   */
+  async resetPassword(id: string, password: string): Promise<void> {
     await this.prisma.appUser.update({
       where: { id },
       data: { passwordHash: await hashPassword(password) },
     });
-    return { password };
   }
 }
