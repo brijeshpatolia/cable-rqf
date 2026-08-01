@@ -172,6 +172,15 @@ export async function openJobFromFile(
     );
   } catch (cause) {
     const why = cause instanceof Error ? cause.message : String(cause);
+    /*
+      The engineer gets the reason; the operator keeps the stack.
+
+      Catching this is what stopped a bad PDF taking the screen down — and it
+      also stopped the exception reaching the platform log, which is the only
+      reason the DOMMatrix failure was ever found. Handling an error should not
+      cost the evidence that it happened.
+    */
+    console.error(`[upload] ${file.name} could not be read`, cause);
     return {
       error:
         `${file.name} could not be read: ${why}. ` +

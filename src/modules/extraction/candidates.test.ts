@@ -188,6 +188,16 @@ describe('quantities in kilometres', () => {
     const out = read([{ ...row51, quantityUnit: 'km' }]).document;
     expect(out.lines[0]).toContain('19,000 m');
   });
+
+  it('say so when the claim is refused, because the model might be right', () => {
+    const out = read([{ ...row51, quantityUnit: 'km' }]).document;
+
+    // Refusing quietly is only safe if the model was wrong. If the document
+    // says `Kms.` and this did not recognise it, the line goes out at a
+    // thousandth of the length under a note saying nothing was converted.
+    expect(out.notes.join(' ')).toContain('Item 5.1 was read in metres');
+    expect(out.notes.join(' ')).toContain('Kilometres were claimed');
+  });
 });
 
 describe('a row with no core count', () => {

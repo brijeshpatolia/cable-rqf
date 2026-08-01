@@ -223,12 +223,24 @@ function gridOf(bytes: Uint8Array): {
  * customer. Disk in a serverless function is the cheaper thing to spend.
  */
 async function installPdfGlobals(): Promise<void> {
-  if ('DOMMatrix' in globalThis) return;
-  const canvas = await import('@napi-rs/canvas');
+  /*
+    Each one checked on its own. Testing `DOMMatrix` and then installing three
+    assumes a runtime either has all of them or none, which is precisely the
+    assumption that put this bug in production the first time: a global that is
+    present *somewhere* is not a global that is present here. A runtime that
+    supplies two of the three would have returned early and left pdf.js to
+    discover the third was missing.
+  */
+  const needed = ['DOMMatrix', 'Path2D', 'ImageData'] as const;
   const g = globalThis as Record<string, unknown>;
-  g['DOMMatrix'] = canvas.DOMMatrix;
-  g['Path2D'] = canvas.Path2D;
-  g['ImageData'] = canvas.ImageData;
+  if (needed.every((name) => name in g)) return;
+
+  const canvas = await import('@napi-rs/canvas');
+  for (const name of needed) {
+    // Nothing the runtime already provides is replaced — its own is likelier
+    // to agree with the rest of the runtime than a borrowed one.
+    if (!(name in g)) g[name] = canvas[name];
+  }
 }
 
 async function textOfPdf(bytes: Uint8Array): Promise<{

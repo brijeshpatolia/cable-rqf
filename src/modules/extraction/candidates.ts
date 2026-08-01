@@ -292,6 +292,14 @@ function verifiedTerm(
   return wordings.some((w) => containsPhrase(evidence, w)) ? answer : null;
 }
 
+/**
+ * A number this app can act on, or nothing.
+ *
+ * Zero is deliberately not one. A zero size is meaningless and a zero quantity
+ * is a question for the customer, and both arrive often enough in real
+ * documents that letting them through as "a number" would put an unpriceable
+ * line on screen with nothing said about why.
+ */
 function positive(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : null;
 }
@@ -334,6 +342,8 @@ export function readCandidates({
   const lines: string[] = [];
   const sources: SourceRegion[] = [];
   const refused: string[] = [];
+  /** Rows that were kept, but with something about them worth saying. */
+  const doubted: string[] = [];
 
   for (const candidate of candidates) {
     const numbered =
@@ -389,9 +399,24 @@ export function readCandidates({
       field failing costs a little precision; this one failing multiplies an
       order by a thousand, so it is the one claim checked against the words
       rather than taken on trust.
+
+      And when the claim is refused, it is refused *out loud*. Silently reading
+      it as metres is safe only if the model was wrong. If the document really
+      does print kilometres in a form this does not recognise — `Kms.`, `K.M.`
+      — then the quote goes out at a thousandth of the length, under a note
+      saying nothing was converted. That is the one shape of mistake this whole
+      file exists to prevent, and it would have been introduced by the check
+      meant to prevent it.
     */
-    const metres =
-      candidate.quantityUnit === 'km' && /\bkms?\b/i.test(evidence) ? quantity * 1000 : quantity;
+    const saysKm = /\bkms?\b/i.test(evidence);
+    if (candidate.quantityUnit === 'km' && !saysKm) {
+      doubted.push(
+        `${ref} was read in metres. Kilometres were claimed for it, and the text ` +
+          'it cites does not say kilometres — check the unit against the document ' +
+          'before this one is priced.',
+      );
+    }
+    const metres = candidate.quantityUnit === 'km' && saysKm ? quantity * 1000 : quantity;
 
     // Rule 3: the term the model chose, looked for in the words it quoted.
     const spec = AXES.map((axis) => verifiedTerm(terms, axis, candidate[axis], evidence)).filter(
@@ -421,6 +446,7 @@ export function readCandidates({
       'rounded or totalled — and every construction term was looked for in the ' +
       'words it was read from. Whatever failed either check was left empty for ' +
       'you to settle rather than filled in.',
+    ...doubted,
     ...(refused.length === 0
       ? []
       : [
@@ -436,6 +462,7 @@ export function readCandidates({
   };
 }
 
+/** Whitespace collapsed, so a quote matches text the PDF reader already folded. */
 const oneLine = (text: string) => text.replace(/\s+/g, ' ').trim();
 
 /**

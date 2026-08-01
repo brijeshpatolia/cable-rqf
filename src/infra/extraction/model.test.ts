@@ -1,5 +1,5 @@
 import { createServer, type Server } from 'node:http';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { readWithModel } from '@/infra/extraction/model';
 import { BUILT_IN_TERMS } from '@/modules/matching';
 
@@ -7,6 +7,19 @@ let server: Server;
 let seen: Record<string, unknown> = {};
 let answer = '{"lines":[{"itemRef":"5.1","cores":2,"sizeMm2":16,"quantity":19000,"quantityUnit":"m","conductor":"Cu","insulation":"XLPE","screen":null,"armour":"SWA","sheath":"PVC","voltage":"1kV","standard":null,"evidence":["5.1 2C X 16 mm² m 19000"]}]}';
 let stop = 'end_turn';
+
+/*
+  Restored after every test rather than by each test that moves them.
+
+  These are shared mutable fixtures, and a test that leaves `answer` set to
+  malformed JSON does not fail — the *next* test does, somewhere unrelated,
+  for a reason that is nowhere in its own body.
+*/
+const GOOD = { answer, stop };
+afterEach(() => {
+  answer = GOOD.answer;
+  stop = GOOD.stop;
+});
 
 const sse = (event: string, data: unknown) =>
   `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
@@ -70,7 +83,6 @@ afterAll(() => server.close());
 describe('the request', () => {
   it('is the one intended', async () => {
     await readWithModel('5.1 2C X 16 mm² m 19000', BUILT_IN_TERMS);
-    console.log(JSON.stringify({ ...seen, messages: undefined }, null, 2).slice(0, 2500));
 
     expect(seen['model']).toBe('claude-opus-5');
     expect(seen['stream']).toBe(true);
@@ -93,7 +105,6 @@ describe('the request', () => {
     stop = 'max_tokens';
     const out = await readWithModel('5.1 2C X 16 mm² m 19000', BUILT_IN_TERMS);
     expect(out).toEqual({ ok: false, why: expect.stringContaining('longer than one answer') });
-    stop = 'end_turn';
   });
 
   it('states a failure when the body is not the shape asked for', async () => {

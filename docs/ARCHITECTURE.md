@@ -194,6 +194,8 @@ Phase 3 only, PDFs only, and fenced tightly. Built; `infra/extraction/model.ts` 
 
 `ANTHROPIC_API_KEY` is the only variable this adds — one value, set on the deployment alongside `DATABASE_URL` and `AUTH_SECRET`, and in `.env` for local work. It is read on the server only and never reaches the browser.
 
+**What leaves the building.** With the key set, the text extracted from an uploaded **PDF** is sent to Anthropic's API. That is customer enquiry data and it crosses the boundary, so it is worth saying plainly. Nothing else goes with it: no spreadsheet, no pasted enquiry, no rate, no cost build-up, no price, no quote, no customer or account record. Documents over 400,000 characters are not sent at all. What the provider does with the text is governed by the commercial terms on the account the key belongs to, not by anything in this repository — read them before pointing this at a customer's document, and unset the key if the answer does not suit. The app works without it.
+
 Not built, and worth knowing: **calls are not cached and the model's raw answer is not stored.** The document's text is kept beside the job, so an extraction can be re-run, but it will not reproduce byte for byte. Re-uploading the same file pays for the same reading twice.
 
 ---

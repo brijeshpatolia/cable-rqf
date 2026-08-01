@@ -18,8 +18,23 @@ import { type Term } from '@/modules/matching';
  * trade for a tool ten people use to answer customers the same day.
  */
 
-/** Long enough for a forty-row schedule; short enough that a stall is not a hang. */
-const TIMEOUT_MS = 120_000;
+/**
+ * Two budgets, because one is not enough.
+ *
+ * `TIMEOUT_MS` bounds a single attempt; `BUDGET_MS` bounds all of them
+ * together. Only the second one matters, and it is the one an SDK will not
+ * give you: a per-attempt timeout multiplies by the retry count, so 120
+ * seconds with two retries is a six-minute worst case on the upload request
+ * path. Past the platform's function limit the process is *killed*, and a
+ * killed function cannot state its reason — which is the one promise this file
+ * makes. A budget that expires is an abort this code catches.
+ *
+ * One retry, not two. A second retry buys a small amount of luck against a
+ * blip and costs the whole time budget; the engineer would rather be told in
+ * three minutes than kept waiting for five.
+ */
+const TIMEOUT_MS = 90_000;
+const BUDGET_MS = 190_000;
 
 /**
  * Documents larger than this are not sent.
@@ -76,7 +91,7 @@ export async function readWithModel(
   }
 
   try {
-    const client = new Anthropic({ apiKey: key, timeout: TIMEOUT_MS, maxRetries: 2 });
+    const client = new Anthropic({ apiKey: key, timeout: TIMEOUT_MS, maxRetries: 1 });
 
     /*
       Streamed because a long schedule is a long answer, and a non-streaming
@@ -84,16 +99,27 @@ export async function readWithModel(
       after two minutes of work that was going to succeed.
     */
     const message = await client.messages
-      .stream({
-        model: 'claude-opus-5',
-        max_tokens: 32_000,
-        // Adaptive: deciding which heading governs which rows is the one thing
-        // being asked for, and it is exactly the sort of reasoning that is
-        // worth a moment's thought and cheap to get wrong quickly.
-        thinking: { type: 'adaptive' },
-        output_config: { format: { type: 'json_schema', schema: schemaFor(terms) } },
-        messages: [{ role: 'user', content: `${INSTRUCTIONS}\n\n---\n\n${text}` }],
-      })
+      .stream(
+        {
+          model: 'claude-opus-5',
+          /*
+            Generous, because the way this budget fails is total. Thinking
+            tokens are spent out of the same allowance, and a schedule that
+            runs past it stops mid-answer — at which point the rows that did
+            arrive are thrown away below, because half a schedule on screen
+            looks exactly like a whole one. Unspent tokens cost nothing.
+          */
+          max_tokens: 64_000,
+          // Adaptive: deciding which heading governs which rows is the one
+          // thing being asked for, and it is exactly the sort of reasoning
+          // that is worth a moment's thought and cheap to get wrong quickly.
+          thinking: { type: 'adaptive' },
+          output_config: { format: { type: 'json_schema', schema: schemaFor(terms) } },
+          messages: [{ role: 'user', content: `${INSTRUCTIONS}\n\n---\n\n${text}` }],
+        },
+        // The budget, spanning the retry rather than resetting with it.
+        { signal: AbortSignal.timeout(BUDGET_MS) },
+      )
       .finalMessage();
 
     // A refusal has no content worth reading, and reading it as an empty
