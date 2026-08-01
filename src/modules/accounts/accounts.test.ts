@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Actor, Role } from '@/modules/auth';
 import {
+  MIN_PASSWORD,
+  checkPassword,
   normaliseEmail,
   planAccessChange,
   planNewAccount,
@@ -196,6 +198,38 @@ describe('changing a role', () => {
     const r = planRoleChange(actor('rateOwner'), account(), 'admin', [account()]);
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error.kind).toBe('FORBIDDEN');
+  });
+});
+
+describe('a password the administrator chose', () => {
+  it('accepts what somebody typed on purpose, including a weak one', () => {
+    /*
+      Not this module's business. An administrator with the authority to grant
+      access has the authority to pick a password, and a screen that argued
+      with them would be overruled by a sticky note.
+    */
+    for (const p of ['sudhir@123', 'password', 'correct horse battery staple']) {
+      expect(checkPassword(p).ok, p).toBe(true);
+    }
+  });
+
+  it('refuses a length that is obviously a slip', () => {
+    for (const p of ['', 'a', 'short12']) {
+      const r = checkPassword(p);
+      expect(r.ok, p).toBe(false);
+      if (!r.ok) expect(r.error.kind).toBe('PASSWORD_TOO_SHORT');
+    }
+  });
+
+  it('says how short it was, so the message is actionable', () => {
+    const r = checkPassword('abc');
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error.message).toContain('has 3');
+  });
+
+  it('accepts exactly the minimum', () => {
+    expect(checkPassword('a'.repeat(MIN_PASSWORD)).ok).toBe(true);
+    expect(checkPassword('a'.repeat(MIN_PASSWORD - 1)).ok).toBe(false);
   });
 });
 

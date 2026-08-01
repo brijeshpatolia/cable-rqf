@@ -25,6 +25,7 @@ export type AccountErrorKind =
   | 'EMAIL_INVALID'
   | 'EMAIL_TAKEN'
   | 'NAME_REQUIRED'
+  | 'PASSWORD_TOO_SHORT'
   | 'SELF_DISABLE'
   | 'SELF_DEMOTE'
   | 'LAST_ADMIN';
@@ -68,6 +69,32 @@ export interface NewAccount {
   readonly name: string;
   readonly role: Role;
   readonly audit: AuditRow;
+}
+
+/**
+ * The one rule kept on a password the administrator chooses.
+ *
+ * Passwords used to be generated here, which made them strong and made nobody
+ * responsible for remembering them. Chosen ones are weaker on average and the
+ * administrator ends up knowing everybody's — both true, both accepted, and
+ * neither is a reason for this module to start refusing what somebody with
+ * authority typed on purpose.
+ *
+ * What it will not accept is a length that is obviously an accident. Eight is
+ * low enough that no deliberate password fails it and high enough that a
+ * stray keystroke does. A pattern demanding a capital and a digit would only
+ * teach people to end everything in `1!`.
+ */
+export const MIN_PASSWORD = 8;
+
+export function checkPassword(raw: string): Result<string> {
+  if (raw.length < MIN_PASSWORD) {
+    return err(
+      'PASSWORD_TOO_SHORT',
+      `A password needs at least ${MIN_PASSWORD} characters. This one has ${raw.length}.`,
+    );
+  }
+  return { ok: true, value: raw };
 }
 
 /**

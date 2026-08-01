@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { session } from '@/infra/auth/session';
 import { accountStore } from '@/infra/repositories';
 import {
+  checkPassword,
   planAccessChange,
   planNewAccount,
   planRoleChange,
@@ -27,13 +28,14 @@ import { authorise, type Role } from '@/modules/auth';
 export interface AccountsResult {
   readonly error?: string;
   readonly ok?: string;
-  /**
-   * The generated password, returned exactly once and never stored in
-   * plaintext. It exists in this object for one render and nowhere else.
-   */
-  readonly password?: string;
   readonly email?: string;
-  /** Echoed back so a refusal does not cost the administrator their typing. */
+  /**
+   * Echoed back so a refusal does not cost the administrator their typing.
+   *
+   * The password is deliberately absent: a rejected form should not send it
+   * back down the wire and into the page a second time. Retyping eight
+   * characters is cheaper than that.
+   */
   readonly sent?: { readonly email: string; readonly name: string; readonly role: string };
 }
 
@@ -59,6 +61,9 @@ export async function createAccount(
   const role = asRole(raw);
   if (role === null) return { error: `"${raw}" is not a role.`, sent };
 
+  const password = checkPassword(String(form.get('password') ?? ''));
+  if (!password.ok) return { error: password.error.message, sent };
+
   const existing = await accountStore.list();
   const plan = planNewAccount(
     gate.actor,
@@ -67,17 +72,16 @@ export async function createAccount(
   );
   if (!plan.ok) return { error: plan.error.message, sent };
 
-  const { password } = await accountStore.create(plan.value);
+  await accountStore.create(plan.value, password.value);
   revalidatePath('/accounts');
 
   /*
-    The password comes back rather than being emailed, because this app sends
-    no mail. Said plainly on the screen: it is shown once and cannot be
-    recovered, only replaced.
+    The password is not echoed back. The administrator chose it, so they
+    already know it — and this app sends no mail, so telling them is not this
+    screen's job either way.
   */
   return {
-    ok: `${plan.value.name} can now sign in.`,
-    password,
+    ok: `${plan.value.name} can sign in with the password you set.`,
     email: plan.value.email,
   };
 }
@@ -151,10 +155,16 @@ export async function resetPassword(
   const found = await target(String(form.get('id') ?? ''));
   if (!found.ok) return { error: found.error };
 
-  const { password } = await accountStore.resetPassword(found.account.id);
-  return {
-    ok: `New password for ${found.account.name}.`,
-    password,
-    email: found.account.email,
-  };
+  const password = checkPassword(String(form.get('password') ?? ''));
+  if (!password.ok) return { error: password.error.message };
+
+  await accountStore.resetPassword(found.account.id, password.value);
+  /*
+    No audit row. The trail records what somebody may do — roles, access,
+    account creation — and a password change alters none of that. Writing one
+    would put a row beside every genuine authority change that is only ever
+    "somebody forgot theirs", which is noise in the one place that should not
+    have any.
+  */
+  return { ok: `${found.account.name} can now sign in with the new password.` };
 }
