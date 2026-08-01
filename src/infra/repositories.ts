@@ -4,6 +4,7 @@ import type {
   QuoteRepository,
   RateRepository,
 } from '@/modules/rates';
+import { DbAccountRepository } from './db/account-repository';
 import { DbAuditRepository } from './db/audit-repository';
 import { DbProductRepository, DbRateRepository } from './db/repository';
 import { DbCatalogueRepository } from './db/catalogue-repository';
@@ -93,6 +94,15 @@ export const catalogueStore = new DbCatalogueRepository();
  * screen asks.
  */
 export const auditStore = new DbAuditRepository();
+
+/**
+ * Who may use the app.
+ *
+ * Not on `repositories` because nothing in `modules/` reads accounts to do its
+ * work — authority arrives as an `Actor` the session already resolved. This is
+ * for the one screen that administers them.
+ */
+export const accountStore = new DbAccountRepository();
 
 /** True when the app is reading real data rather than the seeded stand-in. */
 export const isDatabaseBacked = !useMemory;

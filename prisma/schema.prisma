@@ -41,6 +41,7 @@ datasource db {
 // provider — who is a Rate Owner stays this system's decision.
 
 enum Role {
+  admin
   rateOwner
   engineer
   viewer

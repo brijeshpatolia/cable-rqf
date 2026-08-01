@@ -7,13 +7,24 @@
  * administrator, which for ten internal users is the right amount of process.
  * The password is generated, shown once, and never recoverable — reset it by
  * running this again.
+ *
+ * **Day-to-day this is no longer the way in.** An administrator makes accounts
+ * on the Accounts screen, which needs no checkout of the repository. This
+ * stays for the one account that screen cannot make: the first administrator,
+ * because until one exists nobody can reach the screen that makes them.
+ *
+ * `--password` sets a chosen password instead of a generated one. It exists
+ * for that first account and for a locked-out administrator, and it is worse
+ * than the generated path in two ways worth saying out loud: a human-chosen
+ * password is usually weaker, and it is visible in the shell history of
+ * whoever ran it. Prefer the generated one.
  */
 import 'dotenv/config';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
 import { generatePassword, hashPassword } from '../src/infra/auth/password';
 
-const ROLES = ['rateOwner', 'engineer', 'viewer'] as const;
+const ROLES = ['admin', 'rateOwner', 'engineer', 'viewer'] as const;
 type Role = (typeof ROLES)[number];
 
 function arg(name: string): string | undefined {
@@ -24,6 +35,7 @@ function arg(name: string): string | undefined {
 const email = arg('email')?.trim().toLowerCase();
 const name = arg('name')?.trim();
 const role = arg('role')?.trim() as Role | undefined;
+const chosen = arg('password');
 
 if (email === undefined || name === undefined || role === undefined) {
   console.error(
@@ -46,7 +58,7 @@ if (connectionString === undefined) {
 
 const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
 
-const password = generatePassword();
+const password = chosen ?? generatePassword();
 const passwordHash = await hashPassword(password);
 
 const user = await prisma.appUser.upsert({
@@ -69,7 +81,11 @@ await prisma.auditEvent.create({
 });
 
 console.log(`\n  ${user.email}  (${role})`);
-console.log(`  password: ${password}`);
-console.log('\n  Shown once. Store it in a password manager.\n');
+console.log(`  password: ${chosen === undefined ? password : '(the one you supplied)'}`);
+console.log(
+  chosen === undefined
+    ? '\n  Shown once. Store it in a password manager.\n'
+    : '\n  Chosen rather than generated — it is in your shell history. Clear it.\n',
+);
 
 await prisma.$disconnect();

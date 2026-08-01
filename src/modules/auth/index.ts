@@ -13,7 +13,7 @@
  * stays Nuhas's decision, not their IT department's.
  */
 
-export type Role = 'rateOwner' | 'engineer' | 'viewer';
+export type Role = 'admin' | 'rateOwner' | 'engineer' | 'viewer';
 
 export interface Actor {
   readonly id: string;
@@ -34,6 +34,7 @@ export type Capability =
   | 'lme.enter'
   | 'line.override'
   | 'quote.approve'
+  | 'account.manage'
   | 'read';
 
 /**
@@ -44,6 +45,33 @@ export type Capability =
  * worse — a silent grant.
  */
 const GRANTS: Readonly<Record<Role, readonly Capability[]>> = {
+  /*
+    Everything, including both halves of a separation the other roles keep.
+
+    §2.4 splits rate editing from quote approval on purpose: the person who
+    sets the copper price should not be the person who signs off the quote
+    struck on it. That control assumes enough people to divide the work
+    between, which a company of this size does not always have, and an
+    administrator who cannot approve a quote at seven in the evening is a
+    control that gets worked around rather than observed.
+
+    So it is granted, and the cost is stated rather than hidden: an admin
+    acting alone leaves no second pair of eyes on their own rate change. What
+    survives is attribution — every rate, every approval and every account
+    carries the name of whoever did it, permanently and unerasably, which is
+    the half of the control that still works with one person.
+
+    `account.manage` is admin-only and stays that way. A Rate Owner who could
+    mint accounts could mint themselves a second one.
+  */
+  admin: [
+    'rate.edit',
+    'lme.enter',
+    'line.override',
+    'quote.approve',
+    'account.manage',
+    'read',
+  ],
   rateOwner: ['rate.edit', 'lme.enter', 'read'],
   engineer: ['line.override', 'quote.approve', 'read'],
   viewer: ['read'],
@@ -58,6 +86,7 @@ const GRANTS: Readonly<Record<Role, readonly Capability[]>> = {
  * whether the screen is broken.
  */
 const ROLE_LABELS: Readonly<Record<Role, string>> = {
+  admin: 'Administrator',
   rateOwner: 'Rate Owner',
   engineer: 'Engineer',
   viewer: 'Viewer',
@@ -109,6 +138,8 @@ export function authorise(
 
 export function describeRole(role: Role): string {
   switch (role) {
+    case 'admin':
+      return 'An administrator';
     case 'rateOwner':
       return 'The rate owner';
     case 'engineer':
@@ -128,6 +159,8 @@ export function describeCapability(capability: Capability): string {
       return 'override a line price';
     case 'quote.approve':
       return 'approve a quote';
+    case 'account.manage':
+      return 'manage accounts';
     case 'read':
       return 'read this';
   }
