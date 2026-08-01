@@ -430,8 +430,11 @@ describe('the request schema', () => {
     for (const name of ['armour', 'voltage', 'quantityUnit']) {
       const field = fieldOf(schemaFor(BUILT_IN_TERMS), name);
 
-      expect(field.anyOf).toHaveLength(2);
-      expect(field.anyOf?.map((b) => b.type)).toContain('null');
+      // Both branches named, not just "there are two of them and one is null".
+      // Two null branches would satisfy the looser reading and would send a
+      // field the model can only ever answer nothing to.
+      expect(field.anyOf?.map((b) => b.type).sort()).toEqual(['null', 'string']);
+      expect(choices(field)?.length).toBeGreaterThan(0);
       expect(field).not.toHaveProperty('enum');
     }
   });
