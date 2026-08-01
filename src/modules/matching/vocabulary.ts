@@ -150,11 +150,40 @@ const VOLTAGE: readonly Term[] = [
     axis: 'voltage',
     synonyms: ['1kv', '0.6/1kv', '600/1000v', '0.6/1 kv', '1000v', '1 kv'],
   },
-  { canonical: '6kV', axis: 'voltage', synonyms: ['6kv', '3.6/6kv', '6 kv'] },
-  { canonical: '15kV', axis: 'voltage', synonyms: ['15kv', '8.7/15kv', '15 kv'] },
-  { canonical: '30kV', axis: 'voltage', synonyms: ['30kv', '18/30kv', '30 kv'] },
-  { canonical: '11kV', axis: 'voltage', synonyms: ['11kv', '6.35/11kv', '11 kv'] },
-  { canonical: '33kV', axis: 'voltage', synonyms: ['33kv', '19/33kv', '33 kv'] },
+  /*
+    The bracketed form is how MV cable is actually specified.
+
+    IEC writes a grade as U0/U(Um) — `3.6/6(7.2)kV` — and every MTO that came
+    out of an engineering house in the region writes it that way. Without these
+    the app read a whole medium-voltage schedule and could not say what voltage
+    any of it was, which on MV is most of the price. Both spacings are listed
+    because the bracket is set with a space as often as without.
+  */
+  {
+    canonical: '6kV',
+    axis: 'voltage',
+    synonyms: ['6kv', '3.6/6kv', '6 kv', '3.6/6(7.2)kv', '3.6/6 (7.2)kv'],
+  },
+  {
+    canonical: '15kV',
+    axis: 'voltage',
+    synonyms: ['15kv', '8.7/15kv', '15 kv', '8.7/15(17.5)kv', '8.7/15 (17.5)kv'],
+  },
+  {
+    canonical: '30kV',
+    axis: 'voltage',
+    synonyms: ['30kv', '18/30kv', '30 kv', '18/30(36)kv', '18/30 (36)kv'],
+  },
+  {
+    canonical: '11kV',
+    axis: 'voltage',
+    synonyms: ['11kv', '6.35/11kv', '11 kv', '6.35/11(12)kv', '6.35/11 (12)kv'],
+  },
+  {
+    canonical: '33kV',
+    axis: 'voltage',
+    synonyms: ['33kv', '19/33kv', '33 kv', '19/33(36)kv', '19/33 (36)kv'],
+  },
 ];
 
 const STANDARD: readonly Term[] = [

@@ -144,11 +144,49 @@ export async function openJobFromFile(
     };
   }
 
-  const read = await readDocument(
-    new Uint8Array(await file.arrayBuffer()),
-    file.name,
-    file.type,
-  );
+  /*
+    A reader that throws must not take the page down with it.
+
+    Everything else in this action refuses in words and returns; this one did
+    not, so a file the PDF library could not open — encrypted, truncated, or
+    built by something it disagrees with — replaced the whole screen with
+    "Application error: a server-side exception has occurred" and lost the
+    upload. Reported from production on a real customer RFQ.
+
+    The reason is put in front of the engineer rather than only in a log they
+    cannot read. This is an internal tool with ten accounts, all of whom would
+    rather know what went wrong than be told something did — and the app's own
+    rule is that a refusal states its condition. The alternative is what
+    happened: a white screen and a digest number.
+  */
+  let read: Awaited<ReturnType<typeof readDocument>>;
+  try {
+    read = await readDocument(
+      new Uint8Array(await file.arrayBuffer()),
+      file.name,
+      file.type,
+      // The dictionary as it stands, not as it was compiled: a PDF is read
+      // against the terms the Rate Owner has taught the app, the same ones the
+      // parser will use on the lines that come back.
+      (await vocabularyStore.dictionary()).terms,
+    );
+  } catch (cause) {
+    const why = cause instanceof Error ? cause.message : String(cause);
+    /*
+      The engineer gets the reason; the operator keeps the stack.
+
+      Catching this is what stopped a bad PDF taking the screen down — and it
+      also stopped the exception reaching the platform log, which is the only
+      reason the DOMMatrix failure was ever found. Handling an error should not
+      cost the evidence that it happened.
+    */
+    console.error(`[upload] ${file.name} could not be read`, cause);
+    return {
+      error:
+        `${file.name} could not be read: ${why}. ` +
+        'Paste the cable lines in instead — the enquiry is not lost.',
+    };
+  }
 
   const rawText = read.lines.length > 0 ? read.lines.join('\n') : read.rawText;
   if (rawText.trim() === '') {

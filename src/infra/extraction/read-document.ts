@@ -5,7 +5,10 @@ import {
   type TextRegion,
   extractFromGrid,
   extractFromText,
+  readCandidates,
 } from '@/modules/extraction';
+import { type Term, BUILT_IN_TERMS } from '@/modules/matching';
+import { readWithModel } from './model';
 
 /**
  * Turning an uploaded file into something the extraction module can read.
@@ -35,6 +38,12 @@ export async function readDocument(
   bytes: Uint8Array,
   filename: string,
   mime: string,
+  /**
+   * The dictionary as it stands, so the model may answer in terms the Rate
+   * Owner taught the app rather than only the ones compiled into it. Defaulted
+   * so a caller that has no store to hand still gets the built-ins.
+   */
+  terms: readonly Term[] = BUILT_IN_TERMS,
 ): Promise<ExtractedDocument> {
   switch (kindOf(filename, mime)) {
     case 'spreadsheet': {
@@ -43,7 +52,7 @@ export async function readDocument(
     }
     case 'pdf': {
       const { text, pages } = await textOfPdf(bytes);
-      return extractFromText(text, pages);
+      return readPdfText(text, pages, terms);
     }
     case 'text':
       return extractFromText(new TextDecoder().decode(bytes));
@@ -60,6 +69,78 @@ export async function readDocument(
         rawText: '',
       };
   }
+}
+
+/**
+ * A PDF's text, read twice.
+ *
+ * The pattern reader runs first and always. It costs nothing, it cannot fail,
+ * and its answer is what the app falls back to whenever the model is absent,
+ * slow, or unconvincing — which keeps "can an engineer open an enquiry today"
+ * independent of anybody else's uptime.
+ *
+ * The model then reads the same text for its *layout*: which heading governs
+ * which rows, which is the thing a regular expression cannot see and the
+ * reason a real MTO comes out of the pattern reader as forty Partial lines and
+ * nothing priced. Its answer is checked to destruction in
+ * `modules/extraction`; what survives is text in the form a person would have
+ * pasted.
+ *
+ * **When the two disagree on how many lines there are, the engineer is told.**
+ * The model's reading is preferred because it carries the construction, and
+ * "fewer lines, but each one priceable" is usually the better reading — but it
+ * is not obviously so, and a count that quietly dropped eleven rows is exactly
+ * the kind of thing this app exists to say out loud rather than average away.
+ */
+async function readPdfText(
+  text: string,
+  pages: readonly TextRegion[],
+  terms: readonly Term[],
+): Promise<ExtractedDocument> {
+  const byPattern = extractFromText(text, pages);
+
+  const asked = await readWithModel(text, terms);
+  if (asked === null) return byPattern;
+
+  if (!asked.ok) {
+    return {
+      ...byPattern,
+      notes: [
+        ...byPattern.notes,
+        `The closer reading of this document’s layout did not come back — ${asked.why}. ` +
+          'What is below was read by pattern alone, so check it against the ' +
+          'document, and try the upload again in a minute if it looks thin.',
+      ],
+    };
+  }
+
+  const read = readCandidates({ candidates: asked.candidates, text, regions: pages, terms });
+  if (read.document.lines.length === 0) {
+    if (byPattern.lines.length === 0) return byPattern;
+    return {
+      ...byPattern,
+      notes: [
+        ...byPattern.notes,
+        'These lines were read by pattern. Nothing survived the closer reading ' +
+          'of the document’s layout, so the constructions in the headings — ' +
+          'voltage, armour, sheath — are not on the lines below and will have ' +
+          'to be settled by hand.',
+      ],
+    };
+  }
+
+  if (read.document.lines.length >= byPattern.lines.length) return read.document;
+
+  return {
+    ...read.document,
+    notes: [
+      ...read.document.notes,
+      `Reading the text by pattern alone would have found ${byPattern.lines.length} ` +
+        `line${byPattern.lines.length === 1 ? '' : 's'} rather than ${read.document.lines.length}, ` +
+        'without any of the construction above. The difference is worth a look ' +
+        'at the document before this quote goes out.',
+    ],
+  };
 }
 
 /**
@@ -113,10 +194,60 @@ function gridOf(bytes: Uint8Array): {
  * and the quantity beside it into two separate lines, which is precisely the
  * pairing the extractor needs.
  */
+/**
+ * The browser globals pdf.js needs before it will even load.
+ *
+ * `pdf.mjs` runs `const SCALE_MATRIX = new DOMMatrix()` at module top level.
+ * Node has no `DOMMatrix`, so pdf.js tries to borrow one from
+ * `@napi-rs/canvas` — inside a `try`/`catch` that only warns on failure. When
+ * that package is absent the warning is logged, the next line throws
+ * `ReferenceError: DOMMatrix is not defined`, and the *import itself* fails.
+ *
+ * On Vercel it was absent. It is an optional dependency reached through a
+ * dynamic `require` inside a `catch`, which the bundler's file tracing cannot
+ * see, so nothing put it in the deployed function. Locally it resolved and
+ * everything worked — the failure existed only where nobody could run a
+ * debugger. It took a real customer RFQ and the production log to find.
+ *
+ * So the dependency is declared and installed here instead of being wished
+ * for: a static import is something a bundler can follow, and assigning the
+ * globals before the import means pdf.js finds them already present rather
+ * than going looking.
+ *
+ * **The real implementation, not a stub.** Writing a small `DOMMatrix` would
+ * be lighter, and `SCALE_MATRIX` is only read on the rendering path this app
+ * never calls — today. A stub would be correct only for as long as that stays
+ * true, and the way it would fail is by silently mis-transforming text
+ * positions, which decide how characters group into lines, which decide what
+ * quantity gets read off an RFQ. Wrong text out of a PDF is a wrong price to a
+ * customer. Disk in a serverless function is the cheaper thing to spend.
+ */
+async function installPdfGlobals(): Promise<void> {
+  /*
+    Each one checked on its own. Testing `DOMMatrix` and then installing three
+    assumes a runtime either has all of them or none, which is precisely the
+    assumption that put this bug in production the first time: a global that is
+    present *somewhere* is not a global that is present here. A runtime that
+    supplies two of the three would have returned early and left pdf.js to
+    discover the third was missing.
+  */
+  const needed = ['DOMMatrix', 'Path2D', 'ImageData'] as const;
+  const g = globalThis as Record<string, unknown>;
+  if (needed.every((name) => name in g)) return;
+
+  const canvas = await import('@napi-rs/canvas');
+  for (const name of needed) {
+    // Nothing the runtime already provides is replaced — its own is likelier
+    // to agree with the rest of the runtime than a borrowed one.
+    if (!(name in g)) g[name] = canvas[name];
+  }
+}
+
 async function textOfPdf(bytes: Uint8Array): Promise<{
   readonly text: string;
   readonly pages: readonly TextRegion[];
 }> {
+  await installPdfGlobals();
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
 
   const doc = await pdfjs.getDocument({

@@ -183,13 +183,21 @@ Client components are the exception list, and it stays short: `DataTable` (virtu
 
 ## 8. The LLM boundary
 
-Phase 3 only, and fenced tightly:
+Phase 3 only, PDFs only, and fenced tightly. Built; `infra/extraction/model.ts` is the request and `modules/extraction/candidates.ts` is every rule about what may be believed.
 
-- Lives in `infra/llm/`, behind a port declared in `modules/extraction`. Swapping providers touches one file.
-- **Structured output only.** A strict schema, no free text, no reasoning in the output path.
+- **One file talks to a model.** `infra/extraction/model.ts` sends text and returns parsed JSON. Swapping providers touches it and nothing else.
+- **Structured output only.** A strict schema, no free text, no reasoning in the output path. The spec axes are enums *built from the dictionary at call time*, so the model cannot answer with vocabulary the app does not hold, and a term the Rate Owner taught it last week is available today.
 - The controlling instruction: *any field you are not certain of, return null.* An empty flagged field is a success; a wrong field is a failure.
-- **The model never touches pricing and never touches matching.** It converts document layout into candidate fields. Determinism resumes immediately after.
-- Every call is cached by content hash and logged with its inputs, so any extraction can be replayed and audited.
+- **The model never touches pricing and never touches matching.** It converts document layout into candidate fields — which heading governs which rows, which is the one thing a regular expression cannot see. Its output is text in the form a person would have pasted, and everything after that is the same deterministic path as always.
+- **Nothing is taken on trust.** Every row must quote the document verbatim; a quote that is not in the document costs the row. Every number must be printed in what was quoted, compared as a number rather than a substring, so nothing can be computed, rounded or totalled into a price. The size and the quantity must come off the *same row* — one excerpt stating both, or, where the PDF split the row in two, the quantity quoted from the line bearing that row's own number with the description printed beside it. Every spec term must be found in the words that were quoted. Whatever fails is dropped and named in the notes with its item number.
+- **What it still cannot catch.** Two rows split across adjacent lines are genuinely ambiguous in the text: 5.1's description sits as close to 5.2's number as to its own. If the model pairs them the wrong way round, nothing here can tell. That is what the source pane beside every line is for — it opens on the row the quantity was read off. The guards stop invention and distant mixing; the engineer is the check on the row next door.
+- **Optional.** With no `ANTHROPIC_API_KEY` the app reads documents exactly as it did before. A call that fails never fails the upload; the pattern reading is used and the engineer is told the closer reading did not come back.
+
+`ANTHROPIC_API_KEY` is the only variable this adds — one value, set on the deployment alongside `DATABASE_URL` and `AUTH_SECRET`, and in `.env` for local work. It is read on the server only and never reaches the browser.
+
+**What leaves the building.** With the key set, the text extracted from an uploaded **PDF** is sent to Anthropic's API. That is customer enquiry data and it crosses the boundary, so it is worth saying plainly. Nothing else goes with it: no spreadsheet, no pasted enquiry, no rate, no cost build-up, no price, no quote, no customer or account record. Documents over 400,000 characters are not sent at all. What the provider does with the text is governed by the commercial terms on the account the key belongs to, not by anything in this repository — read them before pointing this at a customer's document, and unset the key if the answer does not suit. The app works without it.
+
+Not built, and worth knowing: **calls are not cached and the model's raw answer is not stored.** The document's text is kept beside the job, so an extraction can be re-run, but it will not reproduce byte for byte. Re-uploading the same file pays for the same reading twice.
 
 ---
 
