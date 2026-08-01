@@ -5,7 +5,10 @@ import {
   type TextRegion,
   extractFromGrid,
   extractFromText,
+  readCandidates,
 } from '@/modules/extraction';
+import { type Term, BUILT_IN_TERMS } from '@/modules/matching';
+import { readWithModel } from './model';
 
 /**
  * Turning an uploaded file into something the extraction module can read.
@@ -35,6 +38,12 @@ export async function readDocument(
   bytes: Uint8Array,
   filename: string,
   mime: string,
+  /**
+   * The dictionary as it stands, so the model may answer in terms the Rate
+   * Owner taught the app rather than only the ones compiled into it. Defaulted
+   * so a caller that has no store to hand still gets the built-ins.
+   */
+  terms: readonly Term[] = BUILT_IN_TERMS,
 ): Promise<ExtractedDocument> {
   switch (kindOf(filename, mime)) {
     case 'spreadsheet': {
@@ -43,7 +52,7 @@ export async function readDocument(
     }
     case 'pdf': {
       const { text, pages } = await textOfPdf(bytes);
-      return extractFromText(text, pages);
+      return readPdfText(text, pages, terms);
     }
     case 'text':
       return extractFromText(new TextDecoder().decode(bytes));
@@ -60,6 +69,78 @@ export async function readDocument(
         rawText: '',
       };
   }
+}
+
+/**
+ * A PDF's text, read twice.
+ *
+ * The pattern reader runs first and always. It costs nothing, it cannot fail,
+ * and its answer is what the app falls back to whenever the model is absent,
+ * slow, or unconvincing — which keeps "can an engineer open an enquiry today"
+ * independent of anybody else's uptime.
+ *
+ * The model then reads the same text for its *layout*: which heading governs
+ * which rows, which is the thing a regular expression cannot see and the
+ * reason a real MTO comes out of the pattern reader as forty Partial lines and
+ * nothing priced. Its answer is checked to destruction in
+ * `modules/extraction`; what survives is text in the form a person would have
+ * pasted.
+ *
+ * **When the two disagree on how many lines there are, the engineer is told.**
+ * The model's reading is preferred because it carries the construction, and
+ * "fewer lines, but each one priceable" is usually the better reading — but it
+ * is not obviously so, and a count that quietly dropped eleven rows is exactly
+ * the kind of thing this app exists to say out loud rather than average away.
+ */
+async function readPdfText(
+  text: string,
+  pages: readonly TextRegion[],
+  terms: readonly Term[],
+): Promise<ExtractedDocument> {
+  const byPattern = extractFromText(text, pages);
+
+  const asked = await readWithModel(text, terms);
+  if (asked === null) return byPattern;
+
+  if (!asked.ok) {
+    return {
+      ...byPattern,
+      notes: [
+        ...byPattern.notes,
+        `The closer reading of this document’s layout did not come back — ${asked.why}. ` +
+          'What is below was read by pattern alone, so check it against the ' +
+          'document, and try the upload again in a minute if it looks thin.',
+      ],
+    };
+  }
+
+  const read = readCandidates({ candidates: asked.candidates, text, regions: pages, terms });
+  if (read.document.lines.length === 0) {
+    if (byPattern.lines.length === 0) return byPattern;
+    return {
+      ...byPattern,
+      notes: [
+        ...byPattern.notes,
+        'These lines were read by pattern. Nothing survived the closer reading ' +
+          'of the document’s layout, so the constructions in the headings — ' +
+          'voltage, armour, sheath — are not on the lines below and will have ' +
+          'to be settled by hand.',
+      ],
+    };
+  }
+
+  if (read.document.lines.length >= byPattern.lines.length) return read.document;
+
+  return {
+    ...read.document,
+    notes: [
+      ...read.document.notes,
+      `Reading the text by pattern alone would have found ${byPattern.lines.length} ` +
+        `line${byPattern.lines.length === 1 ? '' : 's'} rather than ${read.document.lines.length}, ` +
+        'without any of the construction above. The difference is worth a look ' +
+        'at the document before this quote goes out.',
+    ],
+  };
 }
 
 /**

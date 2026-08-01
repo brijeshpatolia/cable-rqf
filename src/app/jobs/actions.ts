@@ -165,6 +165,10 @@ export async function openJobFromFile(
       new Uint8Array(await file.arrayBuffer()),
       file.name,
       file.type,
+      // The dictionary as it stands, not as it was compiled: a PDF is read
+      // against the terms the Rate Owner has taught the app, the same ones the
+      // parser will use on the lines that come back.
+      (await vocabularyStore.dictionary()).terms,
     );
   } catch (cause) {
     const why = cause instanceof Error ? cause.message : String(cause);
