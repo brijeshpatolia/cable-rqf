@@ -113,7 +113,7 @@ export function Rail({
         style={{ padding: '18px 18px 16px', gap: 10 }}
       >
         {/*
-          Placeholder for the Nuhas Oman mark. A copper square rather than a
+          Placeholder for the company mark. A copper square rather than a
           letterform, so nobody mistakes it for a finished logo.
         */}
         <div
@@ -126,26 +126,24 @@ export function Rail({
             flexShrink: 0,
           }}
         />
-        <div style={{ lineHeight: 1.15 }}>
-          <div
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 13.5,
-              fontWeight: 600,
-              letterSpacing: '-0.01em',
-            }}
-          >
-            Cable Quoting
-          </div>
-          <div
-            style={{
-              fontSize: 'var(--text-mono-micro)',
-              color: 'var(--color-ink-tertiary)',
-              letterSpacing: '0.04em',
-            }}
-          >
-            NUHAS OMAN LLC
-          </div>
+        {/*
+          The product name alone. The company name used to sit under it, which
+          was my addition in the 2026 shell and not asked for — an operator who
+          works here all day does not need telling which company they work for,
+          and it made the app read as marketing for its own owner. Where the
+          name genuinely belongs is on the quote that goes out, which is a
+          document about the company rather than a tool used inside it.
+        */}
+        <div
+          style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: 13.5,
+            fontWeight: 600,
+            letterSpacing: '-0.01em',
+            lineHeight: 1.15,
+          }}
+        >
+          Cable Quoting
         </div>
       </div>
 
