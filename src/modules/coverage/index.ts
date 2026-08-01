@@ -149,3 +149,12 @@ export function coverageOf(
     justified: byVolume.past || byQuantity.past,
   };
 }
+
+/*
+  The same lines, named rather than counted.
+
+  `coverageOf` answers how much fails; `gapsOf` answers what fails, and splits
+  a reader problem from a catalogue problem — two failures that arrive wearing
+  the same tier and have opposite remedies.
+*/
+export { gapsOf, type Gap, type GapKind, type GapLine, type Gaps } from './gaps';
