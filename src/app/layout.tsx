@@ -89,7 +89,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
             out" a couple of thousand pixels below the fold on the Rate Desk.
             Nobody scrolls to the end of a rate table to leave.
           */}
-          <Rail actor={actor} waiting={waiting} path={path} />
+          <Rail actor={actor} waiting={waiting} />
 
           <div className="min-w-0 flex-1 flex flex-col">
             {actor === null || latest === undefined ? null : (
