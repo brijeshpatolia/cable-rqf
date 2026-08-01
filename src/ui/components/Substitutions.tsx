@@ -55,8 +55,8 @@ export function Substitutions({
         <p style={note}>
           Nothing is substitutable yet, so no line can tier <em>Close</em>. That
           is the intended starting point: a permissive allowlist is how wrong
-          prices get out. Each rule below is a judgement about what Nuhas can
-          safely build, and it is shown to the engineer on every line priced
+          prices get out. Each rule below is a judgement about what can safely
+          be built, and it is shown to the engineer on every line priced
           through it.
         </p>
       ) : (
@@ -131,13 +131,31 @@ export function Substitutions({
                 ))}
               </select>
             </label>
+            {/*
+              The example runs LSOH → PVC, and the direction is the whole
+              point of it.
+
+              A rule prices on what the *library* holds, so these placeholders
+              read as "a customer asking for PVC may be given LSOH". The
+              example used to be the other way round — hold PVC, satisfy a
+              request for LSOH — which is not a commercial compromise but a
+              failed specification: LSOH is specified where a fire would trap
+              people, because PVC burns to dense smoke and hydrogen chloride.
+              Its own rationale text described the safe direction while the
+              fields described the unsafe one.
+
+              Placeholders are read as instructions by anyone in a hurry, and
+              this form's entire purpose is stopping the wrong cable being
+              quoted. So the example shows the substitution that is actually
+              safe: the better material standing in for the lesser one.
+            */}
             <label className="flex flex-1 flex-col gap-1">
               <span className="label">Library holds</span>
-              <input name="from" placeholder="PVC" required className="numeric" style={input} />
+              <input name="from" placeholder="LSOH" required className="numeric" style={input} />
             </label>
             <label className="flex flex-1 flex-col gap-1">
               <span className="label">Customer asks for</span>
-              <input name="to" placeholder="LSOH" required className="numeric" style={input} />
+              <input name="to" placeholder="PVC" required className="numeric" style={input} />
             </label>
           </div>
 
@@ -145,7 +163,7 @@ export function Substitutions({
             <span className="label">Why this is safe</span>
             <input
               name="rationale"
-              placeholder="LSOH is a drop-in for PVC sheathing on LV, same wall thickness"
+              placeholder="LSOH exceeds PVC on LV sheathing — same wall thickness, no spec lost"
               required
               style={input}
             />

@@ -150,7 +150,7 @@ export default async function CoveragePage() {
                 : 'Inside both thresholds. On this evidence, the library covers the demand.'}
           </strong>{' '}
           The thresholds above are the plan&rsquo;s suggestion, not a rule —
-          Nuhas sets the real ones. The app measures; it does not decide.
+          you set the real ones. The app measures; it does not decide.
         </p>
         <p className="mt-2" style={note}>
           &ldquo;Could not price&rdquo; means Partial and No-match. A line an
