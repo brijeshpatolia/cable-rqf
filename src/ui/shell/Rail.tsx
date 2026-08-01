@@ -1,7 +1,6 @@
-import type { Route } from 'next';
-import Link from 'next/link';
 import { roleLabel, type Actor } from '@/modules/auth';
 import { WhoAmI } from '@/ui/components/WhoAmI';
+import { RailNav } from './RailNav';
 
 /**
  * The left rail.
@@ -23,81 +22,18 @@ import { WhoAmI } from '@/ui/components/WhoAmI';
  * scaffolding: true of the project, useless to the person costing a cable.
  * They are gone. The waiting count stays, because that is work.
  *
- * A server component. The middleware already forwards the path it is
- * answering, so knowing which item is active costs no JavaScript.
+ * Still a server component. Only the links know where you are, and they say
+ * why in `RailNav` — a path forwarded on the request cannot answer that
+ * question once navigation stopped reloading the document.
  */
-
-interface Item {
-  readonly label: string;
-  /**
-   * Typed routes are on, so this is the app's own route union rather than a
-   * string — a rail item pointing at a page that does not exist is a build
-   * failure, which is the right place to find out.
-   */
-  readonly href: Route;
-}
-
-const GROUPS: readonly { readonly heading: string; readonly items: readonly Item[] }[] = [
-  {
-    heading: 'Work',
-    items: [
-      { label: 'Inbox', href: '/' },
-      { label: 'Quotes', href: '/quotes' },
-      { label: 'History', href: '/history' },
-    ],
-  },
-  {
-    heading: 'Library',
-    items: [
-      { label: 'Catalogue', href: '/catalogue' },
-      { label: 'Vocabulary', href: '/vocabulary' },
-      { label: 'Coverage', href: '/coverage' },
-    ],
-  },
-  {
-    heading: 'Rates',
-    items: [
-      { label: 'Rate Desk', href: '/rates' },
-      { label: 'Price Watch', href: '/price-watch' },
-    ],
-  },
-];
-
-/**
- * Which item owns this path.
- *
- * Longest matching prefix, so `/quotes/Q-2026-0007` lights Quotes and not
- * Inbox. `/` is exact — otherwise it would match everything.
- */
-function activeHref(path: string | null): string | null {
-  if (path === null) return null;
-  if (path === '/') return '/';
-
-  let best: string | null = null;
-  for (const group of GROUPS) {
-    for (const item of group.items) {
-      if (item.href === '/') continue;
-      if (path === item.href || path.startsWith(`${item.href}/`)) {
-        if (best === null || item.href.length > best.length) best = item.href;
-      }
-    }
-  }
-  // A job screen is where an enquiry from the Inbox is worked on.
-  if (best === null && path.startsWith('/jobs/')) return '/';
-  return best;
-}
 
 export function Rail({
   actor,
   waiting,
-  path,
 }: {
   readonly actor: Actor | null;
   readonly waiting: number;
-  readonly path: string | null;
 }) {
-  const active = activeHref(path);
-
   return (
     <nav
       className="shrink-0 flex flex-col sticky top-0"
@@ -147,71 +83,7 @@ export function Rail({
         </div>
       </div>
 
-      <div className="flex-1" style={{ padding: '4px 10px', overflowY: 'auto' }}>
-        <ul className="flex flex-col" style={{ gap: 18 }}>
-          {GROUPS.map((group) => (
-            <li key={group.heading}>
-              <div className="label" style={{ color: 'var(--color-ink-faint)', padding: '0 8px 6px' }}>
-                {group.heading}
-              </div>
-              <ul className="flex flex-col" style={{ gap: 2 }}>
-                {group.items.map((item) => (
-                  <li key={item.href}>
-                    {/*
-                      `next/link`, not an anchor: the root layout now reads the
-                      actor, the waiting count and the copper history on every
-                      render, and a full document load re-runs all three plus a
-                      fresh parse. A client-side RSC navigation does not.
-                    */}
-                    <Link
-                      href={item.href}
-                      prefetch={false}
-                      aria-current={item.href === active ? 'page' : undefined}
-                      className="rail-item flex items-center justify-between"
-                      data-active={item.href === active}
-                      style={{
-                        height: 32,
-                        padding: '0 10px',
-                        borderRadius: 'var(--radius-control)',
-                        fontSize: 13,
-                      }}
-                    >
-                      <span className="flex items-center" style={{ gap: 10 }}>
-                        {/*
-                          The marker carries the active state, not the label
-                          colour alone — colour is never the only signal.
-                        */}
-                        <span
-                          aria-hidden
-                          className="rail-marker"
-                          style={{ width: 2, height: 14, borderRadius: 2, flexShrink: 0 }}
-                        />
-                        {item.label}
-                      </span>
-                      {item.href === '/' && waiting > 0 ? (
-                        <span
-                          className="numeric"
-                          style={{
-                            fontSize: 11,
-                            lineHeight: '17px',
-                            padding: '0 6px',
-                            borderRadius: 5,
-                            backgroundColor: 'var(--color-copper)',
-                            color: 'var(--color-ink-on-copper)',
-                          }}
-                          title={`${waiting} ${waiting === 1 ? 'enquiry is' : 'enquiries are'} waiting on a person`}
-                        >
-                          {waiting}
-                        </span>
-                      ) : null}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </li>
-          ))}
-        </ul>
-      </div>
+      <RailNav waiting={waiting} />
 
       {actor === null ? null : <WhoAmI name={actor.name} role={roleLabel(actor.role)} />}
     </nav>
