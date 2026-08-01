@@ -396,8 +396,8 @@ export function readCandidates({
 
     if (!readTogether(folded, quotes, numbered, size, quantity)) {
       refused.push(
-        `${ref} was left out — its size and its quantity are printed in different ` +
-          'parts of the document, so they are unlikely to belong to each other. ' +
+        `${ref} was left out — its size and its quantity do not both come off the ` +
+          'row it is numbered as, so they are unlikely to belong to each other. ' +
           'Read that row off the file by hand.',
       );
       continue;
@@ -538,7 +538,23 @@ function readTogether(
   size: number,
   quantity: number,
 ): boolean {
-  if (quotes.some((q) => statesNumber(q, size) && statesNumber(q, quantity))) return true;
+  /*
+    The row number is required here too, and leaving it out was a hole big
+    enough to drive a whole row through. Two intact rows at the same size —
+
+        5.1 2C X 16 mm² m 19000
+        5.2 2C X 16 mm² m 4000
+
+    — and a candidate numbered 5.1 quoting only the second one satisfied
+    "one excerpt states both" perfectly. Item 5.2's quantity would have gone
+    out under item 5.1's number, and 5.1 itself would have quietly vanished
+    from the enquiry. Nothing above this catches it: every fact cited is
+    printed, on one line, in the right document.
+  */
+  const bearsRef = (q: string) => ref === null || statesRef(q, ref);
+  if (quotes.some((q) => bearsRef(q) && statesNumber(q, size) && statesNumber(q, quantity))) {
+    return true;
+  }
 
   const linesOf = (quote: string): readonly number[] => {
     const needle = oneLine(quote).toLowerCase();

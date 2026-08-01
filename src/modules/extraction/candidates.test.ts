@@ -166,7 +166,7 @@ describe('a size and a quantity from different rows', () => {
     }).document;
 
     expect(out.lines).toEqual([]);
-    expect(out.notes.join(' ')).toContain('different parts of the document');
+    expect(out.notes.join(' ')).toContain('do not both come off the row it is numbered as');
   });
 
   it('still reads a row the PDF split across two lines', () => {
@@ -200,7 +200,7 @@ describe('a size and a quantity from different rows', () => {
     }).document;
 
     expect(out.lines).toEqual([]);
-    expect(out.notes.join(' ')).toContain('different parts of the document');
+    expect(out.notes.join(' ')).toContain('do not both come off the row it is numbered as');
   });
 
   it('reads both of those rows correctly when each is quoted from its own', () => {
@@ -221,6 +221,45 @@ describe('a size and a quantity from different rows', () => {
     }).document;
 
     expect(out.lines).toEqual(['2C x 16 mm² — 19,000 m', '3C x 2.5 mm² — 4,000 m']);
+  });
+
+  it('is refused when a whole intact row is quoted under the wrong number', () => {
+    /*
+      Nothing is split here and nothing is far apart — two complete rows at the
+      same size, and a candidate numbered 5.1 quoting only 5.2. One excerpt
+      states both numbers, which was enough on its own. Item 5.2's quantity
+      would have gone out under item 5.1's number, and 5.1 itself would have
+      vanished from the enquiry without a word.
+    */
+    const text = ['5.1 2C X 16 mm² m 19000', '5.2 2C X 16 mm² m 4000'].join('\n');
+    const out = readCandidates({
+      candidates: [
+        { ...row51, sizeMm2: 16, quantity: 4000, evidence: ['5.2 2C X 16 mm² m 4000'] },
+      ],
+      text,
+    }).document;
+
+    expect(out.lines).toEqual([]);
+    expect(out.notes.join(' ')).toContain('do not both come off the row it is numbered as');
+  });
+
+  it('is refused when the right row is quoted alongside the wrong one', () => {
+    // Quoting its own row as well is not a defence: the numbers still have to
+    // come off the line that bears the number.
+    const text = ['5.1 2C X 16 mm² m 19000', '5.2 2C X 16 mm² m 4000'].join('\n');
+    const out = readCandidates({
+      candidates: [
+        {
+          ...row51,
+          sizeMm2: 16,
+          quantity: 4000,
+          evidence: ['5.1 2C X 16 mm² m 19000', '5.2 2C X 16 mm² m 4000'],
+        },
+      ],
+      text,
+    }).document;
+
+    expect(out.lines).toEqual([]);
   });
 
   it('is not fooled by wording that repeats elsewhere in the document', () => {
@@ -288,7 +327,7 @@ describe('a spec term the quoted text does not use', () => {
 });
 
 describe('quantities in kilometres', () => {
-  const KM = '7.1 2C X 16 mm² km 19000';
+  const KM = '5.1 2C X 16 mm² km 19000';
 
   it('are converted only when the text says kilometres', () => {
     const out = readCandidates({
