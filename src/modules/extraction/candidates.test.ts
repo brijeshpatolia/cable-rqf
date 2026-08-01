@@ -393,14 +393,18 @@ describe('statesNumber', () => {
 });
 
 describe('the request schema', () => {
+  type Field = { anyOf?: { type?: string; enum?: unknown[] }[] };
+  const fieldOf = (schema: unknown, name: string): Field =>
+    (schema as { properties: { lines: { items: { properties: Record<string, Field> } } } })
+      .properties.lines.items.properties[name]!;
+
+  /** The words a field will accept, ignoring the null branch. */
+  const choices = (field: Field) => field.anyOf?.find((b) => b.type !== 'null')?.enum;
+
   it('offers the model only terms the app already knows', () => {
-    const schema = schemaFor(BUILT_IN_TERMS) as {
-      properties: { lines: { items: { properties: Record<string, { enum?: unknown[] }> } } };
-    };
-    const armour = schema.properties.lines.items.properties['armour']?.enum;
+    const armour = choices(fieldOf(schemaFor(BUILT_IN_TERMS), 'armour'));
 
     expect(armour).toContain('SWA');
-    expect(armour).toContain(null);
     expect(armour).not.toContain('XLPE');
   });
 
@@ -408,10 +412,27 @@ describe('the request schema', () => {
     const schema = schemaFor([
       ...BUILT_IN_TERMS,
       { canonical: 'DSTA', axis: 'armour', synonyms: ['double steel tape armour'] },
-    ]) as {
-      properties: { lines: { items: { properties: Record<string, { enum?: unknown[] }> } } };
-    };
+    ]);
 
-    expect(schema.properties.lines.items.properties['armour']?.enum).toContain('DSTA');
+    expect(choices(fieldOf(schema, 'armour'))).toContain('DSTA');
+  });
+
+  /*
+    The shape, not just the contents.
+
+    `{ type: ['string', 'null'], enum: [...] }` is valid JSON Schema, is what
+    every offline validator accepts, and is rejected by the API with a 400:
+    `Enum value 'm' does not match declared type '['string','null']'`. It cost
+    the first live call to find. This test is here so the obvious spelling
+    cannot come back.
+  */
+  it('spells a nullable enum as two branches, which is the only form the API takes', () => {
+    for (const name of ['armour', 'voltage', 'quantityUnit']) {
+      const field = fieldOf(schemaFor(BUILT_IN_TERMS), name);
+
+      expect(field.anyOf).toHaveLength(2);
+      expect(field.anyOf?.map((b) => b.type)).toContain('null');
+      expect(field).not.toHaveProperty('enum');
+    }
   });
 });
