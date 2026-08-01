@@ -107,14 +107,32 @@ export interface Candidate {
  * dictionary, which means a term the Rate Owner taught the app last week is
  * one the model is allowed to use today, with no code change.
  */
+/**
+ * A field that is one of a fixed set of words, or nothing.
+ *
+ * `anyOf`, not `{ type: ['string', 'null'], enum: [...] }`. The obvious
+ * spelling is accepted by every JSON Schema validator and rejected by this
+ * API with `Enum value 'm' does not match declared type '['string','null']'`:
+ * it checks each enum member against the declared type as a whole rather than
+ * against the union's branches. The two-branch form says the same thing in a
+ * way it will take.
+ *
+ * It cost a 400 on the first live call to find, which is the entire argument
+ * for having made one. Nothing short of a real request could have caught it —
+ * the stub server this was tested against will accept any body at all.
+ */
+const oneOfOrNull = (values: readonly unknown[], description: string) => ({
+  anyOf: [{ type: typeof values[0] === 'string' ? 'string' : 'number', enum: [...values] }, { type: 'null' }],
+  description,
+});
+
 export function schemaFor(terms: readonly Term[] = BUILT_IN_TERMS): Record<string, unknown> {
-  const axisField = (axis: Axis) => ({
-    type: ['string', 'null'],
-    enum: [...new Set(terms.filter((t) => t.axis === axis).map((t) => t.canonical)), null],
-    description:
+  const axisField = (axis: Axis) =>
+    oneOfOrNull(
+      [...new Set(terms.filter((t) => t.axis === axis).map((t) => t.canonical))],
       `The ${axis} of this cable, if the document states it — in the heading ` +
-      'above the row as often as on the row itself. Null if it is not stated.',
-  });
+        'above the row as often as on the row itself. Null if it is not stated.',
+    );
 
   return {
     type: 'object',
@@ -157,13 +175,11 @@ export function schemaFor(terms: readonly Term[] = BUILT_IN_TERMS): Record<strin
                 'The length asked for, exactly as printed — do not convert, ' +
                 'round, or add rows together.',
             },
-            quantityUnit: {
-              type: ['string', 'null'],
-              enum: ['m', 'km', null],
-              description:
-                'The unit that length is in. Use the table’s unit column when the ' +
+            quantityUnit: oneOfOrNull(
+              ['m', 'km'],
+              'The unit that length is in. Use the table’s unit column when the ' +
                 'row itself is blank. Null if nothing states it.',
-            },
+            ),
             ...Object.fromEntries(AXES.map((a) => [a, axisField(a)])),
             evidence: {
               type: 'array',
@@ -202,7 +218,14 @@ export const INSTRUCTIONS =
   'costs an engineer thirty seconds; a wrong one leaves this building as a ' +
   'price. This is not a test of how much you can fill in.\n' +
   '3. Quote your source in `evidence`, character for character. Anything you ' +
-  'have not quoted will be discarded.\n' +
+  'have not quoted will be discarded — this is checked, not trusted.\n' +
+  '   A heading is usually broken across several lines, with the voltage and ' +
+  'conductor on one and the armour and sheath on another. Quote **every line ' +
+  'of the heading you took a field from, on every row that inherits it** — all ' +
+  'thirty rows of a group repeat the same two or three heading fragments, and ' +
+  'that is correct and expected. Quoting the heading on the first row of a ' +
+  'group only means every row after it loses its construction and has to be ' +
+  'settled by hand.\n' +
   '4. Leave out anything that is not a cable being asked for: title blocks, ' +
   'revision tables, drum-length notes, core-colour notes, totals.\n' +
   '5. Documents contain mistakes. Do not correct them and do not drop the row — ' +
