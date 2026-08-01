@@ -113,10 +113,48 @@ function gridOf(bytes: Uint8Array): {
  * and the quantity beside it into two separate lines, which is precisely the
  * pairing the extractor needs.
  */
+/**
+ * The browser globals pdf.js needs before it will even load.
+ *
+ * `pdf.mjs` runs `const SCALE_MATRIX = new DOMMatrix()` at module top level.
+ * Node has no `DOMMatrix`, so pdf.js tries to borrow one from
+ * `@napi-rs/canvas` — inside a `try`/`catch` that only warns on failure. When
+ * that package is absent the warning is logged, the next line throws
+ * `ReferenceError: DOMMatrix is not defined`, and the *import itself* fails.
+ *
+ * On Vercel it was absent. It is an optional dependency reached through a
+ * dynamic `require` inside a `catch`, which the bundler's file tracing cannot
+ * see, so nothing put it in the deployed function. Locally it resolved and
+ * everything worked — the failure existed only where nobody could run a
+ * debugger. It took a real customer RFQ and the production log to find.
+ *
+ * So the dependency is declared and installed here instead of being wished
+ * for: a static import is something a bundler can follow, and assigning the
+ * globals before the import means pdf.js finds them already present rather
+ * than going looking.
+ *
+ * **The real implementation, not a stub.** Writing a small `DOMMatrix` would
+ * be lighter, and `SCALE_MATRIX` is only read on the rendering path this app
+ * never calls — today. A stub would be correct only for as long as that stays
+ * true, and the way it would fail is by silently mis-transforming text
+ * positions, which decide how characters group into lines, which decide what
+ * quantity gets read off an RFQ. Wrong text out of a PDF is a wrong price to a
+ * customer. Disk in a serverless function is the cheaper thing to spend.
+ */
+async function installPdfGlobals(): Promise<void> {
+  if ('DOMMatrix' in globalThis) return;
+  const canvas = await import('@napi-rs/canvas');
+  const g = globalThis as Record<string, unknown>;
+  g['DOMMatrix'] = canvas.DOMMatrix;
+  g['Path2D'] = canvas.Path2D;
+  g['ImageData'] = canvas.ImageData;
+}
+
 async function textOfPdf(bytes: Uint8Array): Promise<{
   readonly text: string;
   readonly pages: readonly TextRegion[];
 }> {
+  await installPdfGlobals();
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
 
   const doc = await pdfjs.getDocument({
