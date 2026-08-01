@@ -394,6 +394,15 @@ export function readCandidates({
       continue;
     }
 
+    if (!readTogether(folded, quotes, size, quantity)) {
+      refused.push(
+        `${ref} was left out — its size and its quantity are printed in different ` +
+          'parts of the document, so they are unlikely to belong to each other. ' +
+          'Read that row off the file by hand.',
+      );
+      continue;
+    }
+
     /*
       Kilometres are accepted only when the text says kilometres. Every other
       field failing costs a little precision; this one failing multiplies an
@@ -464,6 +473,59 @@ export function readCandidates({
 
 /** Whitespace collapsed, so a quote matches text the PDF reader already folded. */
 const oneLine = (text: string) => text.replace(/\s+/g, ' ').trim();
+
+/**
+ * How far apart two halves of one row may sit.
+ *
+ * Two, in the worst real case seen: the RFQ this was built against puts item
+ * 1's quantity on one line, a run-on fragment of the heading on the next, and
+ * the cores and size on the one after that. Three allows that and one more,
+ * and stops well short of the next row's neighbour.
+ */
+const SAME_ROW_LINES = 3;
+
+/**
+ * Were the size and the quantity read from the same row?
+ *
+ * Checking each number against *all* the quoted text lets them come from
+ * different rows: quote row 5.1 for `2C X 16 mm²` and row 5.23 for `4,000`,
+ * and both numbers are genuinely printed, both checks pass, and the line comes
+ * out as `2C x 16 mm² — 4,000 m`. Every individual fact true, the row a
+ * fiction, and the resulting quantity wrong on a document that goes to a
+ * customer. Found in review, not in testing.
+ *
+ * The strong form is that one quoted excerpt carries both, which is how three
+ * rows in four are printed and is immune to a mix-up with the row next door.
+ * The rest are split across two lines by the PDF — the description on one, the
+ * item number and quantity on the next — and demanding a single excerpt would
+ * reject exactly the rows this file exists to read. Those fall back to
+ * proximity: the two numbers must be printed within a few lines of each other.
+ *
+ * Every occurrence of a quote is considered, not the first. `3C X 185 mm²`
+ * appears both inside item 3.3's row and on its own as the top half of item
+ * 5.7 thirty lines later, and taking the first would put 5.7's two halves half
+ * a page apart and refuse a row that is perfectly well printed.
+ */
+function readTogether(
+  folded: readonly string[],
+  quotes: readonly string[],
+  size: number,
+  quantity: number,
+): boolean {
+  if (quotes.some((q) => statesNumber(q, size) && statesNumber(q, quantity))) return true;
+
+  const linesStating = (value: number): readonly number[] =>
+    quotes
+      .filter((q) => statesNumber(q, value))
+      .flatMap((q) => {
+        const needle = oneLine(q).toLowerCase();
+        return folded.flatMap((line, at) => (line.includes(needle) ? [at] : []));
+      });
+
+  const sizeAt = linesStating(size);
+  const quantityAt = linesStating(quantity);
+  return sizeAt.some((a) => quantityAt.some((b) => Math.abs(a - b) <= SAME_ROW_LINES));
+}
 
 /**
  * Which line of the document this row came off.

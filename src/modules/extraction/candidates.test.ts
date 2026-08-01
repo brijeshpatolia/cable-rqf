@@ -139,6 +139,82 @@ describe('an answer the document does not support', () => {
   });
 });
 
+describe('a size and a quantity from different rows', () => {
+  it('is refused, even though both numbers are genuinely printed', () => {
+    /*
+      The dangerous shape, and the one that survived the first round of
+      checks: every individual fact true, the row itself a fiction. 16 mm² is
+      printed on row 5.1 and 4,000 is printed on row 5.2, so checking each
+      number against all the quoted text passes both — and produces a quantity
+      that would go to a customer attached to the wrong cable.
+    */
+    const crossed: Candidate = {
+      ...row51,
+      quantity: 4000,
+      evidence: ['5.1 2C X 16 mm² m 19000', '5.2 3C X 2.5 mm² m 4000'],
+    };
+    const out = readCandidates({
+      candidates: [crossed],
+      text: [
+        '5.1 2C X 16 mm² m 19000',
+        'a',
+        'b',
+        'c',
+        'd',
+        '5.2 3C X 2.5 mm² m 4000',
+      ].join('\n'),
+    }).document;
+
+    expect(out.lines).toEqual([]);
+    expect(out.notes.join(' ')).toContain('different parts of the document');
+  });
+
+  it('still reads a row the PDF split across two lines', () => {
+    // The legitimate case, and a quarter of the rows in the document this was
+    // built for: description on one line, item number and quantity on the next.
+    const split = ['2C X 4 mm²', '5.3 m 9000'].join('\n');
+    const out = readCandidates({
+      candidates: [
+        { ...row51, itemRef: '5.3', sizeMm2: 4, quantity: 9000, evidence: ['2C X 4 mm²', '5.3 m 9000'] },
+      ],
+      text: split,
+    }).document;
+
+    expect(out.lines).toEqual(['2C x 4 mm² — 9,000 m']);
+  });
+
+  it('is not fooled by wording that repeats elsewhere in the document', () => {
+    /*
+      `3C X 185 mm²` sits inside item 3.3's row and again on its own as the top
+      half of item 5.7, pages later. Taking the first occurrence would put
+      5.7's two halves half a document apart and refuse a row that is printed
+      perfectly well.
+    */
+    const text = [
+      '3.3 3C X 185 mm² m 2300',
+      ...Array.from({ length: 20 }, (_, i) => `filler ${i}`),
+      '3C X 185 mm²',
+      '5.7 m 2200',
+    ].join('\n');
+
+    const out = readCandidates({
+      candidates: [
+        {
+          ...row51,
+          itemRef: '5.7',
+          cores: 3,
+          sizeMm2: 185,
+          quantity: 2200,
+          evidence: ['3C X 185 mm²', '5.7 m 2200'],
+        },
+      ],
+      text,
+    }).document;
+
+    expect(out.lines).toEqual(['3C x 185 mm² — 2,200 m']);
+  });
+});
+
 describe('a spec term the quoted text does not use', () => {
   it('is dropped without costing the rest of the line', () => {
     // Aluminium armour, on a document that says galvanized steel.
