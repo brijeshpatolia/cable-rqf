@@ -8,12 +8,13 @@ const actor = (role: Role): Actor => ({
   role,
 });
 
-const ROLES: readonly Role[] = ['rateOwner', 'engineer', 'viewer'];
+const ROLES: readonly Role[] = ['admin', 'rateOwner', 'engineer', 'viewer'];
 const CAPABILITIES: readonly Capability[] = [
   'rate.edit',
   'lme.enter',
   'line.override',
   'quote.approve',
+  'account.manage',
   'read',
 ];
 
@@ -25,11 +26,27 @@ const CAPABILITIES: readonly Capability[] = [
  * only form in which a permission change is reviewable.
  */
 const EXPECTED: Readonly<Record<Role, Readonly<Record<Capability, boolean>>>> = {
+  /*
+    An admin holds both halves of the split §2.4 keeps between the other two
+    roles — rate editing and quote approval — which is a deliberate relaxation
+    of that control and is stated here rather than left to be noticed. It is
+    the only role that may manage accounts, and that is the line that does not
+    move: a role which could mint accounts could mint itself another.
+  */
+  admin: {
+    'rate.edit': true,
+    'lme.enter': true,
+    'line.override': true,
+    'quote.approve': true,
+    'account.manage': true,
+    read: true,
+  },
   rateOwner: {
     'rate.edit': true,
     'lme.enter': true,
     'line.override': false,
     'quote.approve': false,
+    'account.manage': false,
     read: true,
   },
   engineer: {
@@ -37,6 +54,7 @@ const EXPECTED: Readonly<Record<Role, Readonly<Record<Capability, boolean>>>> = 
     'lme.enter': false,
     'line.override': true,
     'quote.approve': true,
+    'account.manage': false,
     read: true,
   },
   viewer: {
@@ -44,6 +62,7 @@ const EXPECTED: Readonly<Record<Role, Readonly<Record<Capability, boolean>>>> = 
     'lme.enter': false,
     'line.override': false,
     'quote.approve': false,
+    'account.manage': false,
     read: true,
   },
 };

@@ -1,0 +1,13 @@
+-- The administrator role.
+--
+-- Added rather than replacing anything: the existing three roles keep their
+-- grants exactly, and `admin` holds every capability plus `account.manage`,
+-- which is the one capability no other role has and which is what makes the
+-- Accounts screen safe to expose.
+--
+-- Postgres appends to an enum and cannot remove from one, so this is
+-- irreversible by design. That is the right shape for a role people are
+-- assigned to: dropping a value that an `app_user` row still points at would
+-- fail anyway, and dropping one that nothing points at is not worth a
+-- migration.
+ALTER TYPE "Role" ADD VALUE IF NOT EXISTS 'admin';

@@ -1,4 +1,4 @@
-import { roleLabel, type Actor } from '@/modules/auth';
+import { can, roleLabel, type Actor } from '@/modules/auth';
 import { WhoAmI } from '@/ui/components/WhoAmI';
 import { RailNav } from './RailNav';
 
@@ -83,7 +83,7 @@ export function Rail({
         </div>
       </div>
 
-      <RailNav waiting={waiting} />
+      <RailNav waiting={waiting} canManageAccounts={can(actor, 'account.manage')} />
 
       {actor === null ? null : <WhoAmI name={actor.name} role={roleLabel(actor.role)} />}
     </nav>

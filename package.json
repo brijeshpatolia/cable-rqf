@@ -18,6 +18,7 @@
     "db:reset": "prisma migrate reset --force --skip-seed",
     "test:db": "dotenv -e .env -- vitest run --config vitest.integration.config.ts",
     "user:add": "tsx scripts/create-user.ts",
+    "user:add:http": "dotenv -e .env -- tsx scripts/neon-user.ts",
     "postinstall": "prisma generate",
     "db:deploy": "prisma migrate deploy",
     "db:deploy:http": "tsx scripts/neon-apply.ts",

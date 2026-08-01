@@ -35,10 +35,12 @@ interface Item {
   readonly href: Route;
 }
 
-export const GROUPS: readonly {
+interface Group {
   readonly heading: string;
   readonly items: readonly Item[];
-}[] = [
+}
+
+export const GROUPS: readonly Group[] = [
   {
     heading: 'Work',
     items: [
@@ -65,6 +67,22 @@ export const GROUPS: readonly {
 ];
 
 /**
+ * Shown only to an administrator.
+ *
+ * Kept out of `GROUPS` rather than filtered out of it, so `activeHref` still
+ * matches `/accounts` for everybody. The page itself redirects anyone without
+ * the capability — hiding the link is a courtesy, not the control — and this
+ * way a stale link lands somewhere sensible instead of lighting nothing.
+ */
+const ADMIN_GROUP: Group = {
+  heading: 'Admin',
+  items: [{ label: 'Accounts', href: '/accounts' }],
+};
+
+/** Every group, including the ones this actor may not see. For matching. */
+const ALL: readonly Group[] = [...GROUPS, ADMIN_GROUP];
+
+/**
  * Which item owns this path.
  *
  * Longest matching prefix, so `/quotes/Q-2026-0007` lights Quotes and not
@@ -75,7 +93,7 @@ export function activeHref(path: string | null): string | null {
   if (path === '/') return '/';
 
   let best: string | null = null;
-  for (const group of GROUPS) {
+  for (const group of ALL) {
     for (const item of group.items) {
       if (item.href === '/') continue;
       if (path === item.href || path.startsWith(`${item.href}/`)) {
@@ -88,13 +106,21 @@ export function activeHref(path: string | null): string | null {
   return best;
 }
 
-export function RailNav({ waiting }: { readonly waiting: number }) {
+export function RailNav({
+  waiting,
+  canManageAccounts,
+}: {
+  readonly waiting: number;
+  /** Resolved on the server from the actor's role, never inferred here. */
+  readonly canManageAccounts: boolean;
+}) {
   const active = activeHref(usePathname());
+  const groups = canManageAccounts ? ALL : GROUPS;
 
   return (
     <div className="flex-1" style={{ padding: '4px 10px', overflowY: 'auto' }}>
       <ul className="flex flex-col" style={{ gap: 18 }}>
-        {GROUPS.map((group) => (
+        {groups.map((group) => (
           <li key={group.heading}>
             <div
               className="label"
