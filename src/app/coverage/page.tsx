@@ -11,8 +11,16 @@ import {
   vocabularyStore,
 } from '@/infra/repositories';
 import { computeCost } from '@/modules/costing';
-import { SUGGESTED, coverageOf, type CountedLine, type Share } from '@/modules/coverage';
+import {
+  SUGGESTED,
+  coverageOf,
+  gapsOf,
+  type CountedLine,
+  type GapLine,
+  type Share,
+} from '@/modules/coverage';
 import { deriveBounds, reviewJob, type LineStatus } from '@/modules/matching';
+import { GapTable } from '@/ui/components/GapTable';
 import { Panel } from '@/ui/components/Panel';
 import { StatusDot } from '@/ui/components/StatusDot';
 import { statusTier } from '@/ui/components/tier';
@@ -71,6 +79,7 @@ export default async function CoveragePage() {
   });
 
   const counted: CountedLine[] = [];
+  const uncovered: GapLine[] = [];
   for (const job of jobs) {
     const reviewed = reviewJob(job.rawText, library, rateSet, SOURCE_TERMS, bounds, {
       decisions: job.decisions,
@@ -84,10 +93,21 @@ export default async function CoveragePage() {
         // unpriceable line still tells us how much of it was asked for.
         metres: line.extracted.quantityMetres.value,
       });
+      /*
+        The same lines again, carrying what they were asked for rather than
+        only their tier. `gapsOf` filters to the uncovered ones itself, so the
+        two measures cannot come to disagree about which tiers those are.
+      */
+      uncovered.push({
+        status: line.status,
+        extracted: line.extracted,
+        customer: job.customer,
+      });
     }
   }
 
   const coverage = coverageOf(counted, SUGGESTED);
+  const gaps = gapsOf(uncovered);
 
   const ORDER: readonly LineStatus[] = [
     'exact',
@@ -169,6 +189,37 @@ export default async function CoveragePage() {
           anything. It does the job the threshold was for: it separates one
           12,000 m line nobody can price from a dozen 50 m ones.
         </p>
+      </Panel>
+
+      <Panel
+        title="What is missing"
+        note="The same lines, named and ranked — longest first"
+        flush
+      >
+        {/*
+          Two failures arrive here wearing the same tier and have opposite
+          remedies, so the split is stated before the table rather than left
+          to be counted off it. A percentage says there is a problem; this
+          says which problem, and a team that reads only the percentage can
+          spend a quarter on the wrong one.
+        */}
+        <div
+          className="flex flex-wrap gap-x-10 gap-y-3"
+          style={{ padding: '14px var(--cell-pad-x)', borderBottom: '1px solid var(--color-line-panel)' }}
+        >
+          <Split
+            value={gaps.notInLibrary}
+            label="Not in the library"
+            hint="Read correctly, and there is no such product. Widening the range is what fixes these."
+          />
+          <Split
+            value={gaps.unreadable}
+            label="Could not read"
+            hint="The cores or the size could not be made out, so nothing could match however wide the range. A better reader is what fixes these."
+          />
+        </div>
+
+        <GapTable gaps={gaps} />
       </Panel>
 
       <Panel title="Where the lines fell">
@@ -266,3 +317,45 @@ const note: React.CSSProperties = {
   lineHeight: 'var(--text-micro--line-height)',
   maxWidth: 680,
 };
+
+/**
+ * One side of the split, above the table.
+ *
+ * Deliberately not a percentage. The question these answer is "which of these
+ * two problems do we have", and at the counts a first quarter produces, two
+ * raw numbers are read correctly where two percentages invite arithmetic
+ * nobody asked for.
+ */
+function Split({
+  value,
+  label,
+  hint,
+}: {
+  readonly value: number;
+  readonly label: string;
+  readonly hint: string;
+}) {
+  return (
+    <div className="flex flex-col" style={{ gap: 4 }} title={hint}>
+      <span className="label">{label}</span>
+      <span className="flex items-baseline" style={{ gap: 6 }}>
+        <span
+          className="numeric"
+          style={{
+            fontSize: 'var(--text-numeric-lg)',
+            lineHeight: 'var(--text-numeric-lg--line-height)',
+            color: value === 0 ? 'var(--color-ink-tertiary)' : 'var(--color-ink-primary)',
+          }}
+        >
+          {value}
+        </span>
+        <span
+          className="numeric"
+          style={{ fontSize: 'var(--text-mono-micro)', color: 'var(--color-ink-tertiary)' }}
+        >
+          {value === 1 ? 'line' : 'lines'}
+        </span>
+      </span>
+    </div>
+  );
+}
