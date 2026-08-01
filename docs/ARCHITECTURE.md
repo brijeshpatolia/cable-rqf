@@ -192,6 +192,8 @@ Phase 3 only, PDFs only, and fenced tightly. Built; `infra/extraction/model.ts` 
 - **Nothing is taken on trust.** Every row must quote the document verbatim; a quote that is not in the document costs the row. Every number must be printed in what was quoted, compared as a number rather than a substring, so nothing can be computed, rounded or totalled into a price. Every spec term must be found in the words that were quoted. Whatever fails is dropped and named in the notes with its item number.
 - **Optional.** With no `ANTHROPIC_API_KEY` the app reads documents exactly as it did before. A call that fails never fails the upload; the pattern reading is used and the engineer is told the closer reading did not come back.
 
+`ANTHROPIC_API_KEY` is the only variable this adds — one value, set on the deployment alongside `DATABASE_URL` and `AUTH_SECRET`, and in `.env` for local work. It is read on the server only and never reaches the browser.
+
 Not built, and worth knowing: **calls are not cached and the model's raw answer is not stored.** The document's text is kept beside the job, so an extraction can be re-run, but it will not reproduce byte for byte. Re-uploading the same file pays for the same reading twice.
 
 ---
