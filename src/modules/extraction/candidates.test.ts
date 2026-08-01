@@ -183,6 +183,46 @@ describe('a size and a quantity from different rows', () => {
     expect(out.lines).toEqual(['2C x 4 mm² — 9,000 m']);
   });
 
+  it('is refused when two rows are split the same way and interleave', () => {
+    /*
+      The case proximity alone could not see. Both rows are split across two
+      lines, so 5.1's description sits exactly as close to 5.2's quantity as
+      to its own — three lines, which the first window admitted. The row
+      number is what tells them apart: 4,000 is printed on a line bearing
+      5.2, and this candidate claims to be 5.1.
+    */
+    const text = ['2C X 16 mm²', '5.1 m 19000', '3C X 2.5 mm²', '5.2 m 4000'].join('\n');
+    const out = readCandidates({
+      candidates: [
+        { ...row51, sizeMm2: 16, quantity: 4000, evidence: ['2C X 16 mm²', '5.2 m 4000'] },
+      ],
+      text,
+    }).document;
+
+    expect(out.lines).toEqual([]);
+    expect(out.notes.join(' ')).toContain('different parts of the document');
+  });
+
+  it('reads both of those rows correctly when each is quoted from its own', () => {
+    const text = ['2C X 16 mm²', '5.1 m 19000', '3C X 2.5 mm²', '5.2 m 4000'].join('\n');
+    const out = readCandidates({
+      candidates: [
+        { ...row51, sizeMm2: 16, quantity: 19000, evidence: ['2C X 16 mm²', '5.1 m 19000'] },
+        {
+          ...row51,
+          itemRef: '5.2',
+          cores: 3,
+          sizeMm2: 2.5,
+          quantity: 4000,
+          evidence: ['3C X 2.5 mm²', '5.2 m 4000'],
+        },
+      ],
+      text,
+    }).document;
+
+    expect(out.lines).toEqual(['2C x 16 mm² — 19,000 m', '3C x 2.5 mm² — 4,000 m']);
+  });
+
   it('is not fooled by wording that repeats elsewhere in the document', () => {
     /*
       `3C X 185 mm²` sits inside item 3.3's row and again on its own as the top

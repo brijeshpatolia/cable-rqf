@@ -394,7 +394,7 @@ export function readCandidates({
       continue;
     }
 
-    if (!readTogether(folded, quotes, size, quantity)) {
+    if (!readTogether(folded, quotes, numbered, size, quantity)) {
       refused.push(
         `${ref} was left out — its size and its quantity are printed in different ` +
           'parts of the document, so they are unlikely to belong to each other. ' +
@@ -475,14 +475,25 @@ export function readCandidates({
 const oneLine = (text: string) => text.replace(/\s+/g, ' ').trim();
 
 /**
- * How far apart two halves of one row may sit.
+ * How far the description may sit from the row number it belongs to.
  *
- * Two, in the worst real case seen: the RFQ this was built against puts item
- * 1's quantity on one line, a run-on fragment of the heading on the next, and
- * the cores and size on the one after that. Three allows that and one more,
- * and stops well short of the next row's neighbour.
+ * Two, which is the worst real case: the RFQ this was built against puts item
+ * 1's number and quantity on one line, a run-on fragment of the heading on the
+ * next, and the cores and size on the one after that. Every other split row is
+ * adjacent.
+ *
+ * It was three, and three is one too many. Two rows split the same way put the
+ * first row's description exactly three lines above the second row's quantity,
+ * so a window of three admitted the very pairing this exists to refuse.
  */
-const SAME_ROW_LINES = 3;
+const SAME_ROW_LINES = 2;
+
+/** Is this text's own row number `ref` — as a whole word, not a digit inside one? */
+function statesRef(text: string, ref: string): boolean {
+  return oneLine(text)
+    .split(' ')
+    .some((token) => token.replace(/^[^0-9a-z]+|[^0-9a-z]+$/gi, '') === ref);
+}
 
 /**
  * Were the size and the quantity read from the same row?
@@ -492,38 +503,60 @@ const SAME_ROW_LINES = 3;
  * and both numbers are genuinely printed, both checks pass, and the line comes
  * out as `2C x 16 mm² — 4,000 m`. Every individual fact true, the row a
  * fiction, and the resulting quantity wrong on a document that goes to a
- * customer. Found in review, not in testing.
+ * customer. Found in review, twice, and neither time by a test.
  *
- * The strong form is that one quoted excerpt carries both, which is how three
- * rows in four are printed and is immune to a mix-up with the row next door.
- * The rest are split across two lines by the PDF — the description on one, the
- * item number and quantity on the next — and demanding a single excerpt would
- * reject exactly the rows this file exists to read. Those fall back to
- * proximity: the two numbers must be printed within a few lines of each other.
+ * Three tiers, tried in order:
+ *
+ * 1. **One excerpt states both.** Three rows in four are printed this way, and
+ *    it is the only tier immune to a mix-up with the row next door.
+ * 2. **The row number is the join.** The rest are split across two lines by the
+ *    PDF, and in every split layout seen the item number travels with the
+ *    quantity — `5.3 m 9000` — while the description sits on its own line. So
+ *    the quantity must be quoted from an excerpt bearing this row's own
+ *    number, and the size must be printed beside *that* line. Proximity alone
+ *    was not enough: two rows split the same way interleave, and 5.1's
+ *    description is as close to 5.2's quantity as to its own.
+ * 3. **No number printed at all**, which is rare. Bare proximity, and the
+ *    engineer is the check.
  *
  * Every occurrence of a quote is considered, not the first. `3C X 185 mm²`
  * appears both inside item 3.3's row and on its own as the top half of item
  * 5.7 thirty lines later, and taking the first would put 5.7's two halves half
  * a page apart and refuse a row that is perfectly well printed.
+ *
+ * **What this still cannot catch**, said plainly rather than left to be
+ * discovered: two rows split across adjacent lines are genuinely ambiguous in
+ * the text. If the model attaches 5.2's description to 5.1's quantity, both
+ * lines are one apart from the row number and nothing here can tell. That is
+ * what the source pane beside every line is for — it opens on the row the
+ * quantity was read off, and an engineer comparing the two sees it at once.
  */
 function readTogether(
   folded: readonly string[],
   quotes: readonly string[],
+  ref: string | null,
   size: number,
   quantity: number,
 ): boolean {
   if (quotes.some((q) => statesNumber(q, size) && statesNumber(q, quantity))) return true;
 
-  const linesStating = (value: number): readonly number[] =>
-    quotes
-      .filter((q) => statesNumber(q, value))
-      .flatMap((q) => {
-        const needle = oneLine(q).toLowerCase();
-        return folded.flatMap((line, at) => (line.includes(needle) ? [at] : []));
-      });
+  const linesOf = (quote: string): readonly number[] => {
+    const needle = oneLine(quote).toLowerCase();
+    return folded.flatMap((line, at) => (line.includes(needle) ? [at] : []));
+  };
+  const sizeAt = quotes.filter((q) => statesNumber(q, size)).flatMap(linesOf);
 
-  const sizeAt = linesStating(size);
-  const quantityAt = linesStating(quantity);
+  if (ref !== null) {
+    const anchors = quotes
+      .filter((q) => statesRef(q, ref) && statesNumber(q, quantity))
+      .flatMap(linesOf);
+    // The quantity was not quoted from this row's own line, so there is
+    // nothing tying it to this row.
+    if (anchors.length === 0) return false;
+    return anchors.some((a) => sizeAt.some((b) => Math.abs(a - b) <= SAME_ROW_LINES));
+  }
+
+  const quantityAt = quotes.filter((q) => statesNumber(q, quantity)).flatMap(linesOf);
   return sizeAt.some((a) => quantityAt.some((b) => Math.abs(a - b) <= SAME_ROW_LINES));
 }
 
