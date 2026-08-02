@@ -79,6 +79,21 @@ function failed(why: string): ModelReading {
 export async function readWithModel(
   text: string,
   terms: readonly Term[],
+  /**
+   * The file itself, when there is one.
+   *
+   * Sent alongside the extracted text rather than instead of it, because the
+   * two answer different questions. The text is what the app can *check* an
+   * answer against — every quote is looked for in it. The document is what
+   * carries everything the text layer throws away, and the thing it throws
+   * away is not decoration: on the RFQ this was built against, a size had been
+   * struck through and replaced by hand. A strikethrough is a line drawn over
+   * the glyphs, so the text layer returns both numbers with nothing to tell
+   * them apart, and the app read out the cancelled one — 500 mm² where the
+   * customer wanted 300, against 3,750 m. Given the page, the model reads it
+   * correctly and says which was withdrawn.
+   */
+  pdf?: Uint8Array,
 ): Promise<ModelReading | null> {
   const key = process.env['ANTHROPIC_API_KEY'];
   if (key === undefined || key.trim() === '') return null;
@@ -115,7 +130,25 @@ export async function readWithModel(
           // that is worth a moment's thought and cheap to get wrong quickly.
           thinking: { type: 'adaptive' },
           output_config: { format: { type: 'json_schema', schema: schemaFor(terms) } },
-          messages: [{ role: 'user', content: `${INSTRUCTIONS}\n\n---\n\n${text}` }],
+            messages: [
+            {
+              role: 'user',
+              content:
+                pdf === undefined
+                  ? `${INSTRUCTIONS}\n\n---\n\n${text}`
+                  : [
+                      {
+                        type: 'document' as const,
+                        source: {
+                          type: 'base64' as const,
+                          media_type: 'application/pdf' as const,
+                          data: Buffer.from(pdf).toString('base64'),
+                        },
+                      },
+                      { type: 'text' as const, text: INSTRUCTIONS },
+                    ],
+            },
+          ],
         },
         // The budget, spanning the retry rather than resetting with it.
         { signal: AbortSignal.timeout(BUDGET_MS) },
