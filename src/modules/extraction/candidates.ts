@@ -362,6 +362,14 @@ export interface CandidateReading {
   readonly document: ExtractedDocument;
   /** How many rows the model offered, before any were refused. */
   readonly offered: number;
+  /**
+   * Why each refused row was refused, and each doubt about a kept one.
+   *
+   * Named rather than left to be sliced off the front of `notes`, because a
+   * caller that wants the reasons without the summary was reaching in by index
+   * and would have taken the wrong one the day a note was added.
+   */
+  readonly reasons: readonly string[];
 }
 
 /**
@@ -513,7 +521,12 @@ export function readCandidates({
       field failing costs a little precision; this one failing multiplies an
       order by a thousand.
     */
-    const saysKm = /\bkms?\b/i.test(cells);
+    /*
+      No leading word boundary: the unit is printed against the figure as often
+      as beside it, and `3.75km` has no boundary between the 5 and the k. With
+      one, that row was read as 3.75 metres.
+    */
+    const saysKm = /kms?\b/i.test(cells);
     if (candidate.quantityUnit === 'km' && !saysKm) {
       doubted.push(
         `${ref} was read in metres. Kilometres were claimed for it, and its own ` +
@@ -564,6 +577,7 @@ export function readCandidates({
   return {
     document: { lines, sources, notes, unreadable: lines.length === 0, rawText },
     offered: candidates.length,
+    reasons: [...doubted, ...refused],
   };
 }
 
@@ -651,12 +665,20 @@ function lineOf(folded: readonly string[], row: readonly string[], quantity: num
     first, so the source view opened on a row the engineer had not asked
     about. The longest quote is the one that identifies a place.
   */
-  const distinctive = [...row]
-    .filter((q) => oneLine(q).length >= 6)
-    .sort((a, b) => b.length - a.length);
+  const longestFirst = (qs: readonly string[]) =>
+    [...qs].sort((a, b) => oneLine(b).length - oneLine(a).length);
+  const distinctive = longestFirst(row.filter((q) => oneLine(q).length >= 6));
 
-  for (const test of [(q: string) => statesNumber(q, quantity), () => true]) {
-    for (const quote of distinctive) {
+  const carriesQuantity = (q: string) => statesNumber(q, quantity);
+  // The short cells last, because `5.3` and `m 0` still place a row better
+  // than line 0 does — line 0 is the document's first heading.
+  for (const [quotes, test] of [
+    [distinctive, carriesQuantity],
+    [distinctive, () => true],
+    [longestFirst(row), carriesQuantity],
+    [longestFirst(row), () => true],
+  ] as const) {
+    for (const quote of quotes) {
       if (!test(quote)) continue;
       const found = at(quote);
       if (found >= 0) return found;

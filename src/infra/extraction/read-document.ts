@@ -101,7 +101,7 @@ async function readPdfText(
 ): Promise<ExtractedDocument> {
   const byPattern = extractFromText(text, pages);
 
-  const asked = await readWithModel(text, terms, pdf);
+  const asked = await readWithModel(text, terms, pdf, pages.length);
   if (asked === null) return byPattern;
 
   if (!asked.ok) {
@@ -126,7 +126,7 @@ async function readPdfText(
       itself. Whatever it found out, it says.
     */
     if (byPattern.lines.length === 0) {
-      return { ...byPattern, notes: [...byPattern.notes, ...read.document.notes.slice(1)] };
+      return { ...byPattern, notes: [...byPattern.notes, ...read.reasons] };
     }
     return {
       ...byPattern,

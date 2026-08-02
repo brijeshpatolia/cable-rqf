@@ -183,6 +183,9 @@ describe('cells that are not all one row', () => {
     const out = readCandidates({ candidates: [stolen, row52], text: TEXT }).document;
 
     expect(out.lines).toEqual(['3C x 2.5 mm² — 4,000 m']);
+    // Named, because two guards can refuse this and only one of them is the
+    // point: the row number is missing from the cells before anything else.
+    expect(out.notes.join(' ')).toContain('none of the cells it quotes carry that row number');
   });
 
   it('is refused even when the other row is missing from the answer', () => {
@@ -348,6 +351,33 @@ describe('quantities in kilometres', () => {
     // thousandth of the length under a note saying nothing was converted.
     expect(out.notes.join(' ')).toContain('Item 5.1 was read in metres');
     expect(out.notes.join(' ')).toContain('Kilometres were claimed');
+  });
+});
+
+describe('a kilometre claim the cells do not support', () => {
+  it('is read as metres, and said out loud', () => {
+    /*
+      The direction that costs a thousandfold. Refusing quietly is only safe
+      if the model was wrong; if the document says `Kms.` and this did not
+      recognise it, the line goes out at a thousandth of the length under a
+      note saying nothing was converted.
+    */
+    const out = read([{ ...row51, quantityUnit: 'km' }]).document;
+
+    expect(out.lines).toEqual(['2C x 16 mm² Cu XLPE SWA PVC 1kV — 19,000 m']);
+    expect(out.notes.join(' ')).toContain('Item 5.1 was read in metres');
+    expect(out.notes.join(' ')).toContain('Kilometres were claimed');
+  });
+
+  it('is converted when the cells do say kilometres, joined or spaced', () => {
+    for (const cell of ['5.1 2C X 16 mm² km 19000', '5.1 2C X 16 mm² 19000km']) {
+      const out = readCandidates({
+        candidates: [{ ...row51, quantityUnit: 'km', evidence: { row: [cell], heading: [] } }],
+        text: cell,
+      }).document;
+
+      expect(out.lines[0]).toContain('19,000,000 m');
+    }
   });
 });
 
