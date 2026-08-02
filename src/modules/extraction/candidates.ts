@@ -505,8 +505,14 @@ export function readCandidates({
       layout was being reconstructed from line distances, and it does not stop
       being possible now that the model reports the grouping instead.
     */
+    const mine = new Set(
+      [candidate.sizeMm2, candidate.cores, candidate.quantity]
+        .filter((v): v is number => typeof v === 'number')
+        .map((v) => String(v)),
+    );
     const intruder =
       row.map((q) => leadingRef(q)).find((r) => r !== null && r !== numbered) ??
+      row.map((q) => bareRef(q, mine)).find((r) => r !== null && r !== numbered) ??
       [...everyRef].find((other) => other !== numbered && row.some((q) => statesRef(q, other)));
     if (intruder !== undefined) {
       refused.push(
@@ -608,6 +614,31 @@ const LEADING_REF = /^\s*['"’]?\s*(\d+(?:\.\d+)?)\s+(?!(?:mm|sq|m|km|metres?|m
 
 function leadingRef(text: string): string | null {
   return LEADING_REF.exec(oneLine(text))?.[1] ?? null;
+}
+
+/**
+ * A cell that is a row number and nothing else.
+ *
+ * Column extraction sometimes gives the number a cell of its own, and
+ * `leadingRef` cannot see it there: it wants a number followed by content, and
+ * `5.2` on its own has none. The set built from the answer was the only thing
+ * catching that, and it holds nothing for a row the model chose not to report.
+ * Raised in review, twice — the same hole through a narrower door.
+ *
+ * Only the sectioned form counts. A cell reading `4000` is a quantity far more
+ * often than it is a row called four thousand, and `1` is as likely to be a
+ * unit count; a dot is what makes `5.2` unmistakably a position in a schedule.
+ *
+ * And never a figure this row already claims. `3C X 2.5 mm²` can arrive as a
+ * bare `2.5` cell, which is this row's size and not item 2.5 next door — so
+ * anything the candidate reports as its own size, cores or quantity is exempt
+ * before the question is even asked.
+ */
+const BARE_REF = /^\s*['"’]?\s*(\d+\.\d+)\s*$/;
+
+function bareRef(text: string, mine: ReadonlySet<string>): string | null {
+  const found = BARE_REF.exec(oneLine(text))?.[1];
+  return found === undefined || mine.has(found) ? null : found;
 }
 
 /** Is this text's own row number `ref` — as a whole word, not a digit inside one? */

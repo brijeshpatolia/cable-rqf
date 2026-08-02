@@ -253,6 +253,48 @@ describe('cells that are not all one row', () => {
     expect(out.lines).toEqual(['6 mm² — 1,000 m']);
   });
 
+  it('is refused when a bare number cell belongs to a row not in the answer', () => {
+    /*
+      Raised in review, the same hole through a narrower door. Column
+      extraction gives the number a cell of its own, so `5.2` has no trailing
+      content for the leading-number rule to see — and with 5.2 left out of the
+      answer, the set built from the answer knows nothing about it either.
+    */
+    const crossed: Candidate = {
+      ...row51,
+      quantity: 4000,
+      evidence: { row: ['5.1', '2C X 16 mm²', '5.2', 'm', '4000'], heading: [] },
+    };
+    const out = readCandidates({ candidates: [crossed], text: TEXT }).document;
+
+    expect(out.lines).toEqual([]);
+    expect(out.notes.join(' ')).toContain('quotes a cell belonging to item 5.2');
+  });
+
+  it('does not mistake this row’s own size for a neighbour’s number', () => {
+    // `3C X 2.5 mm²` can arrive as a bare `2.5` cell. That is the size, not
+    // item 2.5 next door.
+    const text = ['5.23 3C X 2.5 mm² m 4000'].join('\n');
+    const out = readCandidates({
+      candidates: [
+        {
+          ...row51,
+          itemRef: '5.23',
+          cores: 3,
+          sizeMm2: 2.5,
+          quantity: 4000,
+          armour: null,
+          insulation: null,
+          voltage: null,
+          evidence: { row: ['5.23', '3C X 2.5 mm²', '2.5', 'm', '4000'], heading: [] },
+        },
+      ],
+      text,
+    }).document;
+
+    expect(out.lines).toEqual(['3C x 2.5 mm² — 4,000 m']);
+  });
+
   it('reads both rows when each quotes its own cell', () => {
     const out = readCandidates({ candidates: [row51, row52], text: TEXT }).document;
 
