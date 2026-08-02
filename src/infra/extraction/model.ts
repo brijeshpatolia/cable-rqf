@@ -47,6 +47,19 @@ const BUDGET_MS = 190_000;
 const MAX_CHARS = 400_000;
 
 /**
+ * And a cap on the file, not only on the text it yielded.
+ *
+ * A scan has almost no text layer and can still be a hundred megabytes, so the
+ * character cap above waves it through. The API takes a document block of at
+ * most a hundred pages inside a request of at most 32 MB, and base64 adds a
+ * third — so 16 MB of PDF is comfortably inside both with the schema and the
+ * text alongside it. Past either limit the file is still *read*; it is only
+ * the model that does not see it.
+ */
+const MAX_PDF_BYTES = 16_000_000;
+const MAX_PDF_PAGES = 100;
+
+/**
  * Three outcomes, not two.
  *
  * `null` means the model was never asked — no key, or nothing worth sending —
@@ -79,6 +92,23 @@ function failed(why: string): ModelReading {
 export async function readWithModel(
   text: string,
   terms: readonly Term[],
+  /**
+   * The file itself, when there is one.
+   *
+   * Sent alongside the extracted text rather than instead of it, because the
+   * two answer different questions. The text is what the app can *check* an
+   * answer against — every quote is looked for in it. The document is what
+   * carries everything the text layer throws away, and the thing it throws
+   * away is not decoration: on the RFQ this was built against, a size had been
+   * struck through and replaced by hand. A strikethrough is a line drawn over
+   * the glyphs, so the text layer returns both numbers with nothing to tell
+   * them apart, and the app read out the cancelled one — 500 mm² where the
+   * customer wanted 300, against 3,750 m. Given the page, the model reads it
+   * correctly and says which was withdrawn.
+   */
+  pdf?: Uint8Array,
+  /** How many pages it has, so a hundred-page bundle is not sent as one block. */
+  pages = 0,
 ): Promise<ModelReading | null> {
   const key = process.env['ANTHROPIC_API_KEY'];
   if (key === undefined || key.trim() === '') return null;
@@ -89,6 +119,16 @@ export async function readWithModel(
         'the point where a file is an enquiry rather than a standards bundle',
     );
   }
+
+  /*
+    Too big to send is not too big to read. The text still goes, and the only
+    thing lost is the model's sight of the page — which matters for a marked-up
+    schedule and not at all for a standards bundle nobody meant to attach.
+  */
+  const document =
+    pdf !== undefined && pdf.byteLength <= MAX_PDF_BYTES && pages <= MAX_PDF_PAGES
+      ? pdf
+      : undefined;
 
   try {
     const client = new Anthropic({ apiKey: key, timeout: TIMEOUT_MS, maxRetries: 1 });
@@ -115,7 +155,43 @@ export async function readWithModel(
           // that is worth a moment's thought and cheap to get wrong quickly.
           thinking: { type: 'adaptive' },
           output_config: { format: { type: 'json_schema', schema: schemaFor(terms) } },
-          messages: [{ role: 'user', content: `${INSTRUCTIONS}\n\n---\n\n${text}` }],
+            messages: [
+            {
+              role: 'user',
+              content:
+                document === undefined
+                  ? `${INSTRUCTIONS}\n\n---\n\n${text}`
+                  : [
+                      {
+                        type: 'document' as const,
+                        source: {
+                          type: 'base64' as const,
+                          media_type: 'application/pdf' as const,
+                          data: Buffer.from(document).toString('base64'),
+                        },
+                      },
+                      {
+                        type: 'text' as const,
+                        /*
+                          The text as well as the page, and the comment above
+                          said so while the code did not. It matters: every
+                          quote is looked for in the text layer, and a quote
+                          taken off the rendered page is written the way a
+                          person reads it rather than the way extraction laid
+                          it out. Given both, the model can see which value is
+                          in force *and* quote it in the form the check can
+                          find.
+                        */
+                        text:
+                          `${INSTRUCTIONS}\n\n` +
+                          'The text below was extracted from the same document. Quote ' +
+                          'from it character for character; use the page above to ' +
+                          'decide which values are in force.\n\n---\n\n' +
+                          text,
+                      },
+                    ],
+            },
+          ],
         },
         // The budget, spanning the retry rather than resetting with it.
         { signal: AbortSignal.timeout(BUDGET_MS) },

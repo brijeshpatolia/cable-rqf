@@ -95,7 +95,12 @@ export interface Candidate {
   readonly sheath?: string | null;
   readonly voltage?: string | null;
   readonly standard?: string | null;
-  readonly evidence?: readonly string[];
+  readonly evidence?: {
+    /** This row's own cells: its number, description, unit and quantity. */
+    readonly row?: readonly string[];
+    /** The group heading it inherits its construction from. */
+    readonly heading?: readonly string[];
+  };
 }
 
 /**
@@ -182,14 +187,35 @@ export function schemaFor(terms: readonly Term[] = BUILT_IN_TERMS): Record<strin
             ),
             ...Object.fromEntries(AXES.map((a) => [a, axisField(a)])),
             evidence: {
-              type: 'array',
-              items: { type: 'string' },
+              type: 'object',
+              additionalProperties: false,
+              required: ['row', 'heading'],
               description:
-                'The text you read this row from, copied character for character: ' +
-                'the row itself, and the heading above it when the construction ' +
-                'came from there. Each entry must be one unbroken run of text as ' +
-                'printed — quote several short runs rather than stitching one long ' +
-                'one together.',
+                'Where you read this row, split into the part that is the row’s ' +
+                'own and the part it inherits. The split is what lets the row be ' +
+                'checked without guessing at the layout.',
+              properties: {
+                row: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  description:
+                    'The text of THIS ROW’S OWN CELLS, copied character for ' +
+                    'character: its number, its description, its unit, its ' +
+                    'quantity. Nothing from any other row. Every figure you report ' +
+                    'is looked for here, so a row whose cells you cannot quote is ' +
+                    'a row that will be left out. If the cell holds a value that ' +
+                    'has been struck through, quote that too — it is part of the ' +
+                    'cell — but do not report it as the answer.',
+                },
+                heading: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  description:
+                    'The group heading this row inherits its construction from, ' +
+                    'copied character for character. Every line of it you took a ' +
+                    'field from. Empty when the row states its own construction.',
+                },
+              },
             },
           },
         },
@@ -200,35 +226,40 @@ export function schemaFor(terms: readonly Term[] = BUILT_IN_TERMS): Record<strin
 
 export const INSTRUCTIONS =
   'You are reading a cable enquiry that a customer has sent to a cable ' +
-  'manufacturer, so that it can be quoted. The text below was taken out of a ' +
-  'PDF and has lost its table structure: columns may have come apart, and a ' +
-  'row’s description and its quantity may sit on separate lines.\n\n' +
-  'List every cable the customer is asking to have priced.\n\n' +
-  'These documents are usually hierarchical. A heading describes a ' +
-  'construction in prose — voltage, conductor, insulation, armour, sheath — ' +
-  'and the numbered rows beneath it give only cores, size and quantity. Those ' +
-  'rows inherit the heading above them: repeat the heading’s construction on ' +
-  'every row it governs, and stop at the next heading. Working out which ' +
-  'heading governs which rows is the job.\n\n' +
+  'manufacturer, so that it can be quoted. List every cable they are asking to ' +
+  'have priced.\n\n' +
+  'These documents are hierarchical. A heading describes a construction in ' +
+  'prose — voltage, conductor, insulation, armour, sheath — and the numbered ' +
+  'rows beneath it give only cores, size and quantity. Those rows inherit the ' +
+  'heading above them: repeat its construction on every row it governs, and ' +
+  'stop at the next heading.\n\n' +
   'Rules, in order of importance:\n\n' +
   '1. Copy, never calculate. Every number you give must be printed in the ' +
   'document. Do not convert units, do not round, do not total rows, and do not ' +
   'fill a gap in a numbering sequence with a row that is not there.\n' +
-  '2. If you are not certain of a field, return null for it. A missing field ' +
-  'costs an engineer thirty seconds; a wrong one leaves this building as a ' +
-  'price. This is not a test of how much you can fill in.\n' +
-  '3. Quote your source in `evidence`, character for character. Anything you ' +
-  'have not quoted will be discarded — this is checked, not trusted.\n' +
-  '   A heading is usually broken across several lines, with the voltage and ' +
-  'conductor on one and the armour and sheath on another. Quote **every line ' +
-  'of the heading you took a field from, on every row that inherits it** — all ' +
-  'thirty rows of a group repeat the same two or three heading fragments, and ' +
-  'that is correct and expected. Quoting the heading on the first row of a ' +
-  'group only means every row after it loses its construction and has to be ' +
-  'settled by hand.\n' +
-  '4. Leave out anything that is not a cable being asked for: title blocks, ' +
+  '2. Read what is in force, not what was cancelled. These documents are marked ' +
+  'up by hand. A value struck through has been withdrawn and must never be ' +
+  'reported; the value written in beside it, often in another colour, is the one ' +
+  'to price. If you cannot tell which of two values stands, return null for that ' +
+  'field rather than choosing between them.\n' +
+  '3. If you are not certain of a field, return null. A missing field costs an ' +
+  'engineer thirty seconds; a wrong one leaves this building as a price. This is ' +
+  'not a test of how much you can fill in.\n' +
+  '4. Quote your source, character for character, in the two places provided. ' +
+  '`evidence.row` is this row’s own cells and nothing from any other row; ' +
+  '`evidence.heading` is the heading lines it inherits. Every figure you report ' +
+  'is looked for in `evidence.row`, so a row you cannot quote is a row that will ' +
+  'be left out. Always include the row’s own number as one of the entries in ' +
+  '`evidence.row` — it is what ties the row to itself, and a row that does not ' +
+  'quote its own number is left out. Add nothing of your own to a quote: no ' +
+  'notes, no parentheses, no ellipses, no “(struck through)”. An annotated ' +
+  'quote is not a quote and costs the row.\n' +
+  '5. Include a row whose quantity is nought, exactly as printed. It is still ' +
+  'something the customer put on the schedule and somebody should ask them about ' +
+  'it; leaving it out silently is the one thing worse than leaving it in.\n' +
+  '6. Leave out anything that is not a cable being asked for: title blocks, ' +
   'revision tables, drum-length notes, core-colour notes, totals.\n' +
-  '5. Documents contain mistakes. Do not correct them and do not drop the row — ' +
+  '7. Documents contain mistakes. Do not correct them and do not drop the row — ' +
   'report what is printed and let a person decide.';
 
 /** `2.5` → `2.5`, `16` → `16`. Never `16.0`. */
@@ -331,6 +362,14 @@ export interface CandidateReading {
   readonly document: ExtractedDocument;
   /** How many rows the model offered, before any were refused. */
   readonly offered: number;
+  /**
+   * Why each refused row was refused, and each doubt about a kept one.
+   *
+   * Named rather than left to be sliced off the front of `notes`, because a
+   * caller that wants the reasons without the summary was reaching in by index
+   * and would have taken the wrong one the day a note was added.
+   */
+  readonly reasons: readonly string[];
 }
 
 /**
@@ -362,6 +401,18 @@ export function readCandidates({
   */
   const whole = folded.join(' ');
 
+  /*
+    Every row number the answer claims, so a row can be checked for cells that
+    are not its own. The split evidence buys simplicity by trusting the model's
+    grouping; this is the one place that trust is checked, and it is checked
+    with information the answer supplies about itself.
+  */
+  const everyRef = new Set(
+    candidates
+      .map((c) => (typeof c.itemRef === 'string' ? c.itemRef.trim() : ''))
+      .filter((r) => r !== ''),
+  );
+
   const lines: string[] = [];
   const sources: SourceRegion[] = [];
   const refused: string[] = [];
@@ -375,28 +426,40 @@ export function readCandidates({
         : null;
     const ref = numbered === null ? 'An unnumbered row' : `Item ${numbered}`;
 
-    const quotes = (candidate.evidence ?? []).filter(
-      (q): q is string => typeof q === 'string' && q.trim() !== '',
-    );
+    const clean = (q: readonly string[] | undefined) =>
+      (q ?? []).filter((x): x is string => typeof x === 'string' && x.trim() !== '');
+    const row = clean(candidate.evidence?.row);
+    const heading = clean(candidate.evidence?.heading);
 
     // Rule 1: what was not quoted from the document did not come from it.
-    const unquoted = quotes.filter((q) => !whole.includes(oneLine(q).toLowerCase()));
-    if (quotes.length === 0 || unquoted.length > 0) {
+    const unquoted = [...row, ...heading].filter((q) => !isQuoted(whole, rawText, q));
+    if (row.length === 0 || unquoted.length > 0) {
       refused.push(
         `${ref} was left out — ` +
-          (quotes.length === 0
-            ? 'nothing in the document was quoted in support of it.'
+          (row.length === 0
+            ? 'none of its own cells were quoted from the document.'
             : `“${oneLine(unquoted[0] ?? '').slice(0, 60)}” does not appear in the document.`),
       );
       continue;
     }
 
-    const evidence = quotes.join(' \n ');
+    /*
+      The row's own cells, and separately everything it cites.
 
-    // Rule 2: a number that is not printed is not a number.
+      Figures are looked for in the first and construction terms in the second,
+      which is the whole reason the model is asked to split them. It replaced
+      three rounds of line-distance rules — a window, a proximity fallback, a
+      row-number join — each of which existed only to guess at which lines
+      belonged to a row, and each of which was wrong in a different way. A model
+      looking at the page does not have to guess.
+    */
+    const cells = row.join(' \n ');
+    const cited = [...row, ...heading].join(' \n ');
+
+    // Rule 2: a number that is not printed on this row is not this row's number.
     const size = positive(candidate.sizeMm2);
-    if (size === null || !statesNumber(evidence, size)) {
-      refused.push(`${ref} was left out — no conductor size is printed in the text it cites.`);
+    if (size === null || !statesNumber(cells, size)) {
+      refused.push(`${ref} was left out — no conductor size is printed in its own cells.`);
       continue;
     }
 
@@ -409,59 +472,88 @@ export function readCandidates({
     }
 
     const quantity = positive(candidate.quantity);
-    if (quantity === null || !statesNumber(evidence, quantity)) {
+    if (quantity === null || !statesNumber(cells, quantity)) {
       refused.push(
-        `${ref} was left out — no quantity is printed in the text it cites, and ` +
-          'a quantity is not worth guessing at.',
-      );
-      continue;
-    }
-
-    if (!readTogether(folded, quotes, numbered, size, quantity)) {
-      refused.push(
-        `${ref} was left out — its size and its quantity do not both come off the ` +
-          'row it is numbered as, so they are unlikely to belong to each other. ' +
-          'Read that row off the file by hand.',
+        `${ref} was left out — no quantity is printed in its own cells, and a ` +
+          'quantity is not worth guessing at.',
       );
       continue;
     }
 
     /*
-      Kilometres are accepted only when the text says kilometres. Every other
-      field failing costs a little precision; this one failing multiplies an
-      order by a thousand, so it is the one claim checked against the words
-      rather than taken on trust.
+      The row number has to be in the row's own cells.
 
-      And when the claim is refused, it is refused *out loud*. Silently reading
-      it as metres is safe only if the model was wrong. If the document really
-      does print kilometres in a form this does not recognise — `Kms.`, `K.M.`
-      — then the quote goes out at a thousandth of the length, under a note
-      saying nothing was converted. That is the one shape of mistake this whole
-      file exists to prevent, and it would have been introduced by the check
-      meant to prevent it.
+      Without this, a row numbered 5.1 could be built entirely out of 5.2's
+      cell: every figure printed, on one line, in the right document, and only
+      the number saying otherwise. It was found in review the first time and it
+      costs one line to keep out.
     */
-    const saysKm = /\bkms?\b/i.test(evidence);
+    if (numbered !== null && !row.some((q) => statesRef(q, numbered))) {
+      refused.push(
+        `${ref} was left out — none of the cells it quotes carry that row number, ` +
+          'so there is nothing tying what was read to the row it claims to be.',
+      );
+      continue;
+    }
+
+    /*
+      And none of the cells may belong to a different row.
+
+      Two intact rows at the same size are enough to build a fiction out of
+      true statements — quote 5.2's cell under 5.1's number and every figure is
+      printed, on one line, in the right document. Found in review when the
+      layout was being reconstructed from line distances, and it does not stop
+      being possible now that the model reports the grouping instead.
+    */
+    const mine = new Set(
+      [candidate.sizeMm2, candidate.cores, candidate.quantity]
+        .filter((v): v is number => typeof v === 'number')
+        .map((v) => String(v)),
+    );
+    const intruder =
+      row.map((q) => leadingRef(q)).find((r) => r !== null && r !== numbered) ??
+      row.map((q) => bareRef(q, mine)).find((r) => r !== null && r !== numbered) ??
+      [...everyRef].find((other) => other !== numbered && row.some((q) => statesRef(q, other)));
+    if (intruder !== undefined) {
+      refused.push(
+        `${ref} was left out — it quotes a cell belonging to item ${intruder}, so ` +
+          'what was read is not all one row. Read that row off the file by hand.',
+      );
+      continue;
+    }
+
+    /*
+      Kilometres are accepted only when the row says kilometres. Every other
+      field failing costs a little precision; this one failing multiplies an
+      order by a thousand.
+    */
+    /*
+      No leading word boundary: the unit is printed against the figure as often
+      as beside it, and `3.75km` has no boundary between the 5 and the k. With
+      one, that row was read as 3.75 metres.
+    */
+    const saysKm = /kms?\b/i.test(cells);
     if (candidate.quantityUnit === 'km' && !saysKm) {
       doubted.push(
-        `${ref} was read in metres. Kilometres were claimed for it, and the text ` +
-          'it cites does not say kilometres — check the unit against the document ' +
+        `${ref} was read in metres. Kilometres were claimed for it, and its own ` +
+          'cells do not say kilometres — check the unit against the document ' +
           'before this one is priced.',
       );
     }
     const metres = candidate.quantityUnit === 'km' && saysKm ? quantity * 1000 : quantity;
 
     // Rule 3: the term the model chose, looked for in the words it quoted.
-    const spec = AXES.map((axis) => verifiedTerm(terms, axis, candidate[axis], evidence)).filter(
+    const spec = AXES.map((axis) => verifiedTerm(terms, axis, candidate[axis], cited)).filter(
       (t): t is string => t !== null,
     );
 
     const cores = positive(candidate.cores);
     const head =
-      cores !== null && Number.isInteger(cores) && statesNumber(evidence, cores)
+      cores !== null && Number.isInteger(cores) && statesNumber(cells, cores)
         ? `${cores}C x ${num(size)} mm²`
         : `${num(size)} mm²`;
 
-    const at = lineOf(folded, quotes, size, quantity);
+    const at = lineOf(folded, row, quantity);
     lines.push(`${[head, ...spec].join(' ')} — ${metres.toLocaleString('en-GB')} m`);
     sources.push({
       line: at,
@@ -491,6 +583,7 @@ export function readCandidates({
   return {
     document: { lines, sources, notes, unreadable: lines.length === 0, rawText },
     offered: candidates.length,
+    reasons: [...doubted, ...refused],
   };
 }
 
@@ -498,18 +591,55 @@ export function readCandidates({
 const oneLine = (text: string) => text.replace(/\s+/g, ' ').trim();
 
 /**
- * How far the description may sit from the row number it belongs to.
+ * The row number a cell opens with, if it opens with one.
  *
- * Two, which is the worst real case: the RFQ this was built against puts item
- * 1's number and quantity on one line, a run-on fragment of the heading on the
- * next, and the cores and size on the one after that. Every other split row is
- * adjacent.
+ * `5.2 3C X 2.5 mm² m 4000` is numbered 5.2; `3750` is a quantity and `2C X 4
+ * mm²` is a description, and neither is numbered at all. The pattern wants a
+ * number, then a space, then something that is not a unit.
  *
- * It was three, and three is one too many. Two rows split the same way put the
- * first row's description exactly three lines above the second row's quantity,
- * so a window of three admitted the very pairing this exists to refuse.
+ * The unit is the whole difficulty. `6 mm² Y/G CABLE` is how the earthing
+ * cables are written — a number, a space, and content — and reading its `6` as
+ * a row number would have refused all six of them for belonging to somebody
+ * else. A figure followed by `mm²` is a size; a figure followed by anything
+ * else is a row that has been numbered.
+ *
+ * This is here because the other half of the check reads the row numbers off
+ * the *answer*, and an answer that omits a row omits its number too: quote
+ * 5.1's number cell and 5.2's quantity, leave 5.2 out of the reply, and
+ * nothing in a set built from the reply knows 5.2 exists. Raised in review.
+ * Read off the cell itself, it does not matter what else the model chose to
+ * report.
  */
-const SAME_ROW_LINES = 2;
+const LEADING_REF = /^\s*['"’]?\s*(\d+(?:\.\d+)?)\s+(?!(?:mm|sq|m|km|metres?|meters?)\b)\S/i;
+
+function leadingRef(text: string): string | null {
+  return LEADING_REF.exec(oneLine(text))?.[1] ?? null;
+}
+
+/**
+ * A cell that is a row number and nothing else.
+ *
+ * Column extraction sometimes gives the number a cell of its own, and
+ * `leadingRef` cannot see it there: it wants a number followed by content, and
+ * `5.2` on its own has none. The set built from the answer was the only thing
+ * catching that, and it holds nothing for a row the model chose not to report.
+ * Raised in review, twice — the same hole through a narrower door.
+ *
+ * Only the sectioned form counts. A cell reading `4000` is a quantity far more
+ * often than it is a row called four thousand, and `1` is as likely to be a
+ * unit count; a dot is what makes `5.2` unmistakably a position in a schedule.
+ *
+ * And never a figure this row already claims. `3C X 2.5 mm²` can arrive as a
+ * bare `2.5` cell, which is this row's size and not item 2.5 next door — so
+ * anything the candidate reports as its own size, cores or quantity is exempt
+ * before the question is even asked.
+ */
+const BARE_REF = /^\s*['"’]?\s*(\d+\.\d+)\s*$/;
+
+function bareRef(text: string, mine: ReadonlySet<string>): string | null {
+  const found = BARE_REF.exec(oneLine(text))?.[1];
+  return found === undefined || mine.has(found) ? null : found;
+}
 
 /** Is this text's own row number `ref` — as a whole word, not a digit inside one? */
 function statesRef(text: string, ref: string): boolean {
@@ -519,113 +649,66 @@ function statesRef(text: string, ref: string): boolean {
 }
 
 /**
- * Were the size and the quantity read from the same row?
+ * Was this excerpt really taken from the document?
  *
- * Checking each number against *all* the quoted text lets them come from
- * different rows: quote row 5.1 for `2C X 16 mm²` and row 5.23 for `4,000`,
- * and both numbers are genuinely printed, both checks pass, and the line comes
- * out as `2C x 16 mm² — 4,000 m`. Every individual fact true, the row a
- * fiction, and the resulting quantity wrong on a document that goes to a
- * customer. Found in review, twice, and neither time by a test.
+ * Verbatim first, which is what an honest quote of a cell looks like. Failing
+ * that, the same words in order and close together — because a heading quoted
+ * the way a person reads it is often *not* a substring of the text layer. The
+ * columns come apart in extraction and drop a row number into the middle of
+ * the sentence:
  *
- * Three tiers, tried in order:
+ *     600/1000V, STRANDED ANNEALED … BINDER TAPE (AS
+ *     5
+ *     REQUIRED), EXTRUDED PVC BEDDING, GALVANIZED STEEL …
  *
- * 1. **One excerpt states both.** Three rows in four are printed this way, and
- *    it is the only tier immune to a mix-up with the row next door.
- * 2. **The row number is the join.** The rest are split across two lines by the
- *    PDF, and in every split layout seen the item number travels with the
- *    quantity — `5.3 m 9000` — while the description sits on its own line. So
- *    the quantity must be quoted from an excerpt bearing this row's own
- *    number, and the size must be printed beside *that* line. Proximity alone
- *    was not enough: two rows split the same way interleave, and 5.1's
- *    description is as close to 5.2's quantity as to its own.
- * 3. **No number printed at all**, which is rare. Bare proximity, and the
- *    engineer is the check.
- *
- * Every occurrence of a quote is considered, not the first. `3C X 185 mm²`
- * appears both inside item 3.3's row and on its own as the top half of item
- * 5.7 thirty lines later, and taking the first would put 5.7's two halves half
- * a page apart and refuse a row that is perfectly well printed.
- *
- * **What this still cannot catch**, said plainly rather than left to be
- * discovered: two rows split across adjacent lines are genuinely ambiguous in
- * the text. If the model attaches 5.2's description to 5.1's quantity, both
- * lines are one apart from the row number and nothing here can tell. That is
- * what the source pane beside every line is for — it opens on the row the
- * quantity was read off, and an engineer comparing the two sees it at once.
+ * The first run of this against a real PDF rejected every heading in the
+ * document on exactly that, and kept six lines out of forty-five. Words in
+ * order within a window is still a check nothing invented can pass: a
+ * fabricated heading would have to appear, word for word and in sequence, in
+ * text it never came from.
  */
-function readTogether(
-  folded: readonly string[],
-  quotes: readonly string[],
-  ref: string | null,
-  size: number,
-  quantity: number,
-): boolean {
-  /*
-    The row number is required here too, and leaving it out was a hole big
-    enough to drive a whole row through. Two intact rows at the same size —
-
-        5.1 2C X 16 mm² m 19000
-        5.2 2C X 16 mm² m 4000
-
-    — and a candidate numbered 5.1 quoting only the second one satisfied
-    "one excerpt states both" perfectly. Item 5.2's quantity would have gone
-    out under item 5.1's number, and 5.1 itself would have quietly vanished
-    from the enquiry. Nothing above this catches it: every fact cited is
-    printed, on one line, in the right document.
-  */
-  const bearsRef = (q: string) => ref === null || statesRef(q, ref);
-  if (quotes.some((q) => bearsRef(q) && statesNumber(q, size) && statesNumber(q, quantity))) {
-    return true;
-  }
-
-  const linesOf = (quote: string): readonly number[] => {
-    const needle = oneLine(quote).toLowerCase();
-    return folded.flatMap((line, at) => (line.includes(needle) ? [at] : []));
-  };
-  const sizeAt = quotes.filter((q) => statesNumber(q, size)).flatMap(linesOf);
-
-  if (ref !== null) {
-    const anchors = quotes
-      .filter((q) => statesRef(q, ref) && statesNumber(q, quantity))
-      .flatMap(linesOf);
-    // The quantity was not quoted from this row's own line, so there is
-    // nothing tying it to this row.
-    if (anchors.length === 0) return false;
-    return anchors.some((a) => sizeAt.some((b) => Math.abs(a - b) <= SAME_ROW_LINES));
-  }
-
-  const quantityAt = quotes.filter((q) => statesNumber(q, quantity)).flatMap(linesOf);
-  return sizeAt.some((a) => quantityAt.some((b) => Math.abs(a - b) <= SAME_ROW_LINES));
+function isQuoted(whole: string, rawText: string, quote: string): boolean {
+  return whole.includes(oneLine(quote).toLowerCase()) || containsPhrase(rawText, quote);
 }
 
 /**
  * Which line of the document this row came off.
  *
- * The quote carrying the quantity is the anchor, because the quantity is the
- * rightmost thing on a row: a quote containing it is the row itself rather
- * than the heading three lines above it, which every row in a group quotes and
- * which would otherwise send half a schedule to the same place.
+ * The cell carrying the quantity, because the quantity is the rightmost thing
+ * on a row: a cell containing it is the row itself rather than the heading
+ * above it, which every row in a group quotes and which would otherwise send
+ * half a schedule to the same place.
  *
- * Anchoring on the *numbers* instead was tried and is worse than it looks. A
- * schedule repeats them — 850 metres of 240 mm² appears twice in the RFQ this
- * was built for, once under an MV heading and once under an LV one — so
- * "the line stating both" confidently picked the wrong row. Text a model
- * copied off a row is far more distinguishing than the figures on it.
+ * Every occurrence of a quote counts, not the first. `3C X 185 mm²` sits
+ * inside item 3.3's row and again on its own as the top half of item 5.7
+ * thirty lines later, and taking the first would open the source view on the
+ * wrong row.
  */
-function lineOf(
-  folded: readonly string[],
-  quotes: readonly string[],
-  size: number,
-  quantity: number,
-): number {
+function lineOf(folded: readonly string[], row: readonly string[], quantity: number): number {
   const at = (quote: string) => folded.findIndex((l) => l.includes(oneLine(quote).toLowerCase()));
 
-  for (const test of [
-    (q: string) => statesNumber(q, quantity),
-    (q: string) => statesNumber(q, size),
-    () => true,
-  ]) {
+  /*
+    Longest first, and nothing trivially short.
+
+    A cell quoted on its own is often a single token — `m`, `3750`, `5.3` —
+    and `m` is in every line of the document. Anchoring on the first one
+    offered sent a third of the schedule to whichever line happened to come
+    first, so the source view opened on a row the engineer had not asked
+    about. The longest quote is the one that identifies a place.
+  */
+  const longestFirst = (qs: readonly string[]) =>
+    [...qs].sort((a, b) => oneLine(b).length - oneLine(a).length);
+  const distinctive = longestFirst(row.filter((q) => oneLine(q).length >= 6));
+
+  const carriesQuantity = (q: string) => statesNumber(q, quantity);
+  // The short cells last, because `5.3` and `m 0` still place a row better
+  // than line 0 does — line 0 is the document's first heading.
+  for (const [quotes, test] of [
+    [distinctive, carriesQuantity],
+    [distinctive, () => true],
+    [longestFirst(row), carriesQuantity],
+    [longestFirst(row), () => true],
+  ] as const) {
     for (const quote of quotes) {
       if (!test(quote)) continue;
       const found = at(quote);

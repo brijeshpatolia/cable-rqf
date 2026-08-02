@@ -40,7 +40,7 @@ const row51: Candidate = {
   sheath: 'PVC',
   voltage: '1kV',
   standard: null,
-  evidence: ['5.1 2C X 16 mm² m 19000', HEADING, ARMOUR_HALF],
+  evidence: { row: ['5.1 2C X 16 mm² m 19000'], heading: [HEADING, ARMOUR_HALF] },
 };
 
 const read = (candidates: readonly Candidate[], text = DOCUMENT) =>
@@ -87,7 +87,7 @@ describe('an answer the document does not support', () => {
       ...row51,
       itemRef: '5.9',
       quantity: 7000,
-      evidence: ['5.9 2C X 16 mm² m 7000'],
+      evidence: { row: ['5.9 2C X 16 mm² m 7000'], heading: [] },
     };
     const out = read([invented]).document;
 
@@ -96,10 +96,10 @@ describe('an answer the document does not support', () => {
   });
 
   it('drops a row that quotes nothing at all', () => {
-    const out = read([{ ...row51, evidence: [] }]).document;
+    const out = read([{ ...row51, evidence: { row: [], heading: [] } }]).document;
 
     expect(out.lines).toEqual([]);
-    expect(out.notes.join(' ')).toContain('nothing in the document was quoted');
+    expect(out.notes.join(' ')).toContain('none of its own cells were quoted');
   });
 
   it('drops a quantity that was not printed, even when the row was', () => {
@@ -130,7 +130,7 @@ describe('an answer the document does not support', () => {
       cores: 4,
       sizeMm2: 50,
       quantity: 0,
-      evidence: ['5.3 4C X 50 mm² m 0'],
+      evidence: { row: ['5.3 4C X 50 mm² m 0'], heading: [] },
     };
     const out = read([zero]).document;
 
@@ -139,43 +139,184 @@ describe('an answer the document does not support', () => {
   });
 });
 
-describe('a size and a quantity from different rows', () => {
-  it('is refused, even though both numbers are genuinely printed', () => {
+describe('cells that are not all one row', () => {
+  const TEXT = [HEADING, ARMOUR_HALF, '5.1 2C X 16 mm² m 19000', '5.2 3C X 2.5 mm² m 4000'].join(
+    '\n',
+  );
+  const row52: Candidate = {
+    ...row51,
+    itemRef: '5.2',
+    cores: 3,
+    sizeMm2: 2.5,
+    quantity: 4000,
+    evidence: { row: ['5.2 3C X 2.5 mm² m 4000'], heading: [] },
+  };
+
+  it('is refused, even though every figure is genuinely printed', () => {
     /*
-      The dangerous shape, and the one that survived the first round of
-      checks: every individual fact true, the row itself a fiction. 16 mm² is
-      printed on row 5.1 and 4,000 is printed on row 5.2, so checking each
-      number against all the quoted text passes both — and produces a quantity
-      that would go to a customer attached to the wrong cable.
+      The fiction built out of true statements: 16 mm² is printed on row 5.1
+      and 4,000 is printed on row 5.2, so a candidate numbered 5.1 that quotes
+      both cells has every number it reports printed in the document — and a
+      quantity that would go to a customer attached to the wrong cable.
     */
     const crossed: Candidate = {
       ...row51,
       quantity: 4000,
-      evidence: ['5.1 2C X 16 mm² m 19000', '5.2 3C X 2.5 mm² m 4000'],
+      evidence: { row: ['5.1 2C X 16 mm² m 19000', '5.2 3C X 2.5 mm² m 4000'], heading: [] },
     };
-    const out = readCandidates({
-      candidates: [crossed],
-      text: [
-        '5.1 2C X 16 mm² m 19000',
-        'a',
-        'b',
-        'c',
-        'd',
-        '5.2 3C X 2.5 mm² m 4000',
-      ].join('\n'),
-    }).document;
+    const out = readCandidates({ candidates: [crossed, row52], text: TEXT }).document;
+
+    expect(out.lines).toEqual(['3C x 2.5 mm² — 4,000 m']);
+    expect(out.notes.join(' ')).toContain('quotes a cell belonging to item 5.2');
+  });
+
+  it('is refused when a whole intact row is quoted under the wrong number', () => {
+    // Nothing split, nothing far apart — two complete rows at the same size,
+    // and a candidate numbered 5.1 quoting only 5.2's cell.
+    const stolen: Candidate = {
+      ...row51,
+      sizeMm2: 2.5,
+      cores: 3,
+      quantity: 4000,
+      evidence: { row: ['5.2 3C X 2.5 mm² m 4000'], heading: [] },
+    };
+    const out = readCandidates({ candidates: [stolen, row52], text: TEXT }).document;
+
+    expect(out.lines).toEqual(['3C x 2.5 mm² — 4,000 m']);
+    // Named, because two guards can refuse this and only one of them is the
+    // point: the row number is missing from the cells before anything else.
+    expect(out.notes.join(' ')).toContain('none of the cells it quotes carry that row number');
+  });
+
+  it('is refused even when the other row is missing from the answer', () => {
+    /*
+      Raised in review. The row numbers were read off the *answer*, so an
+      answer that leaves a row out leaves its number out too: quote 5.1's
+      number cell and 5.2's whole cell, report only 5.1, and there was nothing
+      left that knew 5.2 existed. The number is read off the cell now.
+    */
+    const crossed: Candidate = {
+      ...row51,
+      quantity: 4000,
+      evidence: { row: ['5.1 2C X 16 mm² m 19000', '5.2 3C X 2.5 mm² m 4000'], heading: [] },
+    };
+    const out = readCandidates({ candidates: [crossed], text: TEXT }).document;
 
     expect(out.lines).toEqual([]);
-    expect(out.notes.join(' ')).toContain('do not both come off the row it is numbered as');
+    expect(out.notes.join(' ')).toContain('quotes a cell belonging to item 5.2');
+  });
+
+  it('does not mistake a bare quantity cell for another row’s number', () => {
+    // `3750` opens with a number and is not a numbered row; `1 m 3750` is.
+    const text = ['1 m 3750', "' 1C X 300 mm²"].join('\n');
+    const out = readCandidates({
+      candidates: [
+        {
+          ...row51,
+          itemRef: '1',
+          cores: 1,
+          sizeMm2: 300,
+          quantity: 3750,
+          evidence: { row: ['1 m 3750', "' 1C X 300 mm²", 'm', '3750'], heading: [] },
+        },
+      ],
+      text,
+    }).document;
+
+    expect(out.lines).toEqual(['1C x 300 mm² — 3,750 m']);
+  });
+
+  it('does not read a size as another row’s number', () => {
+    /*
+      The earthing cables are written `6 mm² Y/G CABLE` — a number, a space,
+      content — which is the same shape as a numbered row and is not one. This
+      would have refused all six of them.
+    */
+    const text = ['7.1 m 1000', '6 mm² Y/G CABLE'].join('\n');
+    const out = readCandidates({
+      candidates: [
+        {
+          ...row51,
+          itemRef: '7.1',
+          cores: null,
+          sizeMm2: 6,
+          quantity: 1000,
+          armour: null,
+          insulation: null,
+          voltage: null,
+          evidence: { row: ['7.1 m 1000', '6 mm² Y/G CABLE'], heading: [] },
+        },
+      ],
+      text,
+    }).document;
+
+    expect(out.lines).toEqual(['6 mm² — 1,000 m']);
+  });
+
+  it('is refused when a bare number cell belongs to a row not in the answer', () => {
+    /*
+      Raised in review, the same hole through a narrower door. Column
+      extraction gives the number a cell of its own, so `5.2` has no trailing
+      content for the leading-number rule to see — and with 5.2 left out of the
+      answer, the set built from the answer knows nothing about it either.
+    */
+    const crossed: Candidate = {
+      ...row51,
+      quantity: 4000,
+      evidence: { row: ['5.1', '2C X 16 mm²', '5.2', 'm', '4000'], heading: [] },
+    };
+    const out = readCandidates({ candidates: [crossed], text: TEXT }).document;
+
+    expect(out.lines).toEqual([]);
+    expect(out.notes.join(' ')).toContain('quotes a cell belonging to item 5.2');
+  });
+
+  it('does not mistake this row’s own size for a neighbour’s number', () => {
+    // `3C X 2.5 mm²` can arrive as a bare `2.5` cell. That is the size, not
+    // item 2.5 next door.
+    const text = ['5.23 3C X 2.5 mm² m 4000'].join('\n');
+    const out = readCandidates({
+      candidates: [
+        {
+          ...row51,
+          itemRef: '5.23',
+          cores: 3,
+          sizeMm2: 2.5,
+          quantity: 4000,
+          armour: null,
+          insulation: null,
+          voltage: null,
+          evidence: { row: ['5.23', '3C X 2.5 mm²', '2.5', 'm', '4000'], heading: [] },
+        },
+      ],
+      text,
+    }).document;
+
+    expect(out.lines).toEqual(['3C x 2.5 mm² — 4,000 m']);
+  });
+
+  it('reads both rows when each quotes its own cell', () => {
+    const out = readCandidates({ candidates: [row51, row52], text: TEXT }).document;
+
+    expect(out.lines).toEqual([
+      '2C x 16 mm² Cu XLPE SWA PVC 1kV — 19,000 m',
+      '3C x 2.5 mm² — 4,000 m',
+    ]);
   });
 
   it('still reads a row the PDF split across two lines', () => {
-    // The legitimate case, and a quarter of the rows in the document this was
-    // built for: description on one line, item number and quantity on the next.
+    // A quarter of the rows in the document this was built for: description on
+    // one line, item number and quantity on the next. Both cells are the row's.
     const split = ['2C X 4 mm²', '5.3 m 9000'].join('\n');
     const out = readCandidates({
       candidates: [
-        { ...row51, itemRef: '5.3', sizeMm2: 4, quantity: 9000, evidence: ['2C X 4 mm²', '5.3 m 9000'] },
+        {
+          ...row51,
+          itemRef: '5.3',
+          sizeMm2: 4,
+          quantity: 9000,
+          evidence: { row: ['2C X 4 mm²', '5.3 m 9000'], heading: [] },
+        },
       ],
       text: split,
     }).document;
@@ -183,114 +324,14 @@ describe('a size and a quantity from different rows', () => {
     expect(out.lines).toEqual(['2C x 4 mm² — 9,000 m']);
   });
 
-  it('is refused when two rows are split the same way and interleave', () => {
-    /*
-      The case proximity alone could not see. Both rows are split across two
-      lines, so 5.1's description sits exactly as close to 5.2's quantity as
-      to its own — three lines, which the first window admitted. The row
-      number is what tells them apart: 4,000 is printed on a line bearing
-      5.2, and this candidate claims to be 5.1.
-    */
-    const text = ['2C X 16 mm²', '5.1 m 19000', '3C X 2.5 mm²', '5.2 m 4000'].join('\n');
+  it('is refused when the row number is nowhere in its own cells', () => {
     const out = readCandidates({
-      candidates: [
-        { ...row51, sizeMm2: 16, quantity: 4000, evidence: ['2C X 16 mm²', '5.2 m 4000'] },
-      ],
-      text,
+      candidates: [{ ...row51, evidence: { row: ['2C X 16 mm²', 'm 19000'], heading: [] } }],
+      text: ['2C X 16 mm²', 'm 19000'].join('\n'),
     }).document;
 
     expect(out.lines).toEqual([]);
-    expect(out.notes.join(' ')).toContain('do not both come off the row it is numbered as');
-  });
-
-  it('reads both of those rows correctly when each is quoted from its own', () => {
-    const text = ['2C X 16 mm²', '5.1 m 19000', '3C X 2.5 mm²', '5.2 m 4000'].join('\n');
-    const out = readCandidates({
-      candidates: [
-        { ...row51, sizeMm2: 16, quantity: 19000, evidence: ['2C X 16 mm²', '5.1 m 19000'] },
-        {
-          ...row51,
-          itemRef: '5.2',
-          cores: 3,
-          sizeMm2: 2.5,
-          quantity: 4000,
-          evidence: ['3C X 2.5 mm²', '5.2 m 4000'],
-        },
-      ],
-      text,
-    }).document;
-
-    expect(out.lines).toEqual(['2C x 16 mm² — 19,000 m', '3C x 2.5 mm² — 4,000 m']);
-  });
-
-  it('is refused when a whole intact row is quoted under the wrong number', () => {
-    /*
-      Nothing is split here and nothing is far apart — two complete rows at the
-      same size, and a candidate numbered 5.1 quoting only 5.2. One excerpt
-      states both numbers, which was enough on its own. Item 5.2's quantity
-      would have gone out under item 5.1's number, and 5.1 itself would have
-      vanished from the enquiry without a word.
-    */
-    const text = ['5.1 2C X 16 mm² m 19000', '5.2 2C X 16 mm² m 4000'].join('\n');
-    const out = readCandidates({
-      candidates: [
-        { ...row51, sizeMm2: 16, quantity: 4000, evidence: ['5.2 2C X 16 mm² m 4000'] },
-      ],
-      text,
-    }).document;
-
-    expect(out.lines).toEqual([]);
-    expect(out.notes.join(' ')).toContain('do not both come off the row it is numbered as');
-  });
-
-  it('is refused when the right row is quoted alongside the wrong one', () => {
-    // Quoting its own row as well is not a defence: the numbers still have to
-    // come off the line that bears the number.
-    const text = ['5.1 2C X 16 mm² m 19000', '5.2 2C X 16 mm² m 4000'].join('\n');
-    const out = readCandidates({
-      candidates: [
-        {
-          ...row51,
-          sizeMm2: 16,
-          quantity: 4000,
-          evidence: ['5.1 2C X 16 mm² m 19000', '5.2 2C X 16 mm² m 4000'],
-        },
-      ],
-      text,
-    }).document;
-
-    expect(out.lines).toEqual([]);
-  });
-
-  it('is not fooled by wording that repeats elsewhere in the document', () => {
-    /*
-      `3C X 185 mm²` sits inside item 3.3's row and again on its own as the top
-      half of item 5.7, pages later. Taking the first occurrence would put
-      5.7's two halves half a document apart and refuse a row that is printed
-      perfectly well.
-    */
-    const text = [
-      '3.3 3C X 185 mm² m 2300',
-      ...Array.from({ length: 20 }, (_, i) => `filler ${i}`),
-      '3C X 185 mm²',
-      '5.7 m 2200',
-    ].join('\n');
-
-    const out = readCandidates({
-      candidates: [
-        {
-          ...row51,
-          itemRef: '5.7',
-          cores: 3,
-          sizeMm2: 185,
-          quantity: 2200,
-          evidence: ['3C X 185 mm²', '5.7 m 2200'],
-        },
-      ],
-      text,
-    }).document;
-
-    expect(out.lines).toEqual(['3C x 185 mm² — 2,200 m']);
+    expect(out.notes.join(' ')).toContain('none of the cells it quotes carry that row number');
   });
 });
 
@@ -303,7 +344,7 @@ describe('a spec term the quoted text does not use', () => {
   });
 
   it('is dropped when the model quoted only the row, not the heading', () => {
-    const out = read([{ ...row51, evidence: ['5.1 2C X 16 mm² m 19000'] }]).document;
+    const out = read([{ ...row51, evidence: { row: ['5.1 2C X 16 mm² m 19000'], heading: [] } }]).document;
 
     // Nothing on the row itself states any of it, so none of it survives.
     expect(out.lines).toEqual(['2C x 16 mm² — 19,000 m']);
@@ -331,7 +372,7 @@ describe('quantities in kilometres', () => {
 
   it('are converted only when the text says kilometres', () => {
     const out = readCandidates({
-      candidates: [{ ...row51, quantityUnit: 'km', evidence: [KM] }],
+      candidates: [{ ...row51, quantityUnit: 'km', evidence: { row: [KM], heading: [] } }],
       text: KM,
     }).document;
 
@@ -355,6 +396,33 @@ describe('quantities in kilometres', () => {
   });
 });
 
+describe('a kilometre claim the cells do not support', () => {
+  it('is read as metres, and said out loud', () => {
+    /*
+      The direction that costs a thousandfold. Refusing quietly is only safe
+      if the model was wrong; if the document says `Kms.` and this did not
+      recognise it, the line goes out at a thousandth of the length under a
+      note saying nothing was converted.
+    */
+    const out = read([{ ...row51, quantityUnit: 'km' }]).document;
+
+    expect(out.lines).toEqual(['2C x 16 mm² Cu XLPE SWA PVC 1kV — 19,000 m']);
+    expect(out.notes.join(' ')).toContain('Item 5.1 was read in metres');
+    expect(out.notes.join(' ')).toContain('Kilometres were claimed');
+  });
+
+  it('is converted when the cells do say kilometres, joined or spaced', () => {
+    for (const cell of ['5.1 2C X 16 mm² km 19000', '5.1 2C X 16 mm² 19000km']) {
+      const out = readCandidates({
+        candidates: [{ ...row51, quantityUnit: 'km', evidence: { row: [cell], heading: [] } }],
+        text: cell,
+      }).document;
+
+      expect(out.lines[0]).toContain('19,000,000 m');
+    }
+  });
+});
+
 describe('a row with no core count', () => {
   const EARTH = '7.3 16 mm² Y/G CABLE m 5000';
 
@@ -368,7 +436,7 @@ describe('a row with no core count', () => {
           quantity: 5000,
           quantityUnit: 'm',
           insulation: null,
-          evidence: [EARTH],
+          evidence: { row: [EARTH], heading: [] },
         },
       ],
       text: EARTH,

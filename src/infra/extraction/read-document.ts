@@ -52,7 +52,7 @@ export async function readDocument(
     }
     case 'pdf': {
       const { text, pages } = await textOfPdf(bytes);
-      return readPdfText(text, pages, terms);
+      return readPdfText(text, pages, terms, bytes);
     }
     case 'text':
       return extractFromText(new TextDecoder().decode(bytes));
@@ -96,10 +96,12 @@ async function readPdfText(
   text: string,
   pages: readonly TextRegion[],
   terms: readonly Term[],
+  /** The file itself, so the model sees what the text layer discards. */
+  pdf: Uint8Array,
 ): Promise<ExtractedDocument> {
   const byPattern = extractFromText(text, pages);
 
-  const asked = await readWithModel(text, terms);
+  const asked = await readWithModel(text, terms, pdf, pages.length);
   if (asked === null) return byPattern;
 
   if (!asked.ok) {
@@ -116,7 +118,16 @@ async function readPdfText(
 
   const read = readCandidates({ candidates: asked.candidates, text, regions: pages, terms });
   if (read.document.lines.length === 0) {
-    if (byPattern.lines.length === 0) return byPattern;
+    /*
+      Nothing survived, so the reasons are all there is — and they were being
+      thrown away with the lines. A screen saying "no line carried both a
+      description and a quantity" when forty-seven rows had just been refused
+      one by one, each for a stated reason, is the app keeping its diagnosis to
+      itself. Whatever it found out, it says.
+    */
+    if (byPattern.lines.length === 0) {
+      return { ...byPattern, notes: [...byPattern.notes, ...read.reasons] };
+    }
     return {
       ...byPattern,
       notes: [
@@ -251,7 +262,16 @@ async function textOfPdf(bytes: Uint8Array): Promise<{
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
 
   const doc = await pdfjs.getDocument({
-    data: bytes,
+    /*
+      A copy, because pdf.js takes ownership of what it is given.
+
+      It transfers the buffer to its worker and leaves the caller holding a
+      detached, zero-length array. Nothing here noticed while the bytes were
+      only ever read once — and then the same bytes were also sent to the
+      model, which answered `PDF cannot be empty` on a 176 KB file. One line,
+      and it costs a copy of a document small enough to be an enquiry.
+    */
+    data: new Uint8Array(bytes),
     // No worker: this runs in a serverless function, where spawning one buys
     // nothing and fails in some runtimes.
     useWorkerFetch: false,
