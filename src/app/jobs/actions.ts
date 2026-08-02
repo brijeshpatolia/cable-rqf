@@ -188,10 +188,25 @@ export async function openJobFromFile(
     };
   }
 
-  const rawText = read.lines.length > 0 ? read.lines.join('\n') : read.rawText;
-  if (rawText.trim() === '') {
+  /*
+    A document nobody could read opens with no lines, not with all of them.
+
+    It used to become the enquiry: `rawText` was set to the whole document, and
+    since the review screen reads one cable per line, a four-page MTO arrived as
+    140 Partial lines — title block, revision table, page footers and all. The
+    engineer was handed something that looked like an enquiry of a hundred and
+    forty cables and was in fact an enquiry of none.
+
+    The text is not lost. It goes where the text of a readable document goes,
+    beside the job, which is where the source view already shows it and where it
+    can be read from and pasted. What changes is that the app stops claiming
+    those lines are cables.
+  */
+  const readable = read.lines.length > 0;
+  if (!readable && read.rawText.trim() === '') {
     return { error: read.notes[0] ?? 'Nothing could be read from that file.' };
   }
+  const rawText = readable ? read.lines.join('\n') : '';
 
   const at = now();
   const { reference } = await jobStore.open({
@@ -203,13 +218,10 @@ export async function openJobFromFile(
     /*
       The document is kept beside the lines that were taken out of it, so an
       engineer can check a quantity against the file without going back to the
-      attachment. When the reader failed, `rawText` already *is* the whole
-      document — keeping a second copy of it would only offer to show the same
-      text twice.
+      attachment — and kept when *no* lines were taken out of it, because then
+      it is the only thing there is to work from.
     */
-    ...(read.lines.length > 0
-      ? { document: { text: read.rawText, sources: read.sources } }
-      : {}),
+    document: { text: read.rawText, sources: read.sources },
     actor: permitted.actor,
     at,
   });
