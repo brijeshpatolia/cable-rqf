@@ -497,9 +497,9 @@ export function readCandidates({
       layout was being reconstructed from line distances, and it does not stop
       being possible now that the model reports the grouping instead.
     */
-    const intruder = [...everyRef].find(
-      (other) => other !== numbered && row.some((q) => statesRef(q, other)),
-    );
+    const intruder =
+      row.map((q) => leadingRef(q)).find((r) => r !== null && r !== numbered) ??
+      [...everyRef].find((other) => other !== numbered && row.some((q) => statesRef(q, other)));
     if (intruder !== undefined) {
       refused.push(
         `${ref} was left out — it quotes a cell belonging to item ${intruder}, so ` +
@@ -569,6 +569,32 @@ export function readCandidates({
 
 /** Whitespace collapsed, so a quote matches text the PDF reader already folded. */
 const oneLine = (text: string) => text.replace(/\s+/g, ' ').trim();
+
+/**
+ * The row number a cell opens with, if it opens with one.
+ *
+ * `5.2 3C X 2.5 mm² m 4000` is numbered 5.2; `3750` is a quantity and `2C X 4
+ * mm²` is a description, and neither is numbered at all. The pattern wants a
+ * number, then a space, then something that is not a unit.
+ *
+ * The unit is the whole difficulty. `6 mm² Y/G CABLE` is how the earthing
+ * cables are written — a number, a space, and content — and reading its `6` as
+ * a row number would have refused all six of them for belonging to somebody
+ * else. A figure followed by `mm²` is a size; a figure followed by anything
+ * else is a row that has been numbered.
+ *
+ * This is here because the other half of the check reads the row numbers off
+ * the *answer*, and an answer that omits a row omits its number too: quote
+ * 5.1's number cell and 5.2's quantity, leave 5.2 out of the reply, and
+ * nothing in a set built from the reply knows 5.2 exists. Raised in review.
+ * Read off the cell itself, it does not matter what else the model chose to
+ * report.
+ */
+const LEADING_REF = /^\s*['"’]?\s*(\d+(?:\.\d+)?)\s+(?!(?:mm|sq|m|km|metres?|meters?)\b)\S/i;
+
+function leadingRef(text: string): string | null {
+  return LEADING_REF.exec(oneLine(text))?.[1] ?? null;
+}
 
 /** Is this text's own row number `ref` — as a whole word, not a digit inside one? */
 function statesRef(text: string, ref: string): boolean {

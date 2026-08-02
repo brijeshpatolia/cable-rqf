@@ -185,6 +185,71 @@ describe('cells that are not all one row', () => {
     expect(out.lines).toEqual(['3C x 2.5 mm² — 4,000 m']);
   });
 
+  it('is refused even when the other row is missing from the answer', () => {
+    /*
+      Raised in review. The row numbers were read off the *answer*, so an
+      answer that leaves a row out leaves its number out too: quote 5.1's
+      number cell and 5.2's whole cell, report only 5.1, and there was nothing
+      left that knew 5.2 existed. The number is read off the cell now.
+    */
+    const crossed: Candidate = {
+      ...row51,
+      quantity: 4000,
+      evidence: { row: ['5.1 2C X 16 mm² m 19000', '5.2 3C X 2.5 mm² m 4000'], heading: [] },
+    };
+    const out = readCandidates({ candidates: [crossed], text: TEXT }).document;
+
+    expect(out.lines).toEqual([]);
+    expect(out.notes.join(' ')).toContain('quotes a cell belonging to item 5.2');
+  });
+
+  it('does not mistake a bare quantity cell for another row’s number', () => {
+    // `3750` opens with a number and is not a numbered row; `1 m 3750` is.
+    const text = ['1 m 3750', "' 1C X 300 mm²"].join('\n');
+    const out = readCandidates({
+      candidates: [
+        {
+          ...row51,
+          itemRef: '1',
+          cores: 1,
+          sizeMm2: 300,
+          quantity: 3750,
+          evidence: { row: ['1 m 3750', "' 1C X 300 mm²", 'm', '3750'], heading: [] },
+        },
+      ],
+      text,
+    }).document;
+
+    expect(out.lines).toEqual(['1C x 300 mm² — 3,750 m']);
+  });
+
+  it('does not read a size as another row’s number', () => {
+    /*
+      The earthing cables are written `6 mm² Y/G CABLE` — a number, a space,
+      content — which is the same shape as a numbered row and is not one. This
+      would have refused all six of them.
+    */
+    const text = ['7.1 m 1000', '6 mm² Y/G CABLE'].join('\n');
+    const out = readCandidates({
+      candidates: [
+        {
+          ...row51,
+          itemRef: '7.1',
+          cores: null,
+          sizeMm2: 6,
+          quantity: 1000,
+          armour: null,
+          insulation: null,
+          voltage: null,
+          evidence: { row: ['7.1 m 1000', '6 mm² Y/G CABLE'], heading: [] },
+        },
+      ],
+      text,
+    }).document;
+
+    expect(out.lines).toEqual(['6 mm² — 1,000 m']);
+  });
+
   it('reads both rows when each quotes its own cell', () => {
     const out = readCandidates({ candidates: [row51, row52], text: TEXT }).document;
 
