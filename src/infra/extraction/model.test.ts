@@ -15,6 +15,8 @@ let status = 200;
 /** Statuses for the next requests in order, when a test needs them to differ. */
 let statuses: number[] = [];
 let requests = 0;
+/** Run as each request arrives, for a test that needs the clock to have moved. */
+let onRequest: (() => void) | undefined;
 
 /*
   Restored after every test rather than by each test that moves them.
@@ -30,6 +32,7 @@ afterEach(() => {
   status = GOOD.status;
   statuses = [];
   requests = 0;
+  onRequest = undefined;
 });
 
 beforeAll(async () => {
@@ -40,6 +43,7 @@ beforeAll(async () => {
       seen = JSON.parse(body);
       seenUrl = req.url ?? '';
       requests++;
+      onRequest?.();
       const code = statuses.shift() ?? status;
       res.writeHead(code, { 'content-type': 'application/json' });
       res.end(
@@ -67,7 +71,7 @@ describe('the request', () => {
   it('is the one intended', async () => {
     await readWithModel('5.1 2C X 16 mm² m 19000', BUILT_IN_TERMS);
 
-    expect(seenUrl).toBe('/v1beta/models/gemini-3.5-pro:generateContent');
+    expect(seenUrl).toBe('/v1beta/models/gemini-3.1-pro-preview:generateContent');
     const config = seen['generationConfig'] as Record<string, unknown>;
     expect(config['responseMimeType']).toBe('application/json');
     expect(config['responseSchema']).toEqual(toGeminiSchema(schemaFor(BUILT_IN_TERMS)));
@@ -205,6 +209,26 @@ describe('the request', () => {
     expect(waited).toBe(true);
     expect(requests).toBe(2);
     expect(out).toEqual({ ok: false, why: expect.stringContaining('503') });
+  });
+
+  it('does not start a second attempt that could not come back in time', async () => {
+    // The provider says "not now" — normally worth one more try. But this
+    // first attempt ran long before it failed, and a request begun with what
+    // is left cannot produce a reading: it would be paid for and then aborted,
+    // and the abort would report a timeout in place of what the API actually
+    // said. The 503 is the true answer and the one the engineer should get.
+    statuses = [503, 200];
+    const real = Date.now();
+    let elapsed = 0;
+    const clock = vi.spyOn(Date, 'now').mockImplementation(() => real + elapsed);
+    onRequest = () => (elapsed = 150_000);
+    try {
+      const out = await readWithModel('5.1 2C X 16 mm² m 19000', BUILT_IN_TERMS);
+      expect(requests).toBe(1);
+      expect(out).toEqual({ ok: false, why: expect.stringContaining('503') });
+    } finally {
+      clock.mockRestore();
+    }
   });
 
   it('does not try again when trying again cannot help', async () => {

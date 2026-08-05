@@ -63,6 +63,10 @@ import { toGeminiSchema } from './gemini-schema';
  * *immediately*: the `503 — high demand` this saw twice inside five seconds on
  * its first live call. Those leave the budget almost untouched, so a longer
  * attempt costs the retry nothing it was ever going to use.
+ *
+ * The case that does not fit that description — a first attempt that runs long
+ * and *then* fails — is handled by `MIN_SECOND_ATTEMPT_MS` below, which
+ * declines to start a second request there is no time to finish.
  */
 const TIMEOUT_MS = 180_000;
 const BUDGET_MS = 190_000;
@@ -107,8 +111,18 @@ const MAX_PDF_PAGES = 100;
  * `gemini-3.5-flash` is the measured, cheaper reading described above and the
  * one thing here anybody should feel free to do; anything else is a model
  * nobody has put this document in front of.
+ *
+ * **`-preview`, and why that is the lesser risk.** There is no GA Pro in the
+ * 3.x line — the catalogue offers this or `gemini-2.5-pro`, a generation older
+ * and carrying a retirement date. Preferring the GA name would mean choosing a
+ * weaker model *and* a scheduled outage, which spends the reason for being on
+ * Pro at all. A preview name can be withdrawn without notice; when it is, the
+ * failure is the soft one this whole file is built around — the upload opens,
+ * the pattern reader stands in, the note says what the API answered — and the
+ * fix is this variable rather than a release. That is a bounded risk taken
+ * knowingly, not one nobody noticed.
  */
-const DEFAULT_MODEL = 'gemini-3.5-pro';
+const DEFAULT_MODEL = 'gemini-3.1-pro-preview';
 const ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 /*
@@ -318,11 +332,32 @@ export async function readWithModel(
  * strange way to spend the end of a timeout.
  */
 const RETRY_AFTER_MS = 4_000;
+
+/**
+ * Below this much budget left, the second attempt is not made at all.
+ *
+ * A retry needs room to *finish*, and a read takes most of a minute — the real
+ * RFQ took ninety-five seconds. Starting one with fifteen seconds left buys no
+ * chance of an answer and costs two things that matter: the request is paid
+ * for, and the abort that ends it replaces "the API answered 503 — high
+ * demand" with a timeout, which is the wrong sentence to put in front of the
+ * engineer. Nothing is lost by stopping: the failure being reported is the one
+ * that already happened.
+ *
+ * It earns its keep because the per-attempt timeout sits close to the budget.
+ * A provider saying "not now" almost always says it in milliseconds, so the
+ * ordinary retry is nowhere near this line; what this catches is the case
+ * where the first attempt ran long and *then* failed.
+ */
+const MIN_SECOND_ATTEMPT_MS = 60_000;
+
 async function withOneRetry(
   url: string,
   key: string,
   body: string,
 ): Promise<{ ok: true; body: Answer } | { ok: false; why: string }> {
+  const startedAt = Date.now();
+  const leftOfBudget = () => BUDGET_MS - (Date.now() - startedAt);
   const deadline = AbortSignal.timeout(BUDGET_MS);
   let last = '';
 
@@ -339,6 +374,9 @@ async function withOneRetry(
     const said = ((await res.json().catch(() => ({}))) as Answer).error?.message;
     last = `the API answered ${res.status}${said === undefined ? '' : ` — ${said}`}`;
     if (res.status !== 429 && res.status < 500) break;
+    // Counted after the pause, because the pause is part of what a second
+    // attempt costs.
+    if (leftOfBudget() - RETRY_AFTER_MS < MIN_SECOND_ATTEMPT_MS) break;
     if (attempt === 0 && !deadline.aborted) await pause(deadline);
     if (deadline.aborted) break;
   }
