@@ -16,6 +16,7 @@ import { authorise } from '@/modules/auth';
 import { planDecision } from '@/modules/jobs';
 import { type Axis, type ReviewLine, hasBreakdown, isPriced } from '@/modules/matching';
 import { type Decision, type DraftLine, assembleQuote } from '@/modules/quoting';
+import { enquiryFrom } from '@/modules/extraction';
 import { readDocument } from '@/infra/extraction/read-document';
 import { buildJob } from './build';
 
@@ -188,25 +189,12 @@ export async function openJobFromFile(
     };
   }
 
-  /*
-    A document nobody could read opens with no lines, not with all of them.
-
-    It used to become the enquiry: `rawText` was set to the whole document, and
-    since the review screen reads one cable per line, a four-page MTO arrived as
-    140 Partial lines — title block, revision table, page footers and all. The
-    engineer was handed something that looked like an enquiry of a hundred and
-    forty cables and was in fact an enquiry of none.
-
-    The text is not lost. It goes where the text of a readable document goes,
-    beside the job, which is where the source view already shows it and where it
-    can be read from and pasted. What changes is that the app stops claiming
-    those lines are cables.
-  */
-  const readable = read.lines.length > 0;
-  if (!readable && read.rawText.trim() === '') {
-    return { error: read.notes[0] ?? 'Nothing could be read from that file.' };
-  }
-  const rawText = readable ? read.lines.join('\n') : '';
+  // A document nobody could read opens with no lines, not with all of them.
+  // Why, and what happens to the text, is in `enquiryFrom` — where it can be
+  // tested, which is the whole reason it is not written out here.
+  const enquiry = enquiryFrom(read);
+  if ('refusal' in enquiry) return { error: enquiry.refusal };
+  const { rawText } = enquiry;
 
   const at = now();
   const { reference } = await jobStore.open({

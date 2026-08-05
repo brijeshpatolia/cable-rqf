@@ -23,6 +23,7 @@ export {
   type SourceRegion,
   type TextLine,
   type TextRegion,
+  enquiryFrom,
   placeOf,
   textLines,
 } from './document';

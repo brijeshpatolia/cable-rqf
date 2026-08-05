@@ -1,5 +1,5 @@
 import { createServer, type Server } from 'node:http';
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { readWithModel } from '@/infra/extraction/model';
 import { toGeminiSchema } from '@/infra/extraction/gemini-schema';
 import { schemaFor } from '@/modules/extraction';
@@ -9,9 +9,12 @@ let server: Server;
 let seen: Record<string, unknown> = {};
 let seenUrl = '';
 let answer =
-  '{"lines":[{"itemRef":"5.1","cores":2,"sizeMm2":16,"quantity":19000,"quantityUnit":"m","conductor":"Cu","insulation":"XLPE","screen":null,"armour":"SWA","sheath":"PVC","voltage":"1kV","standard":null,"evidence":["5.1 2C X 16 mm² m 19000"]}]}';
+  '{"lines":[{"itemRef":"5.1","cores":2,"sizeMm2":16,"quantity":19000,"quantityUnit":"m","conductor":"Cu","insulation":"XLPE","screen":null,"armour":"SWA","sheath":"PVC","voltage":"1kV","standard":null,"evidence":{"row":["5.1 2C X 16 mm² m 19000"],"heading":[]}}]}';
 let finish = 'STOP';
 let status = 200;
+/** Statuses for the next requests in order, when a test needs them to differ. */
+let statuses: number[] = [];
+let requests = 0;
 
 /*
   Restored after every test rather than by each test that moves them.
@@ -25,6 +28,8 @@ afterEach(() => {
   answer = GOOD.answer;
   finish = GOOD.finish;
   status = GOOD.status;
+  statuses = [];
+  requests = 0;
 });
 
 beforeAll(async () => {
@@ -34,9 +39,11 @@ beforeAll(async () => {
     req.on('end', () => {
       seen = JSON.parse(body);
       seenUrl = req.url ?? '';
-      res.writeHead(status, { 'content-type': 'application/json' });
+      requests++;
+      const code = statuses.shift() ?? status;
+      res.writeHead(code, { 'content-type': 'application/json' });
       res.end(
-        status === 200
+        code === 200
           ? JSON.stringify({
               candidates: [{ content: { parts: [{ text: answer }] }, finishReason: finish }],
             })
@@ -48,6 +55,10 @@ beforeAll(async () => {
   const port = (server.address() as { port: number }).port;
   process.env['GEMINI_BASE_URL'] = `http://127.0.0.1:${port}/v1beta/models`;
   process.env['GEMINI_API_KEY'] = 'test-key';
+  // Cleared, not assumed clear. A value in a developer's own `.env` would
+  // otherwise fail the default-model assertion below for a reason nowhere in
+  // its body.
+  delete process.env['EXTRACTION_MODEL'];
 });
 
 afterAll(() => server.close());
@@ -65,8 +76,13 @@ describe('the request', () => {
 
   it('sends the model named in the environment', async () => {
     process.env['EXTRACTION_MODEL'] = 'gemini-2.5-pro';
-    await readWithModel('5.1 2C X 16 mm² m 19000', BUILT_IN_TERMS);
-    delete process.env['EXTRACTION_MODEL'];
+    try {
+      await readWithModel('5.1 2C X 16 mm² m 19000', BUILT_IN_TERMS);
+    } finally {
+      // In a `finally`, because a rejection here would otherwise leave the
+      // variable set and break the test above on the next run.
+      delete process.env['EXTRACTION_MODEL'];
+    }
     expect(seenUrl).toBe('/v1beta/models/gemini-2.5-pro:generateContent');
   });
 
@@ -120,6 +136,56 @@ describe('the request', () => {
     status = 400;
     const out = await readWithModel('5.1 2C X 16 mm² m 19000', BUILT_IN_TERMS);
     expect(out).toEqual({ ok: false, why: expect.stringContaining('400') });
+  });
+
+  /*
+    The retry is the newest thing in this adapter and the only part of it that
+    exists because of a failure seen in the wild: the first live call after it
+    was written came back 503 twice inside five seconds, because the first
+    draft did not wait. So the pause is driven rather than waited out — the
+    suite would otherwise spend four seconds per case doing nothing.
+
+    Only `setTimeout` is faked. The stub server is real HTTP on a real socket,
+    and faking the rest of the clock would stop it answering at all. The loop
+    yields to real I/O and then nudges the fake clock, so it does not matter
+    whether the timer exists yet when the first nudge lands — which is the way
+    a naive `advanceTimersByTime` hangs forever.
+  */
+  const drive = async <T>(work: Promise<T>): Promise<T> => {
+    vi.useFakeTimers({ toFake: ['setTimeout'] });
+    try {
+      let settled = false;
+      const done = work.finally(() => (settled = true));
+      for (let i = 0; i < 200 && !settled; i++) {
+        await new Promise((r) => setImmediate(r));
+        await vi.advanceTimersByTimeAsync(100);
+      }
+      return await done;
+    } finally {
+      vi.useRealTimers();
+    }
+  };
+
+  it('tries once more when the provider says “not now”', async () => {
+    statuses = [503];
+    const out = await drive(readWithModel('5.1 2C X 16 mm² m 19000', BUILT_IN_TERMS));
+    expect(requests).toBe(2);
+    expect(out).toEqual({ ok: true, candidates: [expect.objectContaining({ itemRef: '5.1' })] });
+  });
+
+  it('states the failure when trying again does not help', async () => {
+    statuses = [503, 503];
+    const out = await drive(readWithModel('5.1 2C X 16 mm² m 19000', BUILT_IN_TERMS));
+    expect(requests).toBe(2);
+    expect(out).toEqual({ ok: false, why: expect.stringContaining('503') });
+  });
+
+  it('does not try again when trying again cannot help', async () => {
+    // A 400 is this app having asked for something impossible. Asking twice
+    // spends half the budget to be told so twice.
+    status = 400;
+    await readWithModel('5.1 2C X 16 mm² m 19000', BUILT_IN_TERMS);
+    expect(requests).toBe(1);
   });
 
   it('does not ask at all with no key', async () => {

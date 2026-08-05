@@ -37,7 +37,7 @@ import { toGeminiSchema } from './gemini-schema';
  * `TIMEOUT_MS` bounds a single attempt; `BUDGET_MS` bounds all of them
  * together. Only the second one matters, and it is the one a retrying client
  * will not give you: a per-attempt timeout multiplies by the retry count, so
- * 90 seconds with two retries is a four-and-a-half-minute worst case on the
+ * 120 seconds with two retries is a six-minute worst case on the
  * upload request path. Past the platform's function limit the process is
  * *killed*, and a killed function cannot state its reason — which is the one
  * promise this file makes. A budget that expires is an abort this code
@@ -65,11 +65,21 @@ const MAX_CHARS = 400_000;
  *
  * A scan has almost no text layer and can still be a hundred megabytes, so the
  * character cap above waves it through. Inline document data is bounded by the
- * request size, and base64 adds a third — so 16 MB of PDF is comfortably
- * inside it with the schema and the text alongside. Past either limit the file
- * is still *read*; it is only the model that does not see it.
+ * whole request, which this provider holds to 20 MB, and base64 adds a third —
+ * so the raw file has to leave room for its own encoding as well as for the
+ * text and the schema beside it. 12 MB encodes to 16 and lands comfortably
+ * inside. Past either limit the file is still *read*; it is only the model
+ * that does not see it.
+ *
+ * The number carried over from the previous provider was 16 MB, which encodes
+ * to 21.3 — over the limit, and it took a review to notice. It has never been
+ * reachable, because the upload itself refuses anything over 8 MB long before
+ * this function sees it, and that door is the bound that actually holds. This
+ * one is the belt: it should be true on its own rather than true only because
+ * something upstream is stricter, since the upstream number is exactly the
+ * sort of thing that gets raised one day by someone who did not read this.
  */
-const MAX_PDF_BYTES = 16_000_000;
+const MAX_PDF_BYTES = 12_000_000;
 const MAX_PDF_PAGES = 100;
 
 /**
@@ -285,8 +295,10 @@ export async function readWithModel(
  * after it was written came back `503 — this model is currently experiencing
  * high demand` twice inside five seconds. Two requests that close together are
  * one request with extra cost: whatever was busy is still busy. The pause is
- * short enough to be invisible against a ninety-second read and long enough
- * for a spike to pass, and it comes out of the same budget as everything else.
+ * short enough to be invisible against a two-minute read and long enough for a
+ * spike to pass, and it is cut short by the budget rather than running past it
+ * — waiting four seconds to discover there is no time left to use them is a
+ * strange way to spend the end of a timeout.
  */
 const RETRY_AFTER_MS = 4_000;
 async function withOneRetry(
@@ -310,11 +322,24 @@ async function withOneRetry(
     const said = ((await res.json().catch(() => ({}))) as Answer).error?.message;
     last = `the API answered ${res.status}${said === undefined ? '' : ` — ${said}`}`;
     if (res.status !== 429 && res.status < 500) break;
-    if (attempt === 0 && !deadline.aborted) {
-      await new Promise((r) => setTimeout(r, RETRY_AFTER_MS));
-    }
+    if (attempt === 0 && !deadline.aborted) await pause(deadline);
     if (deadline.aborted) break;
   }
 
   return { ok: false, why: last };
+}
+
+/** The pause before the retry, cut short if the budget runs out first. */
+function pause(deadline: AbortSignal): Promise<void> {
+  return new Promise<void>((resolve) => {
+    const timer = setTimeout(resolve, RETRY_AFTER_MS);
+    deadline.addEventListener(
+      'abort',
+      () => {
+        clearTimeout(timer);
+        resolve();
+      },
+      { once: true },
+    );
+  });
 }

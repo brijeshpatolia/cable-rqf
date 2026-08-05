@@ -61,6 +61,42 @@ export interface ExtractedDocument {
   readonly rawText: string;
 }
 
+/**
+ * What an upload becomes: an enquiry, or a refusal.
+ *
+ * A document nobody could read opens with no lines, not with all of them. It
+ * used to become the enquiry — the whole text was handed on as `rawText`, and
+ * since the review screen reads one cable per line, a four-page MTO arrived as
+ * 140 Partial lines: title block, revision table, page footers and all. The
+ * engineer was handed something that looked like an enquiry of a hundred and
+ * forty cables and was in fact an enquiry of none.
+ *
+ * The text is not lost either way. It goes where the text of a readable
+ * document goes — beside the job, where the source view already shows it and
+ * where it can be read from and pasted. What changes is that the app stops
+ * claiming those lines are cables.
+ *
+ * **It lives here rather than in the action that calls it.** It is three lines
+ * of policy, it was written in a Server Action, and a Server Action cannot be
+ * put under test without standing up a session, four repositories and the
+ * router. So the one decision worth checking sat where nothing could check it,
+ * and it shipped wrong once already. Here it is an argument and a return
+ * value.
+ */
+export function enquiryFrom(
+  read: ExtractedDocument,
+): { readonly rawText: string } | { readonly refusal: string } {
+  if (read.lines.length > 0) return { rawText: read.lines.join('\n') };
+  if (read.rawText.trim() !== '') return { rawText: '' };
+  /*
+    Nothing read and nothing to show. The notes are the only diagnosis there
+    is — "no text could be read from this PDF, it is most likely a scan" — so
+    the first of them is the refusal rather than a generic sentence that throws
+    away what the reader worked out.
+  */
+  return { refusal: read.notes[0] ?? 'Nothing could be read from that file.' };
+}
+
 /** `Schedule of Cables, row 12`, or just `row 12` when a file has one region. */
 export function placeOf(
   regions: readonly TextRegion[],
