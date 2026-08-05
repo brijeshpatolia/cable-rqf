@@ -17,14 +17,22 @@ import { toGeminiSchema } from './gemini-schema';
  * being up, and adding one that could take intake down with it would be a poor
  * trade for a tool ten people use to answer customers the same day.
  *
- * **Which model, and why this one.** The first working version of this ran on
- * a frontier model at roughly a dollar a document, which is a real cost on a
- * task that runs on every upload. So the reading was measured on the customer
- * RFQ this was built against — the same file, the same instructions, the same
- * guards downstream — and Gemini Flash returned the same forty-five lines, the
+ * **Which model, and why this one.** Pro, deliberately, and it is worth being
+ * exact about what that is and is not based on. Flash was measured against the
+ * customer RFQ this was built against — the same file, the same instructions,
+ * the same guards downstream — and returned the same forty-five lines, the
  * same twenty-seven exact matches, and the same corrected size on the row that
- * had been struck through by hand. Same answer, about a fiftieth of the cost.
- * The decision was the measurement, not a preference.
+ * had been struck through by hand. On that document the cheaper model was not
+ * worse. But one document is one document, and it is the document this was
+ * written against, which is the weakest possible evidence about the next one.
+ *
+ * What the reading is actually for is the hard case: a schedule whose heading
+ * governs rows three pages later, a size struck out by hand, a note that
+ * withdraws a line. Those are the documents where the models differ, and they
+ * are exactly the ones not yet in front of this. A wrong reading here does not
+ * announce itself — it is a plausible schedule, and someone quotes from it. So
+ * the default buys headroom on the case that has not been measured, and the
+ * saving is a setting away for whoever decides it is worth taking.
  *
  * `fetch`, not a vendor SDK. One endpoint, one shape, and the timeout this
  * needs is the one the platform already gives — a dependency here would buy
@@ -46,8 +54,17 @@ import { toGeminiSchema } from './gemini-schema';
  * One retry, not two. A second retry buys a small amount of luck against a
  * blip and costs the whole time budget; the engineer would rather be told in
  * three minutes than kept waiting for five.
+ *
+ * The per-attempt number is close to the budget on purpose, and it moved when
+ * the default model did. Flash read the real RFQ in 95 seconds; a model that
+ * reasons more takes longer, and a 120-second cap on the attempt would have
+ * turned "slower" into "always fails" — a timeout on a call that was going to
+ * answer. What the retry is actually for is the failure that comes back
+ * *immediately*: the `503 — high demand` this saw twice inside five seconds on
+ * its first live call. Those leave the budget almost untouched, so a longer
+ * attempt costs the retry nothing it was ever going to use.
  */
-const TIMEOUT_MS = 120_000;
+const TIMEOUT_MS = 180_000;
 const BUDGET_MS = 190_000;
 
 /**
@@ -85,13 +102,13 @@ const MAX_PDF_PAGES = 100;
 /**
  * The model, overridable without a deploy.
  *
- * The one above is what the measurement was taken on and what the default
- * should stay until a new measurement says otherwise. The variable exists so
- * that a provider outage, a deprecation, or a cheaper model worth trying is a
- * change to one setting rather than a release — and so the person making that
- * change knows they are changing the thing the numbers were taken on.
+ * The variable exists so that a provider outage, a deprecation, or a model
+ * worth trying is a change to one setting rather than a release. Setting it to
+ * `gemini-3.5-flash` is the measured, cheaper reading described above and the
+ * one thing here anybody should feel free to do; anything else is a model
+ * nobody has put this document in front of.
  */
-const DEFAULT_MODEL = 'gemini-3.5-flash';
+const DEFAULT_MODEL = 'gemini-3.5-pro';
 const ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 /*

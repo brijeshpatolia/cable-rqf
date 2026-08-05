@@ -67,7 +67,7 @@ describe('the request', () => {
   it('is the one intended', async () => {
     await readWithModel('5.1 2C X 16 mm² m 19000', BUILT_IN_TERMS);
 
-    expect(seenUrl).toBe('/v1beta/models/gemini-3.5-flash:generateContent');
+    expect(seenUrl).toBe('/v1beta/models/gemini-3.5-pro:generateContent');
     const config = seen['generationConfig'] as Record<string, unknown>;
     expect(config['responseMimeType']).toBe('application/json');
     expect(config['responseSchema']).toEqual(toGeminiSchema(schemaFor(BUILT_IN_TERMS)));
@@ -75,7 +75,7 @@ describe('the request', () => {
   });
 
   it('sends the model named in the environment', async () => {
-    process.env['EXTRACTION_MODEL'] = 'gemini-2.5-pro';
+    process.env['EXTRACTION_MODEL'] = 'gemini-3.5-flash';
     try {
       await readWithModel('5.1 2C X 16 mm² m 19000', BUILT_IN_TERMS);
     } finally {
@@ -83,7 +83,7 @@ describe('the request', () => {
       // variable set and break the test above on the next run.
       delete process.env['EXTRACTION_MODEL'];
     }
-    expect(seenUrl).toBe('/v1beta/models/gemini-2.5-pro:generateContent');
+    expect(seenUrl).toBe('/v1beta/models/gemini-3.5-flash:generateContent');
   });
 
   it('sends the file itself alongside the text when there is one', async () => {
