@@ -151,31 +151,58 @@ describe('the request', () => {
     whether the timer exists yet when the first nudge lands — which is the way
     a naive `advanceTimersByTime` hangs forever.
   */
-  const drive = async <T>(work: Promise<T>): Promise<T> => {
+  /** Hand the real event loop enough turns for a request to land. */
+  const io = async (turns = 40) => {
+    for (let i = 0; i < turns; i++) await new Promise((r) => setImmediate(r));
+  };
+
+  /**
+   * Runs the call with the clock in hand, and reports what the clock did.
+   *
+   * The count alone is not enough. A test that only asserts "two requests
+   * arrived" passes just as happily if the pause is deleted — and the pause is
+   * the entire fix, so that is the one assertion worth having. `waited` is
+   * whether the second request stayed away while the fake clock sat just short
+   * of the four seconds, which is the difference between a backoff and a
+   * retry loop with a comment about backoff on it.
+   */
+  const drive = async <T>(work: Promise<T>): Promise<{ out: T; waited: boolean }> => {
     vi.useFakeTimers({ toFake: ['setTimeout'] });
     try {
       let settled = false;
       const done = work.finally(() => (settled = true));
-      for (let i = 0; i < 200 && !settled; i++) {
-        await new Promise((r) => setImmediate(r));
-        await vi.advanceTimersByTimeAsync(100);
+
+      // Wait — in real time — for the first answer to come back and the pause
+      // to be scheduled. `getTimerCount` is how that becomes observable.
+      for (let i = 0; i < 100 && vi.getTimerCount() === 0 && !settled; i++) await io(5);
+
+      await vi.advanceTimersByTimeAsync(3_900);
+      await io();
+      const waited = requests === 1;
+
+      // And now past it, plus whatever the rest of the call needs.
+      for (let i = 0; i < 100 && !settled; i++) {
+        await io(5);
+        await vi.advanceTimersByTimeAsync(200);
       }
-      return await done;
+      return { out: await done, waited };
     } finally {
       vi.useRealTimers();
     }
   };
 
-  it('tries once more when the provider says “not now”', async () => {
+  it('tries once more when the provider says “not now”, after waiting', async () => {
     statuses = [503];
-    const out = await drive(readWithModel('5.1 2C X 16 mm² m 19000', BUILT_IN_TERMS));
+    const { out, waited } = await drive(readWithModel('5.1 2C X 16 mm² m 19000', BUILT_IN_TERMS));
+    expect(waited).toBe(true);
     expect(requests).toBe(2);
     expect(out).toEqual({ ok: true, candidates: [expect.objectContaining({ itemRef: '5.1' })] });
   });
 
   it('states the failure when trying again does not help', async () => {
     statuses = [503, 503];
-    const out = await drive(readWithModel('5.1 2C X 16 mm² m 19000', BUILT_IN_TERMS));
+    const { out, waited } = await drive(readWithModel('5.1 2C X 16 mm² m 19000', BUILT_IN_TERMS));
+    expect(waited).toBe(true);
     expect(requests).toBe(2);
     expect(out).toEqual({ ok: false, why: expect.stringContaining('503') });
   });
