@@ -16,6 +16,7 @@ import { authorise } from '@/modules/auth';
 import { planDecision } from '@/modules/jobs';
 import { type Axis, type ReviewLine, hasBreakdown, isPriced } from '@/modules/matching';
 import { type Decision, type DraftLine, assembleQuote } from '@/modules/quoting';
+import { enquiryFrom } from '@/modules/extraction';
 import { readDocument } from '@/infra/extraction/read-document';
 import { buildJob } from './build';
 
@@ -188,10 +189,12 @@ export async function openJobFromFile(
     };
   }
 
-  const rawText = read.lines.length > 0 ? read.lines.join('\n') : read.rawText;
-  if (rawText.trim() === '') {
-    return { error: read.notes[0] ?? 'Nothing could be read from that file.' };
-  }
+  // A document nobody could read opens with no lines, not with all of them.
+  // Why, and what happens to the text, is in `enquiryFrom` — where it can be
+  // tested, which is the whole reason it is not written out here.
+  const enquiry = enquiryFrom(read);
+  if ('refusal' in enquiry) return { error: enquiry.refusal };
+  const { rawText } = enquiry;
 
   const at = now();
   const { reference } = await jobStore.open({
@@ -203,13 +206,10 @@ export async function openJobFromFile(
     /*
       The document is kept beside the lines that were taken out of it, so an
       engineer can check a quantity against the file without going back to the
-      attachment. When the reader failed, `rawText` already *is* the whole
-      document — keeping a second copy of it would only offer to show the same
-      text twice.
+      attachment — and kept when *no* lines were taken out of it, because then
+      it is the only thing there is to work from.
     */
-    ...(read.lines.length > 0
-      ? { document: { text: read.rawText, sources: read.sources } }
-      : {}),
+    document: { text: read.rawText, sources: read.sources },
     actor: permitted.actor,
     at,
   });

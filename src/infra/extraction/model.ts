@@ -1,39 +1,53 @@
-import Anthropic from '@anthropic-ai/sdk';
 import { type Candidate, INSTRUCTIONS, schemaFor } from '@/modules/extraction';
 import { type Term } from '@/modules/matching';
+import { toGeminiSchema } from './gemini-schema';
 
 /**
  * The one place in this app that talks to a model.
  *
- * It is an adapter and nothing more: it sends the document's text, gets JSON
- * back, and hands it to `modules/extraction` to be disbelieved. Every rule
- * about what may be trusted is in that pure module, where a test can put a
+ * It is an adapter and nothing more: it sends the document, gets JSON back,
+ * and hands it to `modules/extraction` to be disbelieved. Every rule about
+ * what may be trusted is in that pure module, where a test can put a
  * fabricated answer in front of it without a network. This file's whole job is
  * the request, the timeout, and refusing to throw.
  *
- * **Optional, deliberately.** With no `ANTHROPIC_API_KEY` configured the app
+ * **Optional, deliberately.** With no `GEMINI_API_KEY` configured the app
  * reads documents exactly as it did before — the pattern reader, its stated
  * limits, and the paste box. An enquiry has never depended on a third party
  * being up, and adding one that could take intake down with it would be a poor
  * trade for a tool ten people use to answer customers the same day.
+ *
+ * **Which model, and why this one.** The first working version of this ran on
+ * a frontier model at roughly a dollar a document, which is a real cost on a
+ * task that runs on every upload. So the reading was measured on the customer
+ * RFQ this was built against — the same file, the same instructions, the same
+ * guards downstream — and Gemini Flash returned the same forty-five lines, the
+ * same twenty-seven exact matches, and the same corrected size on the row that
+ * had been struck through by hand. Same answer, about a fiftieth of the cost.
+ * The decision was the measurement, not a preference.
+ *
+ * `fetch`, not a vendor SDK. One endpoint, one shape, and the timeout this
+ * needs is the one the platform already gives — a dependency here would buy
+ * retry logic that has to be overridden anyway, for the reason set out below.
  */
 
 /**
  * Two budgets, because one is not enough.
  *
  * `TIMEOUT_MS` bounds a single attempt; `BUDGET_MS` bounds all of them
- * together. Only the second one matters, and it is the one an SDK will not
- * give you: a per-attempt timeout multiplies by the retry count, so 120
- * seconds with two retries is a six-minute worst case on the upload request
- * path. Past the platform's function limit the process is *killed*, and a
- * killed function cannot state its reason — which is the one promise this file
- * makes. A budget that expires is an abort this code catches.
+ * together. Only the second one matters, and it is the one a retrying client
+ * will not give you: a per-attempt timeout multiplies by the retry count, so
+ * 120 seconds with two retries is a six-minute worst case on the
+ * upload request path. Past the platform's function limit the process is
+ * *killed*, and a killed function cannot state its reason — which is the one
+ * promise this file makes. A budget that expires is an abort this code
+ * catches.
  *
  * One retry, not two. A second retry buys a small amount of luck against a
  * blip and costs the whole time budget; the engineer would rather be told in
  * three minutes than kept waiting for five.
  */
-const TIMEOUT_MS = 90_000;
+const TIMEOUT_MS = 120_000;
 const BUDGET_MS = 190_000;
 
 /**
@@ -50,14 +64,53 @@ const MAX_CHARS = 400_000;
  * And a cap on the file, not only on the text it yielded.
  *
  * A scan has almost no text layer and can still be a hundred megabytes, so the
- * character cap above waves it through. The API takes a document block of at
- * most a hundred pages inside a request of at most 32 MB, and base64 adds a
- * third — so 16 MB of PDF is comfortably inside both with the schema and the
- * text alongside it. Past either limit the file is still *read*; it is only
- * the model that does not see it.
+ * character cap above waves it through. Inline document data is bounded by the
+ * whole request, which this provider holds to 20 MB, and base64 adds a third —
+ * so the raw file has to leave room for its own encoding as well as for the
+ * text and the schema beside it. 12 MB encodes to 16 and lands comfortably
+ * inside. Past either limit the file is still *read*; it is only the model
+ * that does not see it.
+ *
+ * The number carried over from the previous provider was 16 MB, which encodes
+ * to 21.3 — over the limit, and it took a review to notice. It has never been
+ * reachable, because the upload itself refuses anything over 8 MB long before
+ * this function sees it, and that door is the bound that actually holds. This
+ * one is the belt: it should be true on its own rather than true only because
+ * something upstream is stricter, since the upstream number is exactly the
+ * sort of thing that gets raised one day by someone who did not read this.
  */
-const MAX_PDF_BYTES = 16_000_000;
+const MAX_PDF_BYTES = 12_000_000;
 const MAX_PDF_PAGES = 100;
+
+/**
+ * The model, overridable without a deploy.
+ *
+ * The one above is what the measurement was taken on and what the default
+ * should stay until a new measurement says otherwise. The variable exists so
+ * that a provider outage, a deprecation, or a cheaper model worth trying is a
+ * change to one setting rather than a release — and so the person making that
+ * change knows they are changing the thing the numbers were taken on.
+ */
+const DEFAULT_MODEL = 'gemini-3.5-flash';
+const ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models';
+
+/*
+  Read when the call is made, not when the module loads. A serverless function
+  is reused across requests, so a value captured at import time is the value
+  from whenever that instance happened to start — which makes "I changed the
+  setting and nothing changed" true for an unpredictable while.
+*/
+const modelName = () => process.env['EXTRACTION_MODEL']?.trim() || DEFAULT_MODEL;
+
+/**
+ * Generous, because the way this budget fails is total.
+ *
+ * A schedule that runs past it stops mid-answer — at which point the rows that
+ * did arrive are thrown away below, because half a schedule on screen looks
+ * exactly like a whole one. The real RFQ this was built against spent under
+ * twelve thousand. Unspent tokens cost nothing.
+ */
+const MAX_OUTPUT_TOKENS = 60_000;
 
 /**
  * Three outcomes, not two.
@@ -79,6 +132,16 @@ function failed(why: string): ModelReading {
   // question, not theirs.
   console.error(`[extraction] the model could not read this document: ${why}`);
   return { ok: false, why };
+}
+
+/** The parts of the response this file reads. Everything else is ignored. */
+interface Answer {
+  readonly candidates?: readonly {
+    readonly content?: { readonly parts?: readonly { readonly text?: string }[] };
+    readonly finishReason?: string;
+  }[];
+  readonly promptFeedback?: { readonly blockReason?: string };
+  readonly error?: { readonly message?: string };
 }
 
 /**
@@ -110,7 +173,7 @@ export async function readWithModel(
   /** How many pages it has, so a hundred-page bundle is not sent as one block. */
   pages = 0,
 ): Promise<ModelReading | null> {
-  const key = process.env['ANTHROPIC_API_KEY'];
+  const key = process.env['GEMINI_API_KEY'];
   if (key === undefined || key.trim() === '') return null;
   if (text.trim() === '') return null;
   if (text.length > MAX_CHARS) {
@@ -130,90 +193,76 @@ export async function readWithModel(
       ? pdf
       : undefined;
 
-  try {
-    const client = new Anthropic({ apiKey: key, timeout: TIMEOUT_MS, maxRetries: 1 });
+  const prompt =
+    document === undefined
+      ? `${INSTRUCTIONS}\n\n---\n\n${text}`
+      : `${INSTRUCTIONS}\n\n` +
+        'The text below was extracted from the same document. Quote from it ' +
+        'character for character; use the pages above to decide which values ' +
+        'are in force.\n\n---\n\n' +
+        text;
 
-    /*
-      Streamed because a long schedule is a long answer, and a non-streaming
-      request of this size is the classic way to collect a request timeout
-      after two minutes of work that was going to succeed.
-    */
-    const message = await client.messages
-      .stream(
+  try {
+    const body = JSON.stringify({
+      contents: [
         {
-          model: 'claude-opus-5',
-          /*
-            Generous, because the way this budget fails is total. Thinking
-            tokens are spent out of the same allowance, and a schedule that
-            runs past it stops mid-answer — at which point the rows that did
-            arrive are thrown away below, because half a schedule on screen
-            looks exactly like a whole one. Unspent tokens cost nothing.
-          */
-          max_tokens: 64_000,
-          // Adaptive: deciding which heading governs which rows is the one
-          // thing being asked for, and it is exactly the sort of reasoning
-          // that is worth a moment's thought and cheap to get wrong quickly.
-          thinking: { type: 'adaptive' },
-          output_config: { format: { type: 'json_schema', schema: schemaFor(terms) } },
-            messages: [
-            {
-              role: 'user',
-              content:
-                document === undefined
-                  ? `${INSTRUCTIONS}\n\n---\n\n${text}`
-                  : [
-                      {
-                        type: 'document' as const,
-                        source: {
-                          type: 'base64' as const,
-                          media_type: 'application/pdf' as const,
-                          data: Buffer.from(document).toString('base64'),
-                        },
-                      },
-                      {
-                        type: 'text' as const,
-                        /*
-                          The text as well as the page, and the comment above
-                          said so while the code did not. It matters: every
-                          quote is looked for in the text layer, and a quote
-                          taken off the rendered page is written the way a
-                          person reads it rather than the way extraction laid
-                          it out. Given both, the model can see which value is
-                          in force *and* quote it in the form the check can
-                          find.
-                        */
-                        text:
-                          `${INSTRUCTIONS}\n\n` +
-                          'The text below was extracted from the same document. Quote ' +
-                          'from it character for character; use the page above to ' +
-                          'decide which values are in force.\n\n---\n\n' +
-                          text,
-                      },
-                    ],
-            },
+          parts: [
+            ...(document === undefined
+              ? []
+              : [
+                  {
+                    inline_data: {
+                      mime_type: 'application/pdf',
+                      data: Buffer.from(document).toString('base64'),
+                    },
+                  },
+                ]),
+            { text: prompt },
           ],
         },
-        // The budget, spanning the retry rather than resetting with it.
-        { signal: AbortSignal.timeout(BUDGET_MS) },
-      )
-      .finalMessage();
+      ],
+      generationConfig: {
+        responseMimeType: 'application/json',
+        /*
+          Every spec axis is an enum of Nuhas's own terms, so "invented a
+          plausible cable spec" is not a failure mode anything downstream has
+          to catch — the request will not produce one.
+        */
+        responseSchema: toGeminiSchema(schemaFor(terms)),
+        maxOutputTokens: MAX_OUTPUT_TOKENS,
+      },
+    });
 
-    // A refusal has no content worth reading, and reading it as an empty
-    // document would be a silent one.
-    if (message.stop_reason === 'refusal') return failed('the request was declined');
+    const answer = await withOneRetry(
+      `${process.env['GEMINI_BASE_URL'] ?? ENDPOINT}/${modelName()}:generateContent`,
+      key,
+      body,
+    );
+    if (!answer.ok) return failed(answer.why);
+
+    const blocked = answer.body.promptFeedback?.blockReason;
+    if (blocked !== undefined) return failed(`the request was declined (${blocked})`);
+
+    const first = answer.body.candidates?.[0];
+    if (first === undefined) return failed('it answered with nothing');
     /*
       A truncated answer is a half-read schedule, and half a schedule looks
       exactly like a whole one on screen. The rows that arrived are worth less
       than the rows that silently did not, so none of it is kept.
     */
-    if (message.stop_reason === 'max_tokens') {
+    if (first.finishReason === 'MAX_TOKENS') {
       return failed('the schedule was longer than one answer could hold');
     }
+    // Anything other than a clean stop is a partial or withheld answer under
+    // another name, and reading one as a document would be a silent loss.
+    if (first.finishReason !== undefined && first.finishReason !== 'STOP') {
+      return failed(`it stopped early (${first.finishReason})`);
+    }
 
-    const body = message.content.find((b) => b.type === 'text');
-    if (body === undefined) return failed('it answered with nothing');
+    const parts = first.content?.parts;
+    if (parts === undefined || parts.length === 0) return failed('it answered with nothing');
+    const parsed: unknown = JSON.parse(parts.map((p) => p.text ?? '').join(''));
 
-    const parsed: unknown = JSON.parse(body.text);
     const lines = (parsed as { lines?: unknown } | null)?.lines;
     if (!Array.isArray(lines)) return failed('it did not answer in the shape it was asked for');
 
@@ -230,4 +279,67 @@ export async function readWithModel(
     */
     return failed(cause instanceof Error ? cause.message : String(cause));
   }
+}
+
+/**
+ * The request, once, and again only if trying again could help.
+ *
+ * A 429 or a 5xx is the provider saying "not now", and not now is often over
+ * in a second. A 400 is this app having asked for something impossible, and
+ * asking twice wastes half the budget to be told so twice — the schema fault
+ * that cost a live call to find was a 400, and it would have been one either
+ * way. Both attempts share `BUDGET_MS`, so the retry cannot push the function
+ * past the limit that kills it.
+ *
+ * **And it waits first.** The first version did not, and the first live run
+ * after it was written came back `503 — this model is currently experiencing
+ * high demand` twice inside five seconds. Two requests that close together are
+ * one request with extra cost: whatever was busy is still busy. The pause is
+ * short enough to be invisible against a two-minute read and long enough for a
+ * spike to pass, and it is cut short by the budget rather than running past it
+ * — waiting four seconds to discover there is no time left to use them is a
+ * strange way to spend the end of a timeout.
+ */
+const RETRY_AFTER_MS = 4_000;
+async function withOneRetry(
+  url: string,
+  key: string,
+  body: string,
+): Promise<{ ok: true; body: Answer } | { ok: false; why: string }> {
+  const deadline = AbortSignal.timeout(BUDGET_MS);
+  let last = '';
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'x-goog-api-key': key, 'content-type': 'application/json' },
+      body,
+      signal: AbortSignal.any([deadline, AbortSignal.timeout(TIMEOUT_MS)]),
+    });
+
+    if (res.ok) return { ok: true, body: (await res.json()) as Answer };
+
+    const said = ((await res.json().catch(() => ({}))) as Answer).error?.message;
+    last = `the API answered ${res.status}${said === undefined ? '' : ` — ${said}`}`;
+    if (res.status !== 429 && res.status < 500) break;
+    if (attempt === 0 && !deadline.aborted) await pause(deadline);
+    if (deadline.aborted) break;
+  }
+
+  return { ok: false, why: last };
+}
+
+/** The pause before the retry, cut short if the budget runs out first. */
+function pause(deadline: AbortSignal): Promise<void> {
+  return new Promise<void>((resolve) => {
+    const timer = setTimeout(resolve, RETRY_AFTER_MS);
+    deadline.addEventListener(
+      'abort',
+      () => {
+        clearTimeout(timer);
+        resolve();
+      },
+      { once: true },
+    );
+  });
 }

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  type ExtractedDocument,
   classifyHeader,
+  enquiryFrom,
   extractFromGrid,
   extractFromText,
   findHeaderRow,
@@ -340,5 +342,51 @@ describe('where each line came from', () => {
   it('offers no sources when it could not read the document', () => {
     expect(extractFromText('   \n  \n').sources).toEqual([]);
     expect(extractFromGrid([['Dear sir'], ['Please quote']]).sources).toEqual([]);
+  });
+});
+
+/**
+ * What an upload becomes.
+ *
+ * These three cases are the difference between an engineer being handed an
+ * enquiry of a hundred and forty cables that does not exist, an empty job with
+ * its document beside it, and a stated refusal. The middle one shipped wrong
+ * once, from inside a Server Action where nothing could reach it.
+ */
+describe('an upload becoming an enquiry', () => {
+  const read = (over: Partial<ExtractedDocument>): ExtractedDocument => ({
+    lines: [],
+    sources: [],
+    notes: [],
+    unreadable: false,
+    rawText: '',
+    ...over,
+  });
+
+  it('is the lines, when there are lines', () => {
+    expect(
+      enquiryFrom(read({ lines: ['3C x 50 mm² — 12,500 m', '4C x 16 mm² — 800 m'] })),
+    ).toEqual({ rawText: '3C x 50 mm² — 12,500 m\n4C x 16 mm² — 800 m' });
+  });
+
+  it('is empty — not the whole document — when nothing read as a cable', () => {
+    const document = 'BILL OF MATERIAL\nRev C\nPage 1 of 4\nSheet 2\nIssued for tender';
+    expect(enquiryFrom(read({ rawText: document }))).toEqual({ rawText: '' });
+  });
+
+  it('refuses, in the reader’s own words, when there was nothing at all', () => {
+    expect(
+      enquiryFrom(read({ notes: ['No text could be read from this PDF. It is most likely a scan.'] })),
+    ).toEqual({ refusal: 'No text could be read from this PDF. It is most likely a scan.' });
+  });
+
+  it('still refuses when the reader said nothing either', () => {
+    expect(enquiryFrom(read({}))).toEqual({
+      refusal: 'Nothing could be read from that file.',
+    });
+  });
+
+  it('treats whitespace as nothing', () => {
+    expect(enquiryFrom(read({ rawText: '   \n \t \n  ' }))).toHaveProperty('refusal');
   });
 });

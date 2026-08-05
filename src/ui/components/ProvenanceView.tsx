@@ -51,13 +51,24 @@ export function ProvenanceView({
   const producedBy = (row: number) => entries.find((e) => e.line === row) ?? null;
 
   const mapped = entries.some((e) => e.line !== null);
+  /*
+    No lines at all is not the same as lines whose provenance was lost.
+
+    Both arrive here with nothing mapped, and both used to be explained as "the
+    enquiry text was corrected after this file was read" — which, for a document
+    the reader could make nothing of, is simply untrue. Nobody corrected
+    anything; there was never a line to trace.
+  */
+  const nothingRead = entries.length === 0;
 
   return (
     <div>
       <p style={{ ...note, padding: '0 var(--cell-pad-x) 8px' }}>
         {mapped
           ? 'Select a line on either side and its counterpart is marked. Dimmer type is a row the reader left out — a covering letter left out is noise, a cable line left out is the thing to catch here.'
-          : 'The enquiry text was corrected after this file was read, so the app no longer knows which row each line came from. It will not guess: line positions moved, and provenance pointing at the wrong row is worse than none.'}
+          : nothingRead
+            ? 'No cable line was read from this document, so there is nothing to trace back to it. The text is here to read and to paste from — “Correct the text” below takes whatever you put in and prices it.'
+            : 'The enquiry text was corrected after this file was read, so the app no longer knows which row each line came from. It will not guess: line positions moved, and provenance pointing at the wrong row is worse than none.'}
       </p>
 
       <div className="flex" style={{ borderTop: '1px solid var(--color-line-strong)' }}>
