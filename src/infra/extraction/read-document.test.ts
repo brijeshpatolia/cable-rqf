@@ -18,14 +18,14 @@ import { readDocument } from './read-document';
  * shape both outages took.
  */
 
-const KEY = process.env['ANTHROPIC_API_KEY'];
+const KEY = process.env['GEMINI_API_KEY'];
 
 beforeAll(() => {
   // The pdf.js half must stand on its own, so the model is not consulted here.
-  delete process.env['ANTHROPIC_API_KEY'];
+  delete process.env['GEMINI_API_KEY'];
 });
 afterAll(() => {
-  if (KEY !== undefined) process.env['ANTHROPIC_API_KEY'] = KEY;
+  if (KEY !== undefined) process.env['GEMINI_API_KEY'] = KEY;
 });
 
 async function pdfOf(lines: readonly string[]): Promise<Uint8Array> {

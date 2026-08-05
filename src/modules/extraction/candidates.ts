@@ -116,15 +116,20 @@ export interface Candidate {
  * A field that is one of a fixed set of words, or nothing.
  *
  * `anyOf`, not `{ type: ['string', 'null'], enum: [...] }`. The obvious
- * spelling is accepted by every JSON Schema validator and rejected by this
- * API with `Enum value 'm' does not match declared type '['string','null']'`:
- * it checks each enum member against the declared type as a whole rather than
- * against the union's branches. The two-branch form says the same thing in a
- * way it will take.
+ * spelling is accepted by every JSON Schema validator and was rejected by the
+ * first provider this ran against, with `Enum value 'm' does not match
+ * declared type '['string','null']'`: it checked each enum member against the
+ * declared type as a whole rather than against the union's branches. The
+ * two-branch form says the same thing in a way it would take.
  *
  * It cost a 400 on the first live call to find, which is the entire argument
  * for having made one. Nothing short of a real request could have caught it —
  * the stub server this was tested against will accept any body at all.
+ *
+ * The form is kept now that the provider has changed, because it is the one
+ * that has been proved on a live API rather than only read as valid, and
+ * because `infra` translates whatever is written here into the dialect of the
+ * day. This module states the contract; it does not know who is being asked.
  */
 const oneOfOrNull = (values: readonly unknown[], description: string) => ({
   anyOf: [{ type: typeof values[0] === 'string' ? 'string' : 'number', enum: [...values] }, { type: 'null' }],
