@@ -374,11 +374,23 @@ async function withOneRetry(
     const said = ((await res.json().catch(() => ({}))) as Answer).error?.message;
     last = `the API answered ${res.status}${said === undefined ? '' : ` — ${said}`}`;
     if (res.status !== 429 && res.status < 500) break;
-    // Counted after the pause, because the pause is part of what a second
-    // attempt costs.
+    // Counted with the pause spent, because the pause is part of what a second
+    // attempt costs. Asked here so a decision already made is not waited for.
     if (leftOfBudget() - RETRY_AFTER_MS < MIN_SECOND_ATTEMPT_MS) break;
     if (attempt === 0 && !deadline.aborted) await pause(deadline);
     if (deadline.aborted) break;
+    /*
+      And asked again, because the first answer was a prediction.
+
+      `RETRY_AFTER_MS` is what the pause was *scheduled* for, not what it took.
+      A timer fires when the loop gets round to it, and a serverless instance
+      that has been throttled or frozen can get round to it much later — at
+      which point the second attempt goes out on a budget that was checked
+      against a four-second pause that lasted thirty. This one is measured
+      rather than predicted, and it is the same guard: report the 503 that
+      really happened instead of the timeout that would replace it.
+    */
+    if (leftOfBudget() < MIN_SECOND_ATTEMPT_MS) break;
   }
 
   return { ok: false, why: last };

@@ -231,6 +231,48 @@ describe('the request', () => {
     }
   });
 
+  it('asks again after the pause, because the pause can overrun', async () => {
+    /*
+      The check before the pause is a prediction: it subtracts the four seconds
+      the pause was *scheduled* for. A throttled instance can get round to that
+      timer much later, and then the second attempt goes out against a budget
+      nobody re-measured. Here the first check passes honestly and the pause
+      is the thing that overruns — so only the second check can stop it.
+    */
+    statuses = [503, 200];
+    const real = Date.now();
+    let elapsed = 0;
+    const clock = vi.spyOn(Date, 'now').mockImplementation(() => real + elapsed);
+    onRequest = () => (elapsed = 100_000);
+
+    // Started before the clock is taken, as `drive` does above: the two abort
+    // signals schedule timers of their own, and faking those would count them
+    // among the ones this test is waiting on.
+    let settled = false;
+    const work = readWithModel('5.1 2C X 16 mm² m 19000', BUILT_IN_TERMS).finally(
+      () => (settled = true),
+    );
+    vi.useFakeTimers({ toFake: ['setTimeout'] });
+    try {
+      // Wait for the pause to be scheduled — which is the first check having
+      // passed honestly, with 90 seconds left and only four of them spoken for.
+      for (let i = 0; i < 100 && vi.getTimerCount() === 0 && !settled; i++) await io(5);
+
+      // And now the pause takes fifty seconds of wall clock rather than four.
+      elapsed = 150_000;
+      for (let i = 0; i < 100 && !settled; i++) {
+        await io(5);
+        await vi.advanceTimersByTimeAsync(1_000);
+      }
+
+      expect(await work).toEqual({ ok: false, why: expect.stringContaining('503') });
+      expect(requests).toBe(1);
+    } finally {
+      vi.useRealTimers();
+      clock.mockRestore();
+    }
+  });
+
   it('does not try again when trying again cannot help', async () => {
     // A 400 is this app having asked for something impossible. Asking twice
     // spends half the budget to be told so twice.
