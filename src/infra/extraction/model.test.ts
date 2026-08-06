@@ -71,7 +71,7 @@ describe('the request', () => {
   it('is the one intended', async () => {
     await readWithModel('5.1 2C X 16 mm² m 19000', BUILT_IN_TERMS);
 
-    expect(seenUrl).toBe('/v1beta/models/gemini-3.1-pro-preview:generateContent');
+    expect(seenUrl).toBe('/v1beta/models/gemini-3.6-flash:generateContent');
     const config = seen['generationConfig'] as Record<string, unknown>;
     expect(config['responseMimeType']).toBe('application/json');
     expect(config['responseSchema']).toEqual(toGeminiSchema(schemaFor(BUILT_IN_TERMS)));

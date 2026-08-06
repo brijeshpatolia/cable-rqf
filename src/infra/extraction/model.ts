@@ -55,11 +55,14 @@ import { toGeminiSchema } from './gemini-schema';
  * blip and costs the whole time budget; the engineer would rather be told in
  * three minutes than kept waiting for five.
  *
- * The per-attempt number is close to the budget on purpose, and it moved when
- * the default model did. Flash read the real RFQ in 95 seconds; a model that
- * reasons more takes longer, and a 120-second cap on the attempt would have
- * turned "slower" into "always fails" — a timeout on a call that was going to
- * answer. What the retry is actually for is the failure that comes back
+ * The per-attempt number is close to the budget on purpose. The measured read
+ * took 95 seconds — one model, one document — and a 120-second cap left barely
+ * twenty-five seconds of margin above the only figure anyone has. A schedule
+ * that is longer, or a model that thinks for longer before answering, would
+ * have turned "slower" into "always fails": a timeout on a call that was going
+ * to answer, on every upload, with the pattern reader quietly standing in. An
+ * attempt cap costs nothing when it is not reached, so the margin is bought
+ * cheaply. What the retry is actually for is the failure that comes back
  * *immediately*: the `503 — high demand` this saw twice inside five seconds on
  * its first live call. Those leave the budget almost untouched, so a longer
  * attempt costs the retry nothing it was ever going to use.
@@ -108,21 +111,31 @@ const MAX_PDF_PAGES = 100;
  *
  * The variable exists so that a provider outage, a deprecation, or a model
  * worth trying is a change to one setting rather than a release. Setting it to
- * `gemini-3.5-flash` is the measured, cheaper reading described above and the
- * one thing here anybody should feel free to do; anything else is a model
- * nobody has put this document in front of.
+ * `gemini-3.5-flash` returns to measured ground — that is the model that read
+ * the real RFQ correctly, and the one thing here anybody should feel free to
+ * do. Anything else is a model nobody has put this document in front of.
  *
- * **`-preview`, and why that is the lesser risk.** There is no GA Pro in the
- * 3.x line — the catalogue offers this or `gemini-2.5-pro`, a generation older
- * and carrying a retirement date. Preferring the GA name would mean choosing a
- * weaker model *and* a scheduled outage, which spends the reason for being on
- * Pro at all. A preview name can be withdrawn without notice; when it is, the
- * failure is the soft one this whole file is built around — the upload opens,
- * the pattern reader stands in, the note says what the API answered — and the
- * fix is this variable rather than a release. That is a bounded risk taken
- * knowingly, not one nobody noticed.
+ * **Why this one.** It is the successor to that measured model: generally
+ * available, same family, same PDF-and-schema interface, and *cheaper* per
+ * output token than the version that was measured. There is no trade to argue
+ * about — it is newer and it costs less.
+ *
+ * **What this replaced, and why that was wrong.** An earlier revision defaulted
+ * to `gemini-3.1-pro-preview`, reasoning that the readings that matter are the
+ * ones not yet in front of it — a heading that governs rows three pages later,
+ * a size struck out by hand — and that a model which reasons harder buys
+ * headroom there. That argument still holds. What did not survive checking was
+ * its premise: that Pro was the only way to buy it, and that the alternative
+ * was a generation older. It is not. Pro in the 3.x line is preview-only and
+ * withdrawable without notice, and costs more per output token than this does.
+ * A GA name newer than the measured one is the same bet with none of that
+ * attached, so the preview risk was being carried for nothing.
+ *
+ * Neither this nor Pro has been put in front of the real document; that is the
+ * honest state of both. The difference is that being wrong here costs a
+ * setting change, not an outage nobody scheduled.
  */
-const DEFAULT_MODEL = 'gemini-3.1-pro-preview';
+const DEFAULT_MODEL = 'gemini-3.6-flash';
 const ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 /*
