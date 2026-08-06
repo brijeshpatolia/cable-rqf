@@ -55,14 +55,19 @@ import { toGeminiSchema } from './gemini-schema';
  * blip and costs the whole time budget; the engineer would rather be told in
  * three minutes than kept waiting for five.
  *
- * The per-attempt number is close to the budget on purpose. The measured read
- * took 95 seconds — one model, one document — and a 120-second cap left barely
- * twenty-five seconds of margin above the only figure anyone has. A schedule
- * that is longer, or a model that thinks for longer before answering, would
- * have turned "slower" into "always fails": a timeout on a call that was going
- * to answer, on every upload, with the pattern reader quietly standing in. An
- * attempt cap costs nothing when it is not reached, so the margin is bought
- * cheaply. What the retry is actually for is the failure that comes back
+ * The per-attempt number is close to the budget on purpose, and the two
+ * numbers answer different questions. `TIMEOUT_MS` asks how long one attempt
+ * may take: 180s against a measured 95-second read is 85 seconds of margin,
+ * where the previous 120s left only 25 — too thin for a longer schedule or a
+ * model that thinks before answering, which would have turned "slower" into
+ * "always fails": a timeout on a call that was going to answer, on every
+ * upload, with the pattern reader quietly standing in. `BUDGET_MS` asks how
+ * long the *whole* read may take, and 190s is barely 10 seconds past a fully
+ * spent attempt — deliberately, because overrunning it is fatal rather than
+ * merely slow. So the generous number is bounded by the strict one, and an
+ * attempt cap costs nothing when it is not reached.
+ *
+ * What the retry is actually for is the failure that comes back
  * *immediately*: the `503 — high demand` this saw twice inside five seconds on
  * its first live call. Those leave the budget almost untouched, so a longer
  * attempt costs the retry nothing it was ever going to use.
