@@ -15,6 +15,8 @@ let status = 200;
 /** Statuses for the next requests in order, when a test needs them to differ. */
 let statuses: number[] = [];
 let requests = 0;
+/** Run as each request arrives, for a test that needs the clock to have moved. */
+let onRequest: (() => void) | undefined;
 
 /*
   Restored after every test rather than by each test that moves them.
@@ -30,6 +32,7 @@ afterEach(() => {
   status = GOOD.status;
   statuses = [];
   requests = 0;
+  onRequest = undefined;
 });
 
 beforeAll(async () => {
@@ -40,6 +43,7 @@ beforeAll(async () => {
       seen = JSON.parse(body);
       seenUrl = req.url ?? '';
       requests++;
+      onRequest?.();
       const code = statuses.shift() ?? status;
       res.writeHead(code, { 'content-type': 'application/json' });
       res.end(
@@ -67,7 +71,7 @@ describe('the request', () => {
   it('is the one intended', async () => {
     await readWithModel('5.1 2C X 16 mm² m 19000', BUILT_IN_TERMS);
 
-    expect(seenUrl).toBe('/v1beta/models/gemini-3.5-flash:generateContent');
+    expect(seenUrl).toBe('/v1beta/models/gemini-3.6-flash:generateContent');
     const config = seen['generationConfig'] as Record<string, unknown>;
     expect(config['responseMimeType']).toBe('application/json');
     expect(config['responseSchema']).toEqual(toGeminiSchema(schemaFor(BUILT_IN_TERMS)));
@@ -75,7 +79,7 @@ describe('the request', () => {
   });
 
   it('sends the model named in the environment', async () => {
-    process.env['EXTRACTION_MODEL'] = 'gemini-2.5-pro';
+    process.env['EXTRACTION_MODEL'] = 'gemini-3.5-flash';
     try {
       await readWithModel('5.1 2C X 16 mm² m 19000', BUILT_IN_TERMS);
     } finally {
@@ -83,7 +87,7 @@ describe('the request', () => {
       // variable set and break the test above on the next run.
       delete process.env['EXTRACTION_MODEL'];
     }
-    expect(seenUrl).toBe('/v1beta/models/gemini-2.5-pro:generateContent');
+    expect(seenUrl).toBe('/v1beta/models/gemini-3.5-flash:generateContent');
   });
 
   it('sends the file itself alongside the text when there is one', async () => {
@@ -205,6 +209,68 @@ describe('the request', () => {
     expect(waited).toBe(true);
     expect(requests).toBe(2);
     expect(out).toEqual({ ok: false, why: expect.stringContaining('503') });
+  });
+
+  it('does not start a second attempt that could not come back in time', async () => {
+    // The provider says "not now" — normally worth one more try. But this
+    // first attempt ran long before it failed, and a request begun with what
+    // is left cannot produce a reading: it would be paid for and then aborted,
+    // and the abort would report a timeout in place of what the API actually
+    // said. The 503 is the true answer and the one the engineer should get.
+    statuses = [503, 200];
+    const real = Date.now();
+    let elapsed = 0;
+    const clock = vi.spyOn(Date, 'now').mockImplementation(() => real + elapsed);
+    onRequest = () => (elapsed = 150_000);
+    try {
+      const out = await readWithModel('5.1 2C X 16 mm² m 19000', BUILT_IN_TERMS);
+      expect(requests).toBe(1);
+      expect(out).toEqual({ ok: false, why: expect.stringContaining('503') });
+    } finally {
+      clock.mockRestore();
+    }
+  });
+
+  it('asks again after the pause, because the pause can overrun', async () => {
+    /*
+      The check before the pause is a prediction: it subtracts the four seconds
+      the pause was *scheduled* for. A throttled instance can get round to that
+      timer much later, and then the second attempt goes out against a budget
+      nobody re-measured. Here the first check passes honestly and the pause
+      is the thing that overruns — so only the second check can stop it.
+    */
+    statuses = [503, 200];
+    const real = Date.now();
+    let elapsed = 0;
+    const clock = vi.spyOn(Date, 'now').mockImplementation(() => real + elapsed);
+    onRequest = () => (elapsed = 100_000);
+
+    // Started before the clock is taken, as `drive` does above: the two abort
+    // signals schedule timers of their own, and faking those would count them
+    // among the ones this test is waiting on.
+    let settled = false;
+    const work = readWithModel('5.1 2C X 16 mm² m 19000', BUILT_IN_TERMS).finally(
+      () => (settled = true),
+    );
+    vi.useFakeTimers({ toFake: ['setTimeout'] });
+    try {
+      // Wait for the pause to be scheduled — which is the first check having
+      // passed honestly, with 90 seconds left and only four of them spoken for.
+      for (let i = 0; i < 100 && vi.getTimerCount() === 0 && !settled; i++) await io(5);
+
+      // And now the pause takes fifty seconds of wall clock rather than four.
+      elapsed = 150_000;
+      for (let i = 0; i < 100 && !settled; i++) {
+        await io(5);
+        await vi.advanceTimersByTimeAsync(1_000);
+      }
+
+      expect(await work).toEqual({ ok: false, why: expect.stringContaining('503') });
+      expect(requests).toBe(1);
+    } finally {
+      vi.useRealTimers();
+      clock.mockRestore();
+    }
   });
 
   it('does not try again when trying again cannot help', async () => {

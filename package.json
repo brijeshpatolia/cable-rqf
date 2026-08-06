@@ -22,7 +22,8 @@
     "postinstall": "prisma generate",
     "db:deploy": "prisma migrate deploy",
     "db:deploy:http": "tsx scripts/neon-apply.ts",
-    "db:seed:http": "tsx scripts/neon-seed.ts"
+    "db:seed:http": "tsx scripts/neon-seed.ts",
+    "enquiries:clear:http": "dotenv -e .env -- tsx scripts/neon-clear-enquiries.ts"
   },
   "dependencies": {
     "@napi-rs/canvas": "^1.0.2",

@@ -17,14 +17,22 @@ import { toGeminiSchema } from './gemini-schema';
  * being up, and adding one that could take intake down with it would be a poor
  * trade for a tool ten people use to answer customers the same day.
  *
- * **Which model, and why this one.** The first working version of this ran on
- * a frontier model at roughly a dollar a document, which is a real cost on a
- * task that runs on every upload. So the reading was measured on the customer
- * RFQ this was built against — the same file, the same instructions, the same
- * guards downstream — and Gemini Flash returned the same forty-five lines, the
+ * **Which model, and why this one.** Pro, deliberately, and it is worth being
+ * exact about what that is and is not based on. Flash was measured against the
+ * customer RFQ this was built against — the same file, the same instructions,
+ * the same guards downstream — and returned the same forty-five lines, the
  * same twenty-seven exact matches, and the same corrected size on the row that
- * had been struck through by hand. Same answer, about a fiftieth of the cost.
- * The decision was the measurement, not a preference.
+ * had been struck through by hand. On that document the cheaper model was not
+ * worse. But one document is one document, and it is the document this was
+ * written against, which is the weakest possible evidence about the next one.
+ *
+ * What the reading is actually for is the hard case: a schedule whose heading
+ * governs rows three pages later, a size struck out by hand, a note that
+ * withdraws a line. Those are the documents where the models differ, and they
+ * are exactly the ones not yet in front of this. A wrong reading here does not
+ * announce itself — it is a plausible schedule, and someone quotes from it. So
+ * the default buys headroom on the case that has not been measured, and the
+ * saving is a setting away for whoever decides it is worth taking.
  *
  * `fetch`, not a vendor SDK. One endpoint, one shape, and the timeout this
  * needs is the one the platform already gives — a dependency here would buy
@@ -46,8 +54,29 @@ import { toGeminiSchema } from './gemini-schema';
  * One retry, not two. A second retry buys a small amount of luck against a
  * blip and costs the whole time budget; the engineer would rather be told in
  * three minutes than kept waiting for five.
+ *
+ * The per-attempt number is close to the budget on purpose, and the two
+ * numbers answer different questions. `TIMEOUT_MS` asks how long one attempt
+ * may take: 180s against a measured 95-second read is 85 seconds of margin,
+ * where the previous 120s left only 25 — too thin for a longer schedule or a
+ * model that thinks before answering, which would have turned "slower" into
+ * "always fails": a timeout on a call that was going to answer, on every
+ * upload, with the pattern reader quietly standing in. `BUDGET_MS` asks how
+ * long the *whole* read may take, and 190s is barely 10 seconds past a fully
+ * spent attempt — deliberately, because overrunning it is fatal rather than
+ * merely slow. So the generous number is bounded by the strict one, and an
+ * attempt cap costs nothing when it is not reached.
+ *
+ * What the retry is actually for is the failure that comes back
+ * *immediately*: the `503 — high demand` this saw twice inside five seconds on
+ * its first live call. Those leave the budget almost untouched, so a longer
+ * attempt costs the retry nothing it was ever going to use.
+ *
+ * The case that does not fit that description — a first attempt that runs long
+ * and *then* fails — is handled by `MIN_SECOND_ATTEMPT_MS` below, which
+ * declines to start a second request there is no time to finish.
  */
-const TIMEOUT_MS = 120_000;
+const TIMEOUT_MS = 180_000;
 const BUDGET_MS = 190_000;
 
 /**
@@ -85,13 +114,33 @@ const MAX_PDF_PAGES = 100;
 /**
  * The model, overridable without a deploy.
  *
- * The one above is what the measurement was taken on and what the default
- * should stay until a new measurement says otherwise. The variable exists so
- * that a provider outage, a deprecation, or a cheaper model worth trying is a
- * change to one setting rather than a release — and so the person making that
- * change knows they are changing the thing the numbers were taken on.
+ * The variable exists so that a provider outage, a deprecation, or a model
+ * worth trying is a change to one setting rather than a release. Setting it to
+ * `gemini-3.5-flash` returns to measured ground — that is the model that read
+ * the real RFQ correctly, and the one thing here anybody should feel free to
+ * do. Anything else is a model nobody has put this document in front of.
+ *
+ * **Why this one.** It is the successor to that measured model: generally
+ * available, same family, same PDF-and-schema interface, and *cheaper* per
+ * output token than the version that was measured. There is no trade to argue
+ * about — it is newer and it costs less.
+ *
+ * **What this replaced, and why that was wrong.** An earlier revision defaulted
+ * to `gemini-3.1-pro-preview`, reasoning that the readings that matter are the
+ * ones not yet in front of it — a heading that governs rows three pages later,
+ * a size struck out by hand — and that a model which reasons harder buys
+ * headroom there. That argument still holds. What did not survive checking was
+ * its premise: that Pro was the only way to buy it, and that the alternative
+ * was a generation older. It is not. Pro in the 3.x line is preview-only and
+ * withdrawable without notice, and costs more per output token than this does.
+ * A GA name newer than the measured one is the same bet with none of that
+ * attached, so the preview risk was being carried for nothing.
+ *
+ * Neither this nor Pro has been put in front of the real document; that is the
+ * honest state of both. The difference is that being wrong here costs a
+ * setting change, not an outage nobody scheduled.
  */
-const DEFAULT_MODEL = 'gemini-3.5-flash';
+const DEFAULT_MODEL = 'gemini-3.6-flash';
 const ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 /*
@@ -301,11 +350,32 @@ export async function readWithModel(
  * strange way to spend the end of a timeout.
  */
 const RETRY_AFTER_MS = 4_000;
+
+/**
+ * Below this much budget left, the second attempt is not made at all.
+ *
+ * A retry needs room to *finish*, and a read takes most of a minute — the real
+ * RFQ took ninety-five seconds. Starting one with fifteen seconds left buys no
+ * chance of an answer and costs two things that matter: the request is paid
+ * for, and the abort that ends it replaces "the API answered 503 — high
+ * demand" with a timeout, which is the wrong sentence to put in front of the
+ * engineer. Nothing is lost by stopping: the failure being reported is the one
+ * that already happened.
+ *
+ * It earns its keep because the per-attempt timeout sits close to the budget.
+ * A provider saying "not now" almost always says it in milliseconds, so the
+ * ordinary retry is nowhere near this line; what this catches is the case
+ * where the first attempt ran long and *then* failed.
+ */
+const MIN_SECOND_ATTEMPT_MS = 60_000;
+
 async function withOneRetry(
   url: string,
   key: string,
   body: string,
 ): Promise<{ ok: true; body: Answer } | { ok: false; why: string }> {
+  const startedAt = Date.now();
+  const leftOfBudget = () => BUDGET_MS - (Date.now() - startedAt);
   const deadline = AbortSignal.timeout(BUDGET_MS);
   let last = '';
 
@@ -322,8 +392,23 @@ async function withOneRetry(
     const said = ((await res.json().catch(() => ({}))) as Answer).error?.message;
     last = `the API answered ${res.status}${said === undefined ? '' : ` — ${said}`}`;
     if (res.status !== 429 && res.status < 500) break;
+    // Counted with the pause spent, because the pause is part of what a second
+    // attempt costs. Asked here so a decision already made is not waited for.
+    if (leftOfBudget() - RETRY_AFTER_MS < MIN_SECOND_ATTEMPT_MS) break;
     if (attempt === 0 && !deadline.aborted) await pause(deadline);
     if (deadline.aborted) break;
+    /*
+      And asked again, because the first answer was a prediction.
+
+      `RETRY_AFTER_MS` is what the pause was *scheduled* for, not what it took.
+      A timer fires when the loop gets round to it, and a serverless instance
+      that has been throttled or frozen can get round to it much later — at
+      which point the second attempt goes out on a budget that was checked
+      against a four-second pause that lasted thirty. This one is measured
+      rather than predicted, and it is the same guard: report the 503 that
+      really happened instead of the timeout that would replace it.
+    */
+    if (leftOfBudget() < MIN_SECOND_ATTEMPT_MS) break;
   }
 
   return { ok: false, why: last };
