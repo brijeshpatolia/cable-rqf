@@ -430,6 +430,8 @@ export function readCandidates({
    * descriptions apart: see `lineOf`.
    */
   let sofar = 0;
+  /** Row numbers already on the list, so none of them goes on it twice. */
+  const priced = new Set<string>();
 
   for (const candidate of candidates) {
     const numbered =
@@ -535,6 +537,29 @@ export function readCandidates({
     }
 
     /*
+      And no row twice.
+
+      Nothing stopped the same row being answered twice, and the second copy
+      passed every check the first one did — it quotes the same real cells off
+      the same real row. It came out as a second identical line, which is the
+      one kind of duplicate that is not obvious on the screen and is expensive
+      everywhere else: two lines at 19,000 m is 38,000 m of cable quoted, and
+      the enquiry looks like the customer asked for it.
+
+      Raised in review against the source-line work, where it shows up as the
+      second copy being pushed to a later occurrence of its own description.
+      That is the smaller half. The line itself should never have been there.
+    */
+    if (numbered !== null && priced.has(numbered)) {
+      refused.push(
+        `${ref} was read twice and the second reading was left out — a schedule ` +
+          'prints a row once, and pricing it twice would order the cable twice ' +
+          'over. Check the document if this row really is repeated.',
+      );
+      continue;
+    }
+
+    /*
       Kilometres are accepted only when the row says kilometres. Every other
       field failing costs a little precision; this one failing multiplies an
       order by a thousand.
@@ -574,6 +599,9 @@ export function readCandidates({
       where:
         placeOf(regions, all[at]?.at ?? 0, 'line') + (numbered === null ? '' : `, item ${numbered}`),
     });
+    // Only once it is on the list, so a row refused above does not lock out a
+    // sound reading of the same row behind it.
+    if (numbered !== null) priced.add(numbered);
   }
 
   const notes = [

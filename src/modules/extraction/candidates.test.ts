@@ -613,3 +613,63 @@ describe('two rows the document describes with the same words', () => {
     expect(out.sources.map((s) => s.line)).toEqual([4, 2]);
   });
 });
+
+/**
+ * The same row answered twice.
+ *
+ * Nothing required the model to report a row once, and the second copy passed
+ * every check the first one did — it quotes the same real cells off the same
+ * real row. Raised in review against the source-line work, where it shows as
+ * the copy being pushed onto a later row that happens to read the same way.
+ *
+ * That is the smaller half of it. The line should not have been there at all:
+ * two identical lines is the one duplicate that looks unremarkable on screen
+ * and doubles a quantity everywhere it matters.
+ */
+describe('a row the model reported twice', () => {
+  /* A later row reading exactly the same, which is where the copy would go. */
+  const TWICE = [
+    'SL. NO DESCRIPTION UNIT QTY',
+    '600/1000V, STRANDED ANNEALED PLAIN COPPER CONDUCTOR, XLPE INSULATION, GALVANIZED STEEL ROUND WIRE ARMOUR',
+    '5.1 2C X 16 mm² m 19000',
+    '6.1 2C X 16 mm² m 19000',
+  ].join('\n');
+
+  const once: Candidate = {
+    ...row51,
+    armour: null,
+    voltage: null,
+    evidence: { row: ['5.1', '2C X 16 mm²', '19000'], heading: [] },
+  };
+
+  it('prices it once, and says why the second reading went', () => {
+    const out = read([once, once], TWICE).document;
+
+    expect(out.lines).toHaveLength(1);
+    expect(out.notes.join(' ')).toContain('read twice');
+  });
+
+  it('does not send the second copy to the next row that reads the same', () => {
+    const out = read([once, once], TWICE).document;
+
+    // Line 3 is item 6.1 — a different row of the schedule, and not this one.
+    expect(out.sources.map((s) => s.line)).toEqual([2]);
+  });
+
+  /*
+    Only rows the document numbers. Two unnumbered rows are ordinary — a
+    schedule that numbers nothing would otherwise come back with one line.
+  */
+  it('still keeps two unnumbered rows that read alike', () => {
+    // No `5.1` among the quotes: a row claiming no number while quoting one is
+    // refused by the guard above this, which is a different test's subject.
+    const unnumbered: Candidate = {
+      ...once,
+      itemRef: null,
+      evidence: { row: ['2C X 16 mm²', '19000'], heading: [] },
+    };
+    const out = read([unnumbered, unnumbered], TWICE).document;
+
+    expect(out.lines).toHaveLength(2);
+  });
+});
