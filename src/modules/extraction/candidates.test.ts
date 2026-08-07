@@ -507,3 +507,109 @@ describe('the request schema', () => {
     }
   });
 });
+
+/**
+ * The same cable printed twice, at two voltages.
+ *
+ * This is the commonest shape in a real MTO and the one the source view was
+ * getting wrong: a schedule runs `1C x 630 mm²` through the 6kV group and
+ * again through the 1kV group, so the description — the longest thing either
+ * row quotes — identifies both of them and neither.
+ *
+ * The bug these cover was found on a live upload, not in review. The lines
+ * themselves were right; every citation on the second group pointed at the
+ * first, which is the worse failure, because an engineer checking a line
+ * against the document sees a row that looks plausible and moves on.
+ */
+describe('two rows the document describes with the same words', () => {
+  const TWO_GROUPS = [
+    'SL. NO DESCRIPTION UNIT QTY',
+    '6350/11000V, STRANDED ANNEALED PLAIN COPPER CONDUCTOR, XLPE INSULATION, COPPER TAPE SCREEN AND OVERALL EXTRUDED PVC OUTER SHEATH',
+    '2 1C X 630 mm² m 1300',
+    '600/1000V, STRANDED ANNEALED PLAIN COPPER CONDUCTOR, XLPE INSULATION, ALUMINIUM WIRE ARMOUR AND OVERALL EXTRUDED PVC OUTER SHEATH',
+    '4.2 1C X 630 mm² m 5600',
+  ].join('\n');
+
+  /*
+    Description and quantity in separate cells, which is how they arrive when
+    the columns come apart — and the reason the row cannot be placed by its
+    description alone.
+  */
+  const upper: Candidate = {
+    ...row51,
+    itemRef: '2',
+    cores: 1,
+    sizeMm2: 630,
+    quantity: 1300,
+    armour: null,
+    voltage: null,
+    evidence: { row: ['2', '1C X 630 mm²', '1300'], heading: [] },
+  };
+  const lower: Candidate = {
+    ...upper,
+    itemRef: '4.2',
+    quantity: 5600,
+    evidence: { row: ['4.2', '1C X 630 mm²', '5600'], heading: [] },
+  };
+
+  it('sends each row to its own line, not both to the first', () => {
+    const out = read([upper, lower], TWO_GROUPS).document;
+
+    expect(out.lines).toHaveLength(2);
+    expect(out.sources.map((s) => s.line)).toEqual([2, 4]);
+  });
+
+  it('cites the row carrying the quantity the engineer is checking', () => {
+    const out = read([upper, lower], TWO_GROUPS).document;
+    const cited = TWO_GROUPS.split('\n')[out.sources[1]!.line]!;
+
+    // The whole point: open the citation and 5,600 is what is printed there.
+    expect(out.lines[1]).toContain('5,600 m');
+    expect(cited).toContain('5600');
+    expect(cited).not.toContain('1300');
+  });
+
+  /*
+    A quantity that is itself repeated.
+
+    Two rows ordering 2,000 m of the same size is ordinary, and then no cell
+    either row quotes is unique to it. Document order is all that is left.
+  */
+  const SAME_QUANTITY = [
+    'SL. NO DESCRIPTION UNIT QTY',
+    '6350/11000V, STRANDED ANNEALED PLAIN COPPER CONDUCTOR, XLPE INSULATION, COPPER TAPE SCREEN AND OVERALL EXTRUDED PVC OUTER SHEATH',
+    '3.1 3C X 95 mm² m 2000',
+    '600/1000V, STRANDED ANNEALED PLAIN COPPER CONDUCTOR, XLPE INSULATION, ALUMINIUM WIRE ARMOUR AND OVERALL EXTRUDED PVC OUTER SHEATH',
+    '5.4 3C X 95 mm² m 2000',
+  ].join('\n');
+
+  it('tells two identical rows apart by where they are printed', () => {
+    const first: Candidate = {
+      ...upper,
+      itemRef: '3.1',
+      cores: 3,
+      sizeMm2: 95,
+      quantity: 2000,
+      evidence: { row: ['3.1', '3C X 95 mm²', '2000'], heading: [] },
+    };
+    const second: Candidate = {
+      ...first,
+      itemRef: '5.4',
+      evidence: { row: ['5.4', '3C X 95 mm²', '2000'], heading: [] },
+    };
+    const out = read([first, second], SAME_QUANTITY).document;
+
+    expect(out.sources.map((s) => s.line)).toEqual([2, 4]);
+  });
+
+  /*
+    And the floor is a preference, not a rule. A model that answers out of
+    order would otherwise push every row it got wrong to line 0 — the
+    document's first heading, which is nobody's row.
+  */
+  it('still places a row whose line is above the one before it', () => {
+    const out = read([lower, upper], TWO_GROUPS).document;
+
+    expect(out.sources.map((s) => s.line)).toEqual([4, 2]);
+  });
+});

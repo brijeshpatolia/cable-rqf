@@ -423,6 +423,13 @@ export function readCandidates({
   const refused: string[] = [];
   /** Rows that were kept, but with something about them worth saying. */
   const doubted: string[] = [];
+  /**
+   * How far down the document the last kept row was found.
+   *
+   * A schedule is read top to bottom, so this is what tells two identical
+   * descriptions apart: see `lineOf`.
+   */
+  let sofar = 0;
 
   for (const candidate of candidates) {
     const numbered =
@@ -558,7 +565,9 @@ export function readCandidates({
         ? `${cores}C x ${num(size)} mm²`
         : `${num(size)} mm²`;
 
-    const at = lineOf(folded, row, quantity);
+    const at = lineOf(folded, row, quantity, sofar);
+    // One past it: the next row cannot be the row that was just placed.
+    sofar = at + 1;
     lines.push(`${[head, ...spec].join(' ')} — ${metres.toLocaleString('en-GB')} m`);
     sources.push({
       line: at,
@@ -684,13 +693,44 @@ function isQuoted(whole: string, rawText: string, quote: string): boolean {
  * above it, which every row in a group quotes and which would otherwise send
  * half a schedule to the same place.
  *
- * Every occurrence of a quote counts, not the first. `3C X 185 mm²` sits
- * inside item 3.3's row and again on its own as the top half of item 5.7
- * thirty lines later, and taking the first would open the source view on the
- * wrong row.
+ * Every occurrence of a quote counts, not the first, and `after` is which one
+ * to take: the earliest line this row is allowed to claim, one past where the
+ * previous row was found.
+ *
+ * A real schedule runs the same cores × size through two groups at two
+ * voltages, and the description is the one thing those two rows genuinely
+ * share. On the RFQ this was built against, `1C x 630 mm²` is item 2 near the
+ * top and item 4.2 twenty lines below it; taking the first sent 4.2's source
+ * view to item 2's row — the same words, a different cable, and 1,300 m shown
+ * against a line the engineer was checking for 5,600. A citation that opens on
+ * the wrong row is worse than none, because the check appears to pass.
+ *
+ * Rows are read in the order they are printed, so document order tells the two
+ * apart, and it costs one number to carry. Past rather than at, because two
+ * rows ordering the same length are common — a pair of 2,000 m rows would
+ * otherwise both land on the first of them.
+ *
+ * When no occurrence sits that far down — a quote that only appears above, a
+ * model that answered out of order — the first is still a better answer than
+ * line 0, and the floor follows what was found rather than running ahead of
+ * it, so one such row does not drag the rest of the schedule with it.
  */
-function lineOf(folded: readonly string[], row: readonly string[], quantity: number): number {
-  const at = (quote: string) => folded.findIndex((l) => l.includes(oneLine(quote).toLowerCase()));
+function lineOf(
+  folded: readonly string[],
+  row: readonly string[],
+  quantity: number,
+  after: number,
+): number {
+  const at = (quote: string) => {
+    const needle = oneLine(quote).toLowerCase();
+    let first = -1;
+    for (let i = 0; i < folded.length; i += 1) {
+      if (!folded[i]!.includes(needle)) continue;
+      if (i >= after) return i;
+      if (first < 0) first = i;
+    }
+    return first;
+  };
 
   /*
     Longest first, and nothing trivially short.
@@ -706,12 +746,24 @@ function lineOf(folded: readonly string[], row: readonly string[], quantity: num
   const distinctive = longestFirst(row.filter((q) => oneLine(q).length >= 6));
 
   const carriesQuantity = (q: string) => statesNumber(q, quantity);
-  // The short cells last, because `5.3` and `m 0` still place a row better
-  // than line 0 does — line 0 is the document's first heading.
+  /*
+    A cell carrying the quantity beats one that does not, at any length.
+
+    `5600` is four characters, so it was being held back as too short to be
+    distinctive — and the row went to its description instead, which is exactly
+    the cell two rows in different groups have in common. Short is not the same
+    as ambiguous: the quantity is the rightmost figure on a row and the least
+    shared thing on it, while a description is the most shared. Asking for it
+    at any length, before falling back to text that identifies nothing, is what
+    separates 5,600 m from the 1,300 m row printed the same way above it.
+
+    The cells carrying neither still come last, because `5.3` and `m 0` place a
+    row better than line 0 does — line 0 is the document's first heading.
+  */
   for (const [quotes, test] of [
     [distinctive, carriesQuantity],
-    [distinctive, () => true],
     [longestFirst(row), carriesQuantity],
+    [distinctive, () => true],
     [longestFirst(row), () => true],
   ] as const) {
     for (const quote of quotes) {
