@@ -673,3 +673,148 @@ describe('a row the model reported twice', () => {
     expect(out.lines).toHaveLength(2);
   });
 });
+
+describe('a figure the row prints only as a voltage', () => {
+  /*
+    Every cable row prints a voltage, and a voltage is written as numbers:
+    `600/1000V` puts a 600 and a 1000 on the row, `11kV` puts an 11 there.
+    Nothing about them is a length or a size, but they are printed in the
+    row's own cells, so the rule that a figure must be printed on the row was
+    satisfied by them — and a claim of 600 m came out as 600 m of cable.
+  */
+  const VOLTAGES = [
+    'SL. NO DESCRIPTION UNIT QTY',
+    '7.1 2C X 16 mm² 600/1000V m 19000',
+    '7.2 1C X 630 mm² 6350/11000V m 1000',
+    '7.3 3C X 95 mm² 11kV m 2500',
+    '7.4 4C X 95/50 mm² m 3000',
+  ].join('\n');
+
+  const at = (line: string): Candidate => ({
+    ...row51,
+    itemRef: line.split(' ')[0]!,
+    evidence: { row: [line], heading: [] },
+  });
+  const r71 = at('7.1 2C X 16 mm² 600/1000V m 19000');
+  const r72 = { ...at('7.2 1C X 630 mm² 6350/11000V m 1000'), cores: 1, sizeMm2: 630 };
+  const r73 = { ...at('7.3 3C X 95 mm² 11kV m 2500'), cores: 3, sizeMm2: 95 };
+
+  it('will not order 600 m because the cable is rated 600/1000V', () => {
+    const out = read([{ ...r71, quantity: 600 }], VOLTAGES).document;
+
+    expect(out.lines).toEqual([]);
+    expect(out.notes.join(' ')).toContain('no quantity is printed');
+  });
+
+  it('will not take the upper half of the rating either', () => {
+    const out = read([{ ...r72, quantity: 11000 }], VOLTAGES).document;
+
+    expect(out.lines).toEqual([]);
+  });
+
+  it('will not read 11 m off an 11kV cable', () => {
+    const out = read([{ ...r73, quantity: 11 }], VOLTAGES).document;
+
+    expect(out.lines).toEqual([]);
+  });
+
+  it('will not size a conductor off the rating', () => {
+    const out = read([{ ...r71, sizeMm2: 600, quantity: 19000 }], VOLTAGES).document;
+
+    expect(out.lines).toEqual([]);
+    expect(out.notes.join(' ')).toContain('no conductor size is printed');
+  });
+
+  /*
+    And the same rows read honestly still come out. `1000` is printed twice on
+    7.2 — once as half the rating and once as the quantity — so a rule that
+    threw the row away rather than the rating would cost a real order.
+  */
+  it('still reads the quantity that is genuinely printed beside it', () => {
+    const out = read([{ ...r72, quantity: 1000 }, { ...r73, quantity: 2500 }], VOLTAGES).document;
+
+    expect(out.lines).toEqual([
+      '1C x 630 mm² — 1,000 m',
+      '3C x 95 mm² — 2,500 m',
+    ]);
+  });
+
+  /*
+    A slash between two numbers is not enough on its own. `4C X 95/50 mm²` is
+    a phase-and-earth size, not a rating, and its 95 is the size being ordered.
+    A rating counts up — 600/1000, 6350/11000 — and this one counts down.
+  */
+  it('leaves a phase-and-earth size alone', () => {
+    const r74 = { ...at('7.4 4C X 95/50 mm² m 3000'), cores: 4, sizeMm2: 95, quantity: 3000 };
+
+    expect(read([r74], VOLTAGES).document.lines).toEqual(['4C x 95 mm² — 3,000 m']);
+  });
+});
+
+describe('a heading the row quotes as if it were a cell', () => {
+  /*
+    The split between `evidence.row` and `evidence.heading` is the model's own
+    grouping, and nothing stopped it putting a heading line on both sides — or
+    only on the row side. Once it is there, every figure in that heading counts
+    as printed on the row, which is exactly what the split exists to prevent.
+
+    Headings are collected from the whole answer, the way row numbers already
+    are: a heading governs a group, so the sibling rows beneath it name it even
+    when the row doing the smuggling does not.
+  */
+  const RATED = [
+    'SL. NO DESCRIPTION UNIT QTY',
+    'XLPE INSULATED TO IEC 60502-1, 90 DEG C CONDUCTOR TEMPERATURE, ALUMINIUM WIRE ARMOUR',
+    '8.1 3C X 95 mm² m 2500',
+    '8.2 3C X 120 mm² m 800',
+  ].join('\n');
+  const RATED_HEAD =
+    'XLPE INSULATED TO IEC 60502-1, 90 DEG C CONDUCTOR TEMPERATURE, ALUMINIUM WIRE ARMOUR';
+
+  const honest: Candidate = {
+    ...row51,
+    itemRef: '8.2',
+    cores: 3,
+    sizeMm2: 120,
+    quantity: 800,
+    armour: null,
+    evidence: { row: ['8.2 3C X 120 mm² m 800'], heading: [RATED_HEAD] },
+  };
+
+  it('does not let the heading supply a quantity', () => {
+    const smuggler: Candidate = {
+      ...honest,
+      itemRef: '8.1',
+      sizeMm2: 95,
+      quantity: 90,
+      evidence: { row: ['8.1 3C X 95 mm² m 2500', RATED_HEAD], heading: [RATED_HEAD] },
+    };
+    const out = read([smuggler, honest], RATED).document;
+
+    expect(out.lines).toEqual(['3C x 120 mm² XLPE — 800 m']);
+    expect(out.notes.join(' ')).toContain('no quantity is printed');
+  });
+
+  it('does not let it in by naming the heading on one side only', () => {
+    const smuggler: Candidate = {
+      ...honest,
+      itemRef: '8.1',
+      sizeMm2: 95,
+      quantity: 90,
+      evidence: { row: ['8.1 3C X 95 mm² m 2500', RATED_HEAD], heading: [] },
+    };
+    const out = read([smuggler, honest], RATED).document;
+
+    expect(out.lines).toEqual(['3C x 120 mm² XLPE — 800 m']);
+  });
+
+  /*
+    The heading is still what the construction is read from — that is the whole
+    reason it is quoted. Only figures stop coming out of it.
+  */
+  it('still reads the construction off the heading it cites', () => {
+    const out = read([honest], RATED).document;
+
+    expect(out.lines).toEqual(['3C x 120 mm² XLPE — 800 m']);
+  });
+});

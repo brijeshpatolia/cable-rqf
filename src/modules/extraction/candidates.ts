@@ -291,6 +291,36 @@ export function statesNumber(text: string, value: number): boolean {
 }
 
 /**
+ * A voltage designation, which is never a size, a quantity or a core count.
+ *
+ * Every cable row states its rating, and a rating is written as numbers:
+ * `600/1000V` prints a 600 and a 1000 on the row, `11kV` prints an 11. They
+ * are printed in the row's own cells, so the rule that a figure has to be
+ * printed on the row was satisfied by them, and a claim of 600 m came back as
+ * 600 m of cable with nothing said about it.
+ *
+ * Two forms are struck out. A figure carrying the unit — `11kV`, `415V` — and
+ * a pair separated by a slash, which is how U0/U is printed whether or not the
+ * unit follows it.
+ *
+ * The slash alone is not enough, because it is not only ratings that use one.
+ * `4C X 95/50 mm²` is a phase-and-earth size and its 95 is the size being
+ * ordered, so throwing the pair away would refuse a real row. A rating counts
+ * up — 600/1000, 6350/11000, 0.6/1 — and a phase-and-earth size counts down.
+ * Unsuffixed pairs are struck out only when the second figure is the larger.
+ */
+const VOLTAGE = /(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)(\s*k?v\b)?|\d+(?:\.\d+)?\s*k?v\b/gi;
+
+function withoutVoltages(text: string): string {
+  return text.replace(VOLTAGE, (match, lower?: string, upper?: string, unit?: string) => {
+    // The `11kV` form: nothing captured, and the unit already settles it.
+    if (lower === undefined || upper === undefined) return ' ';
+    if (unit !== undefined) return ' ';
+    return Number(upper) > Number(lower) ? ' ' : match;
+  });
+}
+
+/**
  * Words, for phrase matching.
  *
  * `fold` is the dictionary's own normaliser and is used unchanged so the two
@@ -418,6 +448,20 @@ export function readCandidates({
       .filter((r) => r !== ''),
   );
 
+  /*
+    Every heading the answer names, so a row cannot read a figure out of one.
+
+    Collected from the whole answer rather than from each row, for the same
+    reason the row numbers above are: a heading governs a group, so the sibling
+    rows beneath it name it even when the row quoting it as a cell does not.
+  */
+  const everyHeading = new Set(
+    candidates
+      .flatMap((c) => c.evidence?.heading ?? [])
+      .filter((h): h is string => typeof h === 'string')
+      .map((h) => oneLine(h).toLowerCase()),
+  );
+
   const lines: string[] = [];
   const sources: SourceRegion[] = [];
   const refused: string[] = [];
@@ -469,10 +513,27 @@ export function readCandidates({
     */
     const cells = row.join(' \n ');
     const cited = [...row, ...heading].join(' \n ');
+    /*
+      And, narrower again, the text a *figure* may be read out of.
+
+      Two things are struck out of the row's own cells before a number is
+      looked for in them. A cell that is word for word a heading, because the
+      split between row and heading is the model's own and nothing stopped it
+      filing the same line on both sides — or on the row side alone, which is
+      the same smuggle through a narrower door. And every voltage designation,
+      which is printed on the row but is not a figure anyone is ordering.
+
+      Construction terms still come from `cited`, headings and all: reading the
+      construction off the heading is what the heading is quoted for. It is
+      only figures that have to be printed on the row itself.
+    */
+    const figures = withoutVoltages(
+      row.filter((q) => !everyHeading.has(oneLine(q).toLowerCase())).join(' \n '),
+    );
 
     // Rule 2: a number that is not printed on this row is not this row's number.
     const size = positive(candidate.sizeMm2);
-    if (size === null || !statesNumber(cells, size)) {
+    if (size === null || !statesNumber(figures, size)) {
       refused.push(`${ref} was left out — no conductor size is printed in its own cells.`);
       continue;
     }
@@ -486,7 +547,7 @@ export function readCandidates({
     }
 
     const quantity = positive(candidate.quantity);
-    if (quantity === null || !statesNumber(cells, quantity)) {
+    if (quantity === null || !statesNumber(figures, quantity)) {
       refused.push(
         `${ref} was left out — no quantity is printed in its own cells, and a ` +
           'quantity is not worth guessing at.',
@@ -586,7 +647,7 @@ export function readCandidates({
 
     const cores = positive(candidate.cores);
     const head =
-      cores !== null && Number.isInteger(cores) && statesNumber(cells, cores)
+      cores !== null && Number.isInteger(cores) && statesNumber(figures, cores)
         ? `${cores}C x ${num(size)} mm²`
         : `${num(size)} mm²`;
 
