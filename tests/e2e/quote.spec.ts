@@ -71,6 +71,20 @@ test.describe('from enquiry to quote', () => {
     await expect(page.getByRole('link', { name: number }).first()).toBeVisible();
   });
 
+  test('a line with no quantity is priced by nobody, and the job says why', async ({ page }) => {
+    // The line the placeholder offers, with the length cut off. It matches
+    // the library exactly and must still not come out as a price.
+    await signIn(page, ACCOUNTS.engineer, '/');
+    await page.getByPlaceholder(/3C x 50mm2/).fill('3C x 50mm2 Cu XLPE SWA PVC 1kV');
+    await page.getByRole('button', { name: 'Price this enquiry' }).click();
+    await page.waitForURL(/\/jobs\/[^/]+$/);
+
+    await expect(page.getByText(/No quantity is stated on this line/)).toBeVisible();
+    const approve = page.getByRole('button', { name: /^Approve/ });
+    await expect(approve).toBeDisabled();
+    await expect(approve).toHaveText(/still needs pricing/);
+  });
+
   test('a blank enquiry is refused, and says so', async ({ page }) => {
     await signIn(page, ACCOUNTS.engineer, '/');
     // The textarea is `required`, so the browser stops an empty submit before
