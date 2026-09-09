@@ -661,14 +661,16 @@ describe('a row the model reported twice', () => {
     schedule that numbers nothing would otherwise come back with one line.
   */
   it('still keeps two unnumbered rows that read alike', () => {
-    // No `5.1` among the quotes: a row claiming no number while quoting one is
-    // refused by the guard above this, which is a different test's subject.
+    // On a document that numbers nothing. A row claiming no number while
+    // quoting figures the document prints under one is refused by the
+    // neighbouring-row guard, which is a different test's subject.
+    const NOBODY = ['2C X 16 mm² m 19000', '2C X 16 mm² m 19000'].join('\n');
     const unnumbered: Candidate = {
       ...once,
       itemRef: null,
       evidence: { row: ['2C X 16 mm²', '19000'], heading: [] },
     };
-    const out = read([unnumbered, unnumbered], TWICE).document;
+    const out = read([unnumbered, unnumbered], NOBODY).document;
 
     expect(out.lines).toHaveLength(2);
   });
@@ -816,5 +818,127 @@ describe('a heading the row quotes as if it were a cell', () => {
     const out = read([honest], RATED).document;
 
     expect(out.lines).toEqual(['3C x 120 mm² XLPE — 800 m']);
+  });
+});
+
+describe('a figure quoted off a neighbouring row', () => {
+  /*
+    The last door left open after the row-number guards. Column extraction
+    hands the model a bare `4000` cell: it carries no row number of its own,
+    it is genuinely printed in the document, and nothing in the answer says
+    which row it was printed on. Quote it under 5.1 and 5.1 comes out at 5.2's
+    quantity — every figure printed, every check passed.
+
+    The document knows which row it was printed on. Every cell a figure is
+    read out of is looked for in the text, and when every line it sits on is
+    a line the document numbers as somebody else's row, that is whose cell it
+    is.
+  */
+  it('will not take a bare quantity cell printed on the row below', () => {
+    const crossed: Candidate = {
+      ...row51,
+      quantity: 4000,
+      evidence: { row: ['5.1', '2C X 16 mm²', '4000'], heading: [] },
+    };
+    const out = read([crossed]).document;
+
+    expect(out.lines).toEqual([]);
+    expect(out.notes.join(' ')).toContain('quotes a cell belonging to item 5.2');
+  });
+
+  it('will not take a description cell printed on the row below', () => {
+    const crossed: Candidate = {
+      ...row51,
+      cores: 3,
+      sizeMm2: 2.5,
+      evidence: { row: ['5.1', '3C X 2.5 mm²', '19000'], heading: [] },
+    };
+    const out = read([crossed]).document;
+
+    expect(out.lines).toEqual([]);
+    expect(out.notes.join(' ')).toContain('quotes a cell belonging to item 5.2');
+  });
+
+  it('will not let a row escape by claiming no number', () => {
+    // No row number to check against, and the figures read off a row the
+    // document numbers 5.2 all the same.
+    const nobody: Candidate = {
+      ...row51,
+      itemRef: null,
+      quantity: 4000,
+      evidence: { row: ['2C X 16 mm²', '4000'], heading: [] },
+    };
+    const out = read([nobody]).document;
+
+    expect(out.lines).toEqual([]);
+    // Both cells are printed under a number the row does not claim; the first
+    // of them is the one named.
+    expect(out.notes.join(' ')).toContain('quotes a cell belonging to item 5.1');
+  });
+
+  it('keeps a figure the row prints as well as its neighbour', () => {
+    // Two rows at 4,000 m. The cell is on 5.2's line, and on 5.1's.
+    const text = ['5.1 2C X 16 mm² m 4000', '5.2 3C X 2.5 mm² m 4000'].join('\n');
+    const out = readCandidates({
+      candidates: [
+        {
+          ...row51,
+          quantity: 4000,
+          armour: null,
+          insulation: null,
+          voltage: null,
+          evidence: { row: ['5.1', '2C X 16 mm²', '4000'], heading: [] },
+        },
+      ],
+      text,
+    }).document;
+
+    expect(out.lines).toEqual(['2C x 16 mm² — 4,000 m']);
+  });
+
+  it('keeps a row the reader put one cell to a line', () => {
+    // Column extraction at its worst: no line carries a row number and
+    // anything else, so no line says whose the figure is. Nothing to refuse on.
+    const text = ['5.1', '2C X 16 mm²', 'm', '19000', '5.2', '3C X 2.5 mm²', 'm', '4000'].join(
+      '\n',
+    );
+    const out = readCandidates({
+      candidates: [
+        {
+          ...row51,
+          armour: null,
+          insulation: null,
+          voltage: null,
+          evidence: { row: ['5.1', '2C X 16 mm²', '19000'], heading: [] },
+        },
+      ],
+      text,
+    }).document;
+
+    expect(out.lines).toEqual(['2C x 16 mm² — 19,000 m']);
+  });
+
+  it('keeps a description an earlier row shares', () => {
+    // `1C x 630 mm²` is item 2 near the top and item 4.2 further down. The
+    // cell is printed on 4.2's own line, whatever else it is printed on.
+    const text = ['2 1C X 630 mm² m 1300', '4.2 1C X 630 mm² m 5600'].join('\n');
+    const out = readCandidates({
+      candidates: [
+        {
+          ...row51,
+          itemRef: '4.2',
+          cores: 1,
+          sizeMm2: 630,
+          quantity: 5600,
+          armour: null,
+          insulation: null,
+          voltage: null,
+          evidence: { row: ['4.2', '1C X 630 mm²', '5600'], heading: [] },
+        },
+      ],
+      text,
+    }).document;
+
+    expect(out.lines).toEqual(['1C x 630 mm² — 5,600 m']);
   });
 });

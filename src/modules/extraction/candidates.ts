@@ -585,10 +585,24 @@ export function readCandidates({
         .filter((v): v is number => typeof v === 'number')
         .map((v) => String(v)),
     );
+    const cores = positive(candidate.cores);
+    /*
+      The cells a figure is actually read out of. A bare `4000` carries no
+      row number for the three checks above to see, so for these the question
+      is put to the document instead: see `printedUnder`.
+    */
+    const figured = row.filter(
+      (q) =>
+        !everyHeading.has(oneLine(q).toLowerCase()) &&
+        (statesNumber(q, size) ||
+          statesNumber(q, quantity) ||
+          (cores !== null && statesNumber(q, cores))),
+    );
     const intruder =
       row.map((q) => leadingRef(q)).find((r) => r !== null && r !== numbered) ??
       row.map((q) => bareRef(q, mine)).find((r) => r !== null && r !== numbered) ??
-      [...everyRef].find((other) => other !== numbered && row.some((q) => statesRef(q, other)));
+      [...everyRef].find((other) => other !== numbered && row.some((q) => statesRef(q, other))) ??
+      figured.map((q) => printedUnder(folded, q, numbered)).find((r) => r !== undefined);
     if (intruder !== undefined) {
       refused.push(
         `${ref} was left out — it quotes a cell belonging to item ${intruder}, so ` +
@@ -645,7 +659,6 @@ export function readCandidates({
       (t): t is string => t !== null,
     );
 
-    const cores = positive(candidate.cores);
     const head =
       cores !== null && Number.isInteger(cores) && statesNumber(figures, cores)
         ? `${cores}C x ${num(size)} mm²`
@@ -742,6 +755,47 @@ const BARE_REF = /^\s*['"’]?\s*(\d+\.\d+)\s*$/;
 function bareRef(text: string, mine: ReadonlySet<string>): string | null {
   const found = BARE_REF.exec(oneLine(text))?.[1];
   return found === undefined || mine.has(found) ? null : found;
+}
+
+/**
+ * Whose row the document prints a cell on, when it is not this row's.
+ *
+ * The three checks before this one read the row number off the cell: a cell
+ * that opens with one, a cell that is one, a cell that says one the answer
+ * knows. A bare `4000` does none of those. It is a figure and nothing else,
+ * it is printed in the document, and quoted under 5.1 it passes every check
+ * there is — while the document, one line down, prints it against 5.2. The
+ * last hole after the other three were closed, and the one the split
+ * evidence was always going to leave: the answer's grouping is the model's,
+ * and a bare cell carries nothing to check it against.
+ *
+ * Except the page. Every line the cell is printed on is looked at, and if
+ * each of them is a line the document itself numbers as somebody else's row,
+ * that is whose cell it is. One line that is this row's, or that the document
+ * numbers as nobody's, clears it: two rows ordering 4,000 m print the figure
+ * twice, and a description shared between item 2 and item 4.2 is on 4.2's own
+ * line whatever else it is on. A reader that put every cell on a line of its
+ * own numbers no line at all, and that document is trusted as it was — the
+ * layout cannot be reconstructed from line distances, which is where this
+ * file started, and it is not tried again here.
+ *
+ * `leadingRef` is what says a line is numbered, so `6 mm² Y/G CABLE` is not a
+ * row called six, for the same reason it is not one as a cell.
+ */
+function printedUnder(
+  folded: readonly string[],
+  quote: string,
+  numbered: string | null,
+): string | undefined {
+  const needle = oneLine(quote).toLowerCase();
+  let foreign: string | undefined;
+  for (const line of folded) {
+    if (!line.includes(needle)) continue;
+    const owner = leadingRef(line);
+    if (owner === null || owner === numbered) return undefined;
+    foreign ??= owner;
+  }
+  return foreign;
 }
 
 /** Is this text's own row number `ref` — as a whole word, not a digit inside one? */
