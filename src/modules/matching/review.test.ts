@@ -70,7 +70,7 @@ describe('reviewJob', () => {
   });
 
   it('never gives an unpriced line a price — it has no field to hold one', () => {
-    const job = run('3C x 50mm2 aluminium XLPE SWA PVC 1kV');
+    const job = run('3C x 50mm2 aluminium XLPE SWA PVC 1kV — 500 m');
     const line = job.lines[0]!;
 
     expect(isPriced(line)).toBe(false);
@@ -81,33 +81,26 @@ describe('reviewJob', () => {
 
   it('states why the job cannot be approved, rather than sitting grey and silent', () => {
     const job = run(
-      [realLine(), '3C x 50mm2 aluminium XLPE SWA PVC 1kV'].join('\n'),
+      [realLine(' — 500 m'), '3C x 50mm2 aluminium XLPE SWA PVC 1kV — 500 m'].join('\n'),
     );
     expect(job.blockers).toHaveLength(1);
     expect(job.blockers[0]).toContain('1 line still needs pricing');
   });
 
   it('has no blockers when every line priced cleanly', () => {
-    expect(run(realLine()).blockers).toHaveLength(0);
+    expect(run(realLine(' — 500 m')).blockers).toHaveLength(0);
   });
 
   it('ignores blank lines in a pasted block', () => {
     expect(run(`\n${realLine()}\n\n\n`).lines).toHaveLength(1);
   });
 
-  it('falls back to a default quantity when the line does not state one', () => {
-    const job = run(realLine());
-    const line = job.lines[0]!;
-    if (!hasBreakdown(line)) throw new Error('expected priced');
-    expect(line.breakdown.quantity.toString()).toBe('1000');
-  });
-
   it('sorts red before amber before green', () => {
     const job = run(
       [
-        realLine(),
-        '3C x 50mm2 aluminium XLPE SWA PVC 1kV',
-        '6C x 50mm2 Cu XLPE SWA PVC 1kV',
+        realLine(' — 500 m'),
+        '3C x 50mm2 aluminium XLPE SWA PVC 1kV — 500 m',
+        '6C x 50mm2 Cu XLPE SWA PVC 1kV — 500 m',
       ].join('\n'),
     );
     const sorted = [...job.lines].sort((a, b) =>
@@ -122,7 +115,7 @@ describe('reviewJob', () => {
   });
 
   it('reports unfamiliar wording so the screen can ask about it', () => {
-    const job = run('3C x 50mm2 Cu XLPE SWA PVC 1kV with unobtainium bedding');
+    const job = run('3C x 50mm2 Cu XLPE SWA PVC 1kV with unobtainium bedding — 500 m');
     expect(job.unknownTerms).toContain('unobtainium');
   });
 
@@ -262,7 +255,7 @@ describe('decisions a human makes about a line', () => {
 
   it('counts decided lines, and sinks them below untouched ones', () => {
     const job = withDecisions(
-      [ALUMINIUM, '6C x 50mm2 Cu XLPE SWA PVC 1kV'].join('\n'),
+      [ALUMINIUM, '6C x 50mm2 Cu XLPE SWA PVC 1kV — 200 m'].join('\n'),
       [
         {
           position: 0,
@@ -368,5 +361,74 @@ describe('worstStatus', () => {
       const j = job(input);
       expect(worstStatus(j.lines)).toBe([...j.lines].sort(byReviewOrder)[0]!.status);
     }
+  });
+});
+
+describe('a line that states no quantity', () => {
+  /*
+    Found in a sweep of the pricing path. A line with no length was priced at
+    a thousand metres — a default nobody typed, shown nowhere on the screen —
+    and came out Exact with a total, and approvable. A quote for 1,000 m of
+    cable the customer never asked for is the one thing this app is built
+    not to do: the failure mode is refusing to answer.
+  */
+  const NO_QUANTITY = realLine();
+  const AT = new Date('2026-07-25T09:00:00Z');
+
+  it('is not priced, whatever it matched', () => {
+    const job = run(NO_QUANTITY);
+    const line = job.lines[0]!;
+
+    expect(line.status).toBe('partial');
+    expect(isPriced(line)).toBe(false);
+    expect('reason' in line.match ? line.match.reason : '').toMatch(/quantity/i);
+  });
+
+  it('blocks approval, and says why', () => {
+    const job = run(NO_QUANTITY);
+
+    expect(job.blockers.length).toBeGreaterThan(0);
+    expect(job.blockers.join(' ')).toMatch(/pricing/);
+    expect(pricedValueOf(job.lines).toString()).toBe('0');
+  });
+
+  it('cannot be bought back with a hand price — a rate times nothing is nothing', () => {
+    const decisions: LineDecision[] = [
+      {
+        position: 0,
+        override: { unitRate: dec('7.5'), reason: 'Quoted last year.', by: 'An Engineer', at: AT },
+      },
+    ];
+    const job = reviewJob(NO_QUANTITY, LIBRARY, RATES, SOURCE_TERMS, BOUNDS, { decisions });
+
+    expect(job.lines[0]!.status).toBe('partial');
+    expect(isPriced(job.lines[0]!)).toBe(false);
+    expect(job.blockers.length).toBeGreaterThan(0);
+  });
+
+  it('nor with a chosen product', () => {
+    const decisions: LineDecision[] = [
+      {
+        position: 0,
+        choice: {
+          productCode: real.id,
+          sourceSheet: real.sourceSheet ?? '',
+          reason: 'This one.',
+          by: 'An Engineer',
+          at: AT,
+        },
+      },
+    ];
+    const job = reviewJob(NO_QUANTITY, LIBRARY, RATES, SOURCE_TERMS, BOUNDS, { decisions });
+
+    expect(job.lines[0]!.status).toBe('partial');
+    expect(isPriced(job.lines[0]!)).toBe(false);
+  });
+
+  it('is priced the moment a quantity is written on it', () => {
+    const job = run(realLine(' — 250 m'));
+
+    expect(job.lines[0]!.status).toBe('exact');
+    expect(job.blockers).toEqual([]);
   });
 });

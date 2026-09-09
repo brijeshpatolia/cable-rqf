@@ -147,6 +147,23 @@ describe('planSupersede', () => {
     if (!spurious.ok) expect(spurious.error.code).toBe('PREMIUM_MISMATCH');
   });
 
+  it('refuses a drawing premium that is not a finite, non-negative number', () => {
+    /*
+      Found in a sweep. `NaN` is a Decimal, and `NaN.isNegative()` is false,
+      so a premium of NaN went through — and copper plus NaN is NaN, on every
+      copper cable in the library, on every quote, with nothing held for
+      review because NaN is outside no band.
+    */
+    for (const premium of ['NaN', 'Infinity', '-Infinity', '-0.1']) {
+      const out = planSupersede(
+        request({ code: 'CC1F', newValue: dec('2'), newDrawingPremium: dec(premium) }),
+        linked('1.973232', '0.108407'),
+      );
+      expect(out.ok, premium).toBe(false);
+      if (!out.ok) expect(out.error.code, premium).toBe('NEGATIVE');
+    }
+  });
+
   it('audits the premium, not the rate, when an LME-linked code changes', () => {
     // The stored rate on an LME-linked code is derived from copper and is not
     // what the owner edits — the premium is. The audit must say so.
@@ -264,6 +281,16 @@ describe('planCreateRate', () => {
     if (!result.ok) expect(result.error.code).toBe('PREMIUM_MISMATCH');
   });
 
+  it('refuses an LME-linked code whose premium is not a finite, non-negative number', () => {
+    for (const premium of ['NaN', 'Infinity', '-0.5']) {
+      const out = planCreateRate(
+        request({ lmeLinked: true, drawingPremium: dec(premium) }),
+        undefined,
+      );
+      expect(out.ok, premium).toBe(false);
+    }
+  });
+
   it('accepts an LME-linked code that states its premium', () => {
     const result = planCreateRate(
       request({ lmeLinked: true, drawingPremium: dec('0.42') }),
@@ -304,6 +331,16 @@ describe('planAmendRate', () => {
     reason: 'Supplier renamed the grade.',
     actor: ACTOR,
     ...over,
+  });
+
+  it('refuses a premium that is not a finite, non-negative number', () => {
+    for (const premium of ['NaN', 'Infinity', '-1']) {
+      const out = planAmendRate(
+        request({ lmeLinked: true, drawingPremium: dec(premium) }),
+        linked('1.973232', '0.108407'),
+      );
+      expect(out.ok, premium).toBe(false);
+    }
   });
 
   it('carries the rate forward untouched', () => {
