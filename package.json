@@ -17,6 +17,7 @@
     "db:migrate": "prisma migrate dev",
     "db:reset": "prisma migrate reset --force --skip-seed",
     "test:db": "dotenv -e .env -- vitest run --config vitest.integration.config.ts",
+    "test:e2e": "dotenv -e .env -- playwright test",
     "user:add": "tsx scripts/create-user.ts",
     "user:add:http": "dotenv -e .env -- tsx scripts/neon-user.ts",
     "postinstall": "prisma generate",
@@ -41,6 +42,7 @@
   },
   "devDependencies": {
     "@neondatabase/serverless": "^1.1.0",
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4.0.0",
     "@types/node": "^22.10.0",
     "@types/pg": "^8.20.0",
