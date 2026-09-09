@@ -165,7 +165,6 @@ export interface Job {
 }
 
 export interface ReviewOptions {
-  readonly defaultQuantityMetres?: string;
   /** What humans have already decided, keyed by line position. */
   readonly decisions?: readonly LineDecision[];
   /** The Rate Owner's allowlist. Empty means no line can ever tier Close. */
@@ -182,12 +181,7 @@ export function reviewJob(
   bounds: Bounds,
   options: ReviewOptions = {},
 ): Job {
-  const {
-    defaultQuantityMetres = '1000',
-    decisions = [],
-    substitutions = [],
-    dictionary,
-  } = options;
+  const { decisions = [], substitutions = [], dictionary } = options;
 
   const byPosition = new Map(decisions.map((d) => [d.position, d]));
 
@@ -200,9 +194,31 @@ export function reviewJob(
       const match = matchLine(extracted, products, { substitutions });
       const decision = byPosition.get(index);
 
-      const quantity = {
-        metres: metres(extracted.quantityMetres.value ?? defaultQuantityMetres),
-      };
+      /*
+        No quantity, no price — before any decision is looked at.
+
+        There used to be a default of a thousand metres here, and a line with
+        no length came out Exact, with a total, and approvable: a quote for
+        1,000 m nobody asked for, with the quantity column showing nothing.
+        A hand price or a chosen product does not mend it, because a rate
+        times an unknown length is an unknown total. The line is open until
+        someone writes the length on it.
+      */
+      if (extracted.quantityMetres.value === null) {
+        return {
+          index,
+          extracted,
+          match: {
+            tier: 'partial',
+            reason:
+              'No quantity is stated on this line. Write the length on it — ' +
+              'a line with no length has no price.',
+            nearest: 'nearest' in match ? match.nearest : [],
+          },
+          status: 'partial',
+        };
+      }
+      const quantity = { metres: metres(extracted.quantityMetres.value) };
 
       // ── An engineer named the product ──────────────────────────────────
       //

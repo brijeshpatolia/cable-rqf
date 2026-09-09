@@ -291,6 +291,36 @@ export function statesNumber(text: string, value: number): boolean {
 }
 
 /**
+ * A voltage designation, which is never a size, a quantity or a core count.
+ *
+ * Every cable row states its rating, and a rating is written as numbers:
+ * `600/1000V` prints a 600 and a 1000 on the row, `11kV` prints an 11. They
+ * are printed in the row's own cells, so the rule that a figure has to be
+ * printed on the row was satisfied by them, and a claim of 600 m came back as
+ * 600 m of cable with nothing said about it.
+ *
+ * Two forms are struck out. A figure carrying the unit — `11kV`, `415V` — and
+ * a pair separated by a slash, which is how U0/U is printed whether or not the
+ * unit follows it.
+ *
+ * The slash alone is not enough, because it is not only ratings that use one.
+ * `4C X 95/50 mm²` is a phase-and-earth size and its 95 is the size being
+ * ordered, so throwing the pair away would refuse a real row. A rating counts
+ * up — 600/1000, 6350/11000, 0.6/1 — and a phase-and-earth size counts down.
+ * Unsuffixed pairs are struck out only when the second figure is the larger.
+ */
+const VOLTAGE = /(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)(\s*k?v\b)?|\d+(?:\.\d+)?\s*k?v\b/gi;
+
+function withoutVoltages(text: string): string {
+  return text.replace(VOLTAGE, (match, lower?: string, upper?: string, unit?: string) => {
+    // The `11kV` form: nothing captured, and the unit already settles it.
+    if (lower === undefined || upper === undefined) return ' ';
+    if (unit !== undefined) return ' ';
+    return Number(upper) > Number(lower) ? ' ' : match;
+  });
+}
+
+/**
  * Words, for phrase matching.
  *
  * `fold` is the dictionary's own normaliser and is used unchanged so the two
@@ -418,11 +448,34 @@ export function readCandidates({
       .filter((r) => r !== ''),
   );
 
+  /*
+    Every heading the answer names, so a row cannot read a figure out of one.
+
+    Collected from the whole answer rather than from each row, for the same
+    reason the row numbers above are: a heading governs a group, so the sibling
+    rows beneath it name it even when the row quoting it as a cell does not.
+  */
+  const everyHeading = new Set(
+    candidates
+      .flatMap((c) => c.evidence?.heading ?? [])
+      .filter((h): h is string => typeof h === 'string')
+      .map((h) => oneLine(h).toLowerCase()),
+  );
+
   const lines: string[] = [];
   const sources: SourceRegion[] = [];
   const refused: string[] = [];
   /** Rows that were kept, but with something about them worth saying. */
   const doubted: string[] = [];
+  /**
+   * How far down the document the last kept row was found.
+   *
+   * A schedule is read top to bottom, so this is what tells two identical
+   * descriptions apart: see `lineOf`.
+   */
+  let sofar = 0;
+  /** Row numbers already on the list, so none of them goes on it twice. */
+  const priced = new Set<string>();
 
   for (const candidate of candidates) {
     const numbered =
@@ -460,10 +513,27 @@ export function readCandidates({
     */
     const cells = row.join(' \n ');
     const cited = [...row, ...heading].join(' \n ');
+    /*
+      And, narrower again, the text a *figure* may be read out of.
+
+      Two things are struck out of the row's own cells before a number is
+      looked for in them. A cell that is word for word a heading, because the
+      split between row and heading is the model's own and nothing stopped it
+      filing the same line on both sides — or on the row side alone, which is
+      the same smuggle through a narrower door. And every voltage designation,
+      which is printed on the row but is not a figure anyone is ordering.
+
+      Construction terms still come from `cited`, headings and all: reading the
+      construction off the heading is what the heading is quoted for. It is
+      only figures that have to be printed on the row itself.
+    */
+    const figures = withoutVoltages(
+      row.filter((q) => !everyHeading.has(oneLine(q).toLowerCase())).join(' \n '),
+    );
 
     // Rule 2: a number that is not printed on this row is not this row's number.
     const size = positive(candidate.sizeMm2);
-    if (size === null || !statesNumber(cells, size)) {
+    if (size === null || !statesNumber(figures, size)) {
       refused.push(`${ref} was left out — no conductor size is printed in its own cells.`);
       continue;
     }
@@ -477,7 +547,7 @@ export function readCandidates({
     }
 
     const quantity = positive(candidate.quantity);
-    if (quantity === null || !statesNumber(cells, quantity)) {
+    if (quantity === null || !statesNumber(figures, quantity)) {
       refused.push(
         `${ref} was left out — no quantity is printed in its own cells, and a ` +
           'quantity is not worth guessing at.',
@@ -515,14 +585,51 @@ export function readCandidates({
         .filter((v): v is number => typeof v === 'number')
         .map((v) => String(v)),
     );
+    const cores = positive(candidate.cores);
+    /*
+      The cells a figure is actually read out of. A bare `4000` carries no
+      row number for the three checks above to see, so for these the question
+      is put to the document instead: see `printedUnder`.
+    */
+    const figured = row.filter(
+      (q) =>
+        !everyHeading.has(oneLine(q).toLowerCase()) &&
+        (statesNumber(q, size) ||
+          statesNumber(q, quantity) ||
+          (cores !== null && statesNumber(q, cores))),
+    );
     const intruder =
       row.map((q) => leadingRef(q)).find((r) => r !== null && r !== numbered) ??
       row.map((q) => bareRef(q, mine)).find((r) => r !== null && r !== numbered) ??
-      [...everyRef].find((other) => other !== numbered && row.some((q) => statesRef(q, other)));
+      [...everyRef].find((other) => other !== numbered && row.some((q) => statesRef(q, other))) ??
+      figured.map((q) => printedUnder(folded, q, numbered)).find((r) => r !== undefined);
     if (intruder !== undefined) {
       refused.push(
         `${ref} was left out — it quotes a cell belonging to item ${intruder}, so ` +
           'what was read is not all one row. Read that row off the file by hand.',
+      );
+      continue;
+    }
+
+    /*
+      And no row twice.
+
+      Nothing stopped the same row being answered twice, and the second copy
+      passed every check the first one did — it quotes the same real cells off
+      the same real row. It came out as a second identical line, which is the
+      one kind of duplicate that is not obvious on the screen and is expensive
+      everywhere else: two lines at 19,000 m is 38,000 m of cable quoted, and
+      the enquiry looks like the customer asked for it.
+
+      Raised in review against the source-line work, where it shows up as the
+      second copy being pushed to a later occurrence of its own description.
+      That is the smaller half. The line itself should never have been there.
+    */
+    if (numbered !== null && priced.has(numbered)) {
+      refused.push(
+        `${ref} was read twice and the second reading was left out — a schedule ` +
+          'prints a row once, and pricing it twice would order the cable twice ' +
+          'over. Check the document if this row really is repeated.',
       );
       continue;
     }
@@ -552,19 +659,23 @@ export function readCandidates({
       (t): t is string => t !== null,
     );
 
-    const cores = positive(candidate.cores);
     const head =
-      cores !== null && Number.isInteger(cores) && statesNumber(cells, cores)
+      cores !== null && Number.isInteger(cores) && statesNumber(figures, cores)
         ? `${cores}C x ${num(size)} mm²`
         : `${num(size)} mm²`;
 
-    const at = lineOf(folded, row, quantity);
+    const at = lineOf(folded, row, quantity, sofar);
+    // One past it: the next row cannot be the row that was just placed.
+    sofar = at + 1;
     lines.push(`${[head, ...spec].join(' ')} — ${metres.toLocaleString('en-GB')} m`);
     sources.push({
       line: at,
       where:
         placeOf(regions, all[at]?.at ?? 0, 'line') + (numbered === null ? '' : `, item ${numbered}`),
     });
+    // Only once it is on the list, so a row refused above does not lock out a
+    // sound reading of the same row behind it.
+    if (numbered !== null) priced.add(numbered);
   }
 
   const notes = [
@@ -646,6 +757,47 @@ function bareRef(text: string, mine: ReadonlySet<string>): string | null {
   return found === undefined || mine.has(found) ? null : found;
 }
 
+/**
+ * Whose row the document prints a cell on, when it is not this row's.
+ *
+ * The three checks before this one read the row number off the cell: a cell
+ * that opens with one, a cell that is one, a cell that says one the answer
+ * knows. A bare `4000` does none of those. It is a figure and nothing else,
+ * it is printed in the document, and quoted under 5.1 it passes every check
+ * there is — while the document, one line down, prints it against 5.2. The
+ * last hole after the other three were closed, and the one the split
+ * evidence was always going to leave: the answer's grouping is the model's,
+ * and a bare cell carries nothing to check it against.
+ *
+ * Except the page. Every line the cell is printed on is looked at, and if
+ * each of them is a line the document itself numbers as somebody else's row,
+ * that is whose cell it is. One line that is this row's, or that the document
+ * numbers as nobody's, clears it: two rows ordering 4,000 m print the figure
+ * twice, and a description shared between item 2 and item 4.2 is on 4.2's own
+ * line whatever else it is on. A reader that put every cell on a line of its
+ * own numbers no line at all, and that document is trusted as it was — the
+ * layout cannot be reconstructed from line distances, which is where this
+ * file started, and it is not tried again here.
+ *
+ * `leadingRef` is what says a line is numbered, so `6 mm² Y/G CABLE` is not a
+ * row called six, for the same reason it is not one as a cell.
+ */
+function printedUnder(
+  folded: readonly string[],
+  quote: string,
+  numbered: string | null,
+): string | undefined {
+  const needle = oneLine(quote).toLowerCase();
+  let foreign: string | undefined;
+  for (const line of folded) {
+    if (!line.includes(needle)) continue;
+    const owner = leadingRef(line);
+    if (owner === null || owner === numbered) return undefined;
+    foreign ??= owner;
+  }
+  return foreign;
+}
+
 /** Is this text's own row number `ref` — as a whole word, not a digit inside one? */
 function statesRef(text: string, ref: string): boolean {
   return oneLine(text)
@@ -684,13 +836,44 @@ function isQuoted(whole: string, rawText: string, quote: string): boolean {
  * above it, which every row in a group quotes and which would otherwise send
  * half a schedule to the same place.
  *
- * Every occurrence of a quote counts, not the first. `3C X 185 mm²` sits
- * inside item 3.3's row and again on its own as the top half of item 5.7
- * thirty lines later, and taking the first would open the source view on the
- * wrong row.
+ * Every occurrence of a quote counts, not the first, and `after` is which one
+ * to take: the earliest line this row is allowed to claim, one past where the
+ * previous row was found.
+ *
+ * A real schedule runs the same cores × size through two groups at two
+ * voltages, and the description is the one thing those two rows genuinely
+ * share. On the RFQ this was built against, `1C x 630 mm²` is item 2 near the
+ * top and item 4.2 twenty lines below it; taking the first sent 4.2's source
+ * view to item 2's row — the same words, a different cable, and 1,300 m shown
+ * against a line the engineer was checking for 5,600. A citation that opens on
+ * the wrong row is worse than none, because the check appears to pass.
+ *
+ * Rows are read in the order they are printed, so document order tells the two
+ * apart, and it costs one number to carry. Past rather than at, because two
+ * rows ordering the same length are common — a pair of 2,000 m rows would
+ * otherwise both land on the first of them.
+ *
+ * When no occurrence sits that far down — a quote that only appears above, a
+ * model that answered out of order — the first is still a better answer than
+ * line 0, and the floor follows what was found rather than running ahead of
+ * it, so one such row does not drag the rest of the schedule with it.
  */
-function lineOf(folded: readonly string[], row: readonly string[], quantity: number): number {
-  const at = (quote: string) => folded.findIndex((l) => l.includes(oneLine(quote).toLowerCase()));
+function lineOf(
+  folded: readonly string[],
+  row: readonly string[],
+  quantity: number,
+  after: number,
+): number {
+  const at = (quote: string) => {
+    const needle = oneLine(quote).toLowerCase();
+    let first = -1;
+    for (let i = 0; i < folded.length; i += 1) {
+      if (!folded[i]!.includes(needle)) continue;
+      if (i >= after) return i;
+      if (first < 0) first = i;
+    }
+    return first;
+  };
 
   /*
     Longest first, and nothing trivially short.
@@ -706,12 +889,24 @@ function lineOf(folded: readonly string[], row: readonly string[], quantity: num
   const distinctive = longestFirst(row.filter((q) => oneLine(q).length >= 6));
 
   const carriesQuantity = (q: string) => statesNumber(q, quantity);
-  // The short cells last, because `5.3` and `m 0` still place a row better
-  // than line 0 does — line 0 is the document's first heading.
+  /*
+    A cell carrying the quantity beats one that does not, at any length.
+
+    `5600` is four characters, so it was being held back as too short to be
+    distinctive — and the row went to its description instead, which is exactly
+    the cell two rows in different groups have in common. Short is not the same
+    as ambiguous: the quantity is the rightmost figure on a row and the least
+    shared thing on it, while a description is the most shared. Asking for it
+    at any length, before falling back to text that identifies nothing, is what
+    separates 5,600 m from the 1,300 m row printed the same way above it.
+
+    The cells carrying neither still come last, because `5.3` and `m 0` place a
+    row better than line 0 does — line 0 is the document's first heading.
+  */
   for (const [quotes, test] of [
     [distinctive, carriesQuantity],
-    [distinctive, () => true],
     [longestFirst(row), carriesQuantity],
+    [distinctive, () => true],
     [longestFirst(row), () => true],
   ] as const) {
     for (const quote of quotes) {

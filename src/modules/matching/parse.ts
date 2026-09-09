@@ -54,8 +54,24 @@ const CORES_SIZE =
 /** A bare size with no core count: `50mm2`. */
 const SIZE_ONLY = /(\d+(?:\.\d+)?)\s*(?:sq\.?\s*)?(?:mm2|mm²|mm\^2)/i;
 
-/** `12,000 m`, `12000 metres`, `2.5 km`. */
-const QUANTITY = /(\d[\d,]*(?:\.\d+)?)\s*(k?m|metres?|meters?|kms?)\b/i;
+/**
+ * `12,000 m`, `12000 metres`, `2.5 km`.
+ *
+ * Only a figure the parser is sure of. The first version took any run of
+ * digits and commas, and it read `1,5 km` as fifteen kilometres, `12 000 m`
+ * as nought metres, and `1e3 m` as three — each a number that was printed,
+ * none of them the number that was meant. A quantity is the figure a price
+ * is multiplied by, so a misread one is not a small error.
+ *
+ * So the figure has to be whole digits, or digits in proper thousands
+ * groups, with an optional decimal point; and it may not follow a digit, a
+ * separator, a sign or a letter, nor a short digit group that would make it
+ * the tail of a space-grouped number. Anything else is left unread, which
+ * hands the line to a person — the right outcome for a quantity nobody is
+ * sure of.
+ */
+const QUANTITY =
+  /(?<![\d.,\-a-z])(?<!(?:^|\s)\d{1,3}\s)(\d{1,3}(?:,\d{3})+|\d+)(\.\d+)?\s*(k?m|metres?|meters?|kms?)\b/i;
 
 const PAIR_WORDS = /(?:pr|pair|pairs)/i;
 
@@ -95,10 +111,11 @@ export function parseLine(
 
   const qty = QUANTITY.exec(text);
   if (qty !== null) {
-    const amount = dec(qty[1]!.replace(/,/g, ''));
-    const unit = qty[2]!.toLowerCase();
+    const amount = dec(`${qty[1]!.replace(/,/g, '')}${qty[2] ?? ''}`);
+    const unit = qty[3]!.toLowerCase();
     const metres = unit.startsWith('k') ? amount.times(1000) : amount;
-    quantity = found(metres, qty[0]);
+    // Nought metres is not a quantity anyone is ordering; the line asks.
+    if (metres.greaterThan(0)) quantity = found(metres, qty[0]);
     specText = text.replace(qty[0], ' ');
   }
 

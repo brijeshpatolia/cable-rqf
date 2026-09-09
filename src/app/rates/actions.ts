@@ -59,6 +59,21 @@ function parseDecimal(raw: FormDataEntryValue | null, what: string) {
   }
 }
 
+/**
+ * The drawing premium field, which may be left blank.
+ *
+ * It used to go straight through `dec()`, which throws on "abc" — so a typo
+ * in this one box crashed the action instead of answering it, while the rate
+ * box beside it was parsed properly. Blank is not a premium; anything else
+ * has to be a number, and the plan decides whether a number is allowed.
+ */
+function parsePremium(raw: FormDataEntryValue | null) {
+  const text = String(raw ?? '').trim();
+  if (text === '') return { value: undefined } as const;
+  const parsed = parseDecimal(text, 'drawing premium');
+  return 'error' in parsed ? parsed : ({ value: parsed.value } as const);
+}
+
 export async function supersedeRate(
   _previous: ActionResult | null,
   form: FormData,
@@ -74,8 +89,8 @@ export async function supersedeRate(
   const value = parseDecimal(form.get('value'), 'rate');
   if ('error' in value) return { error: value.error };
 
-  const premiumRaw = String(form.get('premium') ?? '').trim();
-  const premium = premiumRaw === '' ? undefined : dec(premiumRaw);
+  const premium = parsePremium(form.get('premium'));
+  if ('error' in premium) return { error: premium.error };
 
   const current = await rateWriter.currentRate(kind, code);
 
@@ -84,7 +99,7 @@ export async function supersedeRate(
       kind,
       code,
       newValue: value.value,
-      ...(premium !== undefined ? { newDrawingPremium: premium } : {}),
+      ...(premium.value !== undefined ? { newDrawingPremium: premium.value } : {}),
       at: now(),
       reason,
       actor: permitted.actor,
@@ -157,7 +172,8 @@ export async function createRate(
   const value = parseDecimal(form.get('value'), 'rate');
   if ('error' in value) return { error: value.error };
 
-  const premiumRaw = String(form.get('premium') ?? '').trim();
+  const premium = parsePremium(form.get('premium'));
+  if ('error' in premium) return { error: premium.error };
 
   const plan = planCreateRate(
     {
@@ -167,7 +183,7 @@ export async function createRate(
       uom: String(form.get('uom') ?? ''),
       value: value.value,
       lmeLinked,
-      ...(premiumRaw === '' ? {} : { drawingPremium: dec(premiumRaw) }),
+      ...(premium.value === undefined ? {} : { drawingPremium: premium.value }),
       at: now(),
       reason: String(form.get('reason') ?? ''),
       actor: permitted.actor,
@@ -196,7 +212,8 @@ export async function amendRate(
 
   const kind = String(form.get('kind') ?? 'material') as RateKind;
   const code = String(form.get('code') ?? '').trim();
-  const premiumRaw = String(form.get('premium') ?? '').trim();
+  const premium = parsePremium(form.get('premium'));
+  if ('error' in premium) return { error: premium.error };
 
   const plan = planAmendRate(
     {
@@ -205,7 +222,7 @@ export async function amendRate(
       description: String(form.get('description') ?? ''),
       uom: String(form.get('uom') ?? ''),
       lmeLinked: form.get('lmeLinked') === 'on',
-      ...(premiumRaw === '' ? {} : { drawingPremium: dec(premiumRaw) }),
+      ...(premium.value === undefined ? {} : { drawingPremium: premium.value }),
       at: now(),
       reason: String(form.get('reason') ?? ''),
       actor: permitted.actor,

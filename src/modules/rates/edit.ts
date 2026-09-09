@@ -79,6 +79,20 @@ export interface CurrentRate {
 }
 
 /**
+ * A drawing premium the copper formula can be trusted with.
+ *
+ * `NaN` is a Decimal, and `NaN.isNegative()` is false, so a premium typed as
+ * "NaN" walked through the sign check — and copper plus NaN is NaN, on every
+ * copper cable in the library, with nothing held for review because NaN is
+ * outside no band. The premium is added to the metal value on every LME-linked
+ * line, so it is checked the way the LME price itself is: finite, and not
+ * below nought.
+ */
+function soundPremium(premium: Decimal): boolean {
+  return premium.isFinite() && !premium.isNegative();
+}
+
+/**
  * Decides whether a rate change is legitimate, and what it becomes.
  *
  * Every refusal names the reason in words the engineer can act on. None of
@@ -137,6 +151,9 @@ export function planSupersede(
   }
 
   const premium = request.newDrawingPremium ?? null;
+  if (premium !== null && !soundPremium(premium)) {
+    return err(fail('NEGATIVE', 'A drawing premium has to be a number, and not a negative one.'));
+  }
 
   // An LME-linked code prices off copper plus its own drawing premium; a fixed
   // code has no premium at all. Mismatching the two would be accepted by the
@@ -349,6 +366,12 @@ export function planCreateRate(
       message: 'An LME-linked code prices off copper plus a drawing premium. The premium is the part you set.',
     });
   }
+  if (request.drawingPremium !== undefined && !soundPremium(request.drawingPremium)) {
+    return err({
+      code: 'NEGATIVE',
+      message: 'A drawing premium has to be a number, and not a negative one.',
+    });
+  }
   if (!lmeLinked && (!request.value.isFinite() || request.value.lessThan(0))) {
     return err({ code: 'NOT_LATER', message: 'A rate cannot be negative.' });
   }
@@ -438,6 +461,12 @@ export function planAmendRate(
     return err({
       code: 'PREMIUM_MISMATCH',
       message: 'Linking a code to the LME means it prices off copper plus a drawing premium. Set the premium.',
+    });
+  }
+  if (premium !== null && !soundPremium(premium)) {
+    return err({
+      code: 'NEGATIVE',
+      message: 'A drawing premium has to be a number, and not a negative one.',
     });
   }
 

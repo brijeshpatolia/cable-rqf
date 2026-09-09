@@ -42,6 +42,34 @@ describe('parsing', () => {
     expect(parseLine('3C x 50mm2 1kV, 2.5 km').quantityMetres.value?.toString()).toBe('2500');
   });
 
+  it('reads a quantity written with a decimal point or thousands commas', () => {
+    expect(parseLine('3C x 50mm2 12,000.5 m').quantityMetres.value?.toString()).toBe('12000.5');
+    expect(parseLine('3C x 50mm2 1,500 m').quantityMetres.value?.toString()).toBe('1500');
+    expect(parseLine('3C x 50mm2 500 m').quantityMetres.value?.toString()).toBe('500');
+    expect(parseLine('3C x 50mm2 0.5 km').quantityMetres.value?.toString()).toBe('500');
+    expect(parseLine('4C x 16mm2 - 8,500 m').quantityMetres.value?.toString()).toBe('8500');
+  });
+
+  it('leaves a quantity it could misread empty, rather than reading it wrong', () => {
+    /*
+      Found in a sweep. Each of these had a number in it and the parser took
+      one — `1,5 km` as fifteen kilometres, `12 000 m` as nought metres,
+      `1e3 m` as three. A quantity the app is not sure of is a quantity a
+      person is asked for; a wrong one goes out as a price.
+    */
+    const unread = (text: string) => parseLine(`3C x 50mm2 ${text}`).quantityMetres.value;
+
+    expect(unread('1,5 km'), 'a decimal comma').toBeNull();
+    expect(unread('12,00 m'), 'a comma that is not a thousands group').toBeNull();
+    expect(unread('1.234,5 m'), 'European grouping').toBeNull();
+    expect(unread('12 000 m'), 'a space as a thousands separator').toBeNull();
+    expect(unread('12 500 m'), 'a space as a thousands separator, non-zero tail').toBeNull();
+    expect(unread('1e3 m'), 'an exponent').toBeNull();
+    expect(unread('-500 m'), 'a negative').toBeNull();
+    expect(unread('0 m'), 'nought').toBeNull();
+    expect(unread('0.0 km'), 'nought in kilometres').toBeNull();
+  });
+
   it('does not read a quantity as a size', () => {
     const l = parseLine('4C x 16mm2 Cu XLPE SWA PVC 1kV 12000 m');
     expect(l.sizeMm2.value?.toString()).toBe('16');

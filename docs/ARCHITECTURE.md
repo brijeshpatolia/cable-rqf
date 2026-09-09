@@ -210,11 +210,11 @@ Not built, and worth knowing: **calls are not cached and the model's raw answer 
 | `core/` | Vitest | Decimal, rounding, branded types |
 | `modules/costing` | Vitest + **parity harness** | All 99 products reproduce their spreadsheet at 4 dp |
 | `modules/*` | Vitest | Pure logic — fast, no database |
-| Property tests | fast-check | Every breakdown leaf has provenance; no unpriced line can carry a price |
-| Integration | Vitest + Testcontainers | Effective dating, exclusion constraints, reconstruction |
-| E2E | Playwright | Keyboard-only path: rate edit → reprice → quote → export |
-| Visual | Playwright screenshots of `/_dev/gallery` | The design system doesn't drift |
-| a11y | axe + token contrast check | Every token pair at its intended size |
+| Property tests | *not built* | Planned on fast-check: every breakdown leaf has provenance; no unpriced line can carry a price. The type system enforces the second today; the first is checked by the parity harness on every fixture |
+| Integration | Vitest against a real Postgres (`tests/db`, `pnpm test:db`) | Effective dating, exclusion constraints, quote round trip, parity read back from the store. Skipped, not faked, when `DATABASE_URL` is unset — there is no Testcontainers; point it at any migrated, seeded database |
+| E2E | Playwright (`tests/e2e`, `pnpm test:e2e`) | The critical path in a real browser against the production build: sign in → paste → priced → approve → quote → both exports. And the door: anonymous redirects, exports refused unsigned, a viewer who cannot approve, sign-out that ends the session row |
+| Visual | *not built* | Planned: Playwright screenshots of a gallery route, so the design system doesn't drift. There is no gallery route yet |
+| a11y | *not built* | Planned: axe plus a token contrast check, every token pair at its intended size |
 
 The type system does the rest of the work: **an unpriced line has no price field to render, not a null one.** The spec's central rule — *if it isn't confident, it doesn't price* — is enforced by the shape of the types, so violating it doesn't compile.
 
@@ -232,6 +232,8 @@ src/
   ui/            Design system primitives + tokens
 tests/
   parity/        The 99 golden fixtures
+  db/            Against a real Postgres: round trips, invariants, parity read back
+  e2e/           Playwright, against the production build (needs the same .env)
 docs/            PROJECT_PLAN.md · DESIGN_SYSTEM.md · ARCHITECTURE.md
 ```
 

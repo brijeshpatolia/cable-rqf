@@ -507,3 +507,438 @@ describe('the request schema', () => {
     }
   });
 });
+
+/**
+ * The same cable printed twice, at two voltages.
+ *
+ * This is the commonest shape in a real MTO and the one the source view was
+ * getting wrong: a schedule runs `1C x 630 mm²` through the 6kV group and
+ * again through the 1kV group, so the description — the longest thing either
+ * row quotes — identifies both of them and neither.
+ *
+ * The bug these cover was found on a live upload, not in review. The lines
+ * themselves were right; every citation on the second group pointed at the
+ * first, which is the worse failure, because an engineer checking a line
+ * against the document sees a row that looks plausible and moves on.
+ */
+describe('two rows the document describes with the same words', () => {
+  const TWO_GROUPS = [
+    'SL. NO DESCRIPTION UNIT QTY',
+    '6350/11000V, STRANDED ANNEALED PLAIN COPPER CONDUCTOR, XLPE INSULATION, COPPER TAPE SCREEN AND OVERALL EXTRUDED PVC OUTER SHEATH',
+    '2 1C X 630 mm² m 1300',
+    '600/1000V, STRANDED ANNEALED PLAIN COPPER CONDUCTOR, XLPE INSULATION, ALUMINIUM WIRE ARMOUR AND OVERALL EXTRUDED PVC OUTER SHEATH',
+    '4.2 1C X 630 mm² m 5600',
+  ].join('\n');
+
+  /*
+    Description and quantity in separate cells, which is how they arrive when
+    the columns come apart — and the reason the row cannot be placed by its
+    description alone.
+  */
+  const upper: Candidate = {
+    ...row51,
+    itemRef: '2',
+    cores: 1,
+    sizeMm2: 630,
+    quantity: 1300,
+    armour: null,
+    voltage: null,
+    evidence: { row: ['2', '1C X 630 mm²', '1300'], heading: [] },
+  };
+  const lower: Candidate = {
+    ...upper,
+    itemRef: '4.2',
+    quantity: 5600,
+    evidence: { row: ['4.2', '1C X 630 mm²', '5600'], heading: [] },
+  };
+
+  it('sends each row to its own line, not both to the first', () => {
+    const out = read([upper, lower], TWO_GROUPS).document;
+
+    expect(out.lines).toHaveLength(2);
+    expect(out.sources.map((s) => s.line)).toEqual([2, 4]);
+  });
+
+  it('cites the row carrying the quantity the engineer is checking', () => {
+    const out = read([upper, lower], TWO_GROUPS).document;
+    const cited = TWO_GROUPS.split('\n')[out.sources[1]!.line]!;
+
+    // The whole point: open the citation and 5,600 is what is printed there.
+    expect(out.lines[1]).toContain('5,600 m');
+    expect(cited).toContain('5600');
+    expect(cited).not.toContain('1300');
+  });
+
+  /*
+    A quantity that is itself repeated.
+
+    Two rows ordering 2,000 m of the same size is ordinary, and then no cell
+    either row quotes is unique to it. Document order is all that is left.
+  */
+  const SAME_QUANTITY = [
+    'SL. NO DESCRIPTION UNIT QTY',
+    '6350/11000V, STRANDED ANNEALED PLAIN COPPER CONDUCTOR, XLPE INSULATION, COPPER TAPE SCREEN AND OVERALL EXTRUDED PVC OUTER SHEATH',
+    '3.1 3C X 95 mm² m 2000',
+    '600/1000V, STRANDED ANNEALED PLAIN COPPER CONDUCTOR, XLPE INSULATION, ALUMINIUM WIRE ARMOUR AND OVERALL EXTRUDED PVC OUTER SHEATH',
+    '5.4 3C X 95 mm² m 2000',
+  ].join('\n');
+
+  it('tells two identical rows apart by where they are printed', () => {
+    const first: Candidate = {
+      ...upper,
+      itemRef: '3.1',
+      cores: 3,
+      sizeMm2: 95,
+      quantity: 2000,
+      evidence: { row: ['3.1', '3C X 95 mm²', '2000'], heading: [] },
+    };
+    const second: Candidate = {
+      ...first,
+      itemRef: '5.4',
+      evidence: { row: ['5.4', '3C X 95 mm²', '2000'], heading: [] },
+    };
+    const out = read([first, second], SAME_QUANTITY).document;
+
+    expect(out.sources.map((s) => s.line)).toEqual([2, 4]);
+  });
+
+  /*
+    And the floor is a preference, not a rule. A model that answers out of
+    order would otherwise push every row it got wrong to line 0 — the
+    document's first heading, which is nobody's row.
+  */
+  it('still places a row whose line is above the one before it', () => {
+    const out = read([lower, upper], TWO_GROUPS).document;
+
+    expect(out.sources.map((s) => s.line)).toEqual([4, 2]);
+  });
+});
+
+/**
+ * The same row answered twice.
+ *
+ * Nothing required the model to report a row once, and the second copy passed
+ * every check the first one did — it quotes the same real cells off the same
+ * real row. Raised in review against the source-line work, where it shows as
+ * the copy being pushed onto a later row that happens to read the same way.
+ *
+ * That is the smaller half of it. The line should not have been there at all:
+ * two identical lines is the one duplicate that looks unremarkable on screen
+ * and doubles a quantity everywhere it matters.
+ */
+describe('a row the model reported twice', () => {
+  /* A later row reading exactly the same, which is where the copy would go. */
+  const TWICE = [
+    'SL. NO DESCRIPTION UNIT QTY',
+    '600/1000V, STRANDED ANNEALED PLAIN COPPER CONDUCTOR, XLPE INSULATION, GALVANIZED STEEL ROUND WIRE ARMOUR',
+    '5.1 2C X 16 mm² m 19000',
+    '6.1 2C X 16 mm² m 19000',
+  ].join('\n');
+
+  const once: Candidate = {
+    ...row51,
+    armour: null,
+    voltage: null,
+    evidence: { row: ['5.1', '2C X 16 mm²', '19000'], heading: [] },
+  };
+
+  it('prices it once, and says why the second reading went', () => {
+    const out = read([once, once], TWICE).document;
+
+    expect(out.lines).toHaveLength(1);
+    expect(out.notes.join(' ')).toContain('read twice');
+  });
+
+  it('does not send the second copy to the next row that reads the same', () => {
+    const out = read([once, once], TWICE).document;
+
+    // Line 3 is item 6.1 — a different row of the schedule, and not this one.
+    expect(out.sources.map((s) => s.line)).toEqual([2]);
+  });
+
+  /*
+    Only rows the document numbers. Two unnumbered rows are ordinary — a
+    schedule that numbers nothing would otherwise come back with one line.
+  */
+  it('still keeps two unnumbered rows that read alike', () => {
+    // On a document that numbers nothing. A row claiming no number while
+    // quoting figures the document prints under one is refused by the
+    // neighbouring-row guard, which is a different test's subject.
+    const NOBODY = ['2C X 16 mm² m 19000', '2C X 16 mm² m 19000'].join('\n');
+    const unnumbered: Candidate = {
+      ...once,
+      itemRef: null,
+      evidence: { row: ['2C X 16 mm²', '19000'], heading: [] },
+    };
+    const out = read([unnumbered, unnumbered], NOBODY).document;
+
+    expect(out.lines).toHaveLength(2);
+  });
+});
+
+describe('a figure the row prints only as a voltage', () => {
+  /*
+    Every cable row prints a voltage, and a voltage is written as numbers:
+    `600/1000V` puts a 600 and a 1000 on the row, `11kV` puts an 11 there.
+    Nothing about them is a length or a size, but they are printed in the
+    row's own cells, so the rule that a figure must be printed on the row was
+    satisfied by them — and a claim of 600 m came out as 600 m of cable.
+  */
+  const VOLTAGES = [
+    'SL. NO DESCRIPTION UNIT QTY',
+    '7.1 2C X 16 mm² 600/1000V m 19000',
+    '7.2 1C X 630 mm² 6350/11000V m 1000',
+    '7.3 3C X 95 mm² 11kV m 2500',
+    '7.4 4C X 95/50 mm² m 3000',
+  ].join('\n');
+
+  const at = (line: string): Candidate => ({
+    ...row51,
+    itemRef: line.split(' ')[0]!,
+    evidence: { row: [line], heading: [] },
+  });
+  const r71 = at('7.1 2C X 16 mm² 600/1000V m 19000');
+  const r72 = { ...at('7.2 1C X 630 mm² 6350/11000V m 1000'), cores: 1, sizeMm2: 630 };
+  const r73 = { ...at('7.3 3C X 95 mm² 11kV m 2500'), cores: 3, sizeMm2: 95 };
+
+  it('will not order 600 m because the cable is rated 600/1000V', () => {
+    const out = read([{ ...r71, quantity: 600 }], VOLTAGES).document;
+
+    expect(out.lines).toEqual([]);
+    expect(out.notes.join(' ')).toContain('no quantity is printed');
+  });
+
+  it('will not take the upper half of the rating either', () => {
+    const out = read([{ ...r72, quantity: 11000 }], VOLTAGES).document;
+
+    expect(out.lines).toEqual([]);
+  });
+
+  it('will not read 11 m off an 11kV cable', () => {
+    const out = read([{ ...r73, quantity: 11 }], VOLTAGES).document;
+
+    expect(out.lines).toEqual([]);
+  });
+
+  it('will not size a conductor off the rating', () => {
+    const out = read([{ ...r71, sizeMm2: 600, quantity: 19000 }], VOLTAGES).document;
+
+    expect(out.lines).toEqual([]);
+    expect(out.notes.join(' ')).toContain('no conductor size is printed');
+  });
+
+  /*
+    And the same rows read honestly still come out. `1000` is printed twice on
+    7.2 — once as half the rating and once as the quantity — so a rule that
+    threw the row away rather than the rating would cost a real order.
+  */
+  it('still reads the quantity that is genuinely printed beside it', () => {
+    const out = read([{ ...r72, quantity: 1000 }, { ...r73, quantity: 2500 }], VOLTAGES).document;
+
+    expect(out.lines).toEqual([
+      '1C x 630 mm² — 1,000 m',
+      '3C x 95 mm² — 2,500 m',
+    ]);
+  });
+
+  /*
+    A slash between two numbers is not enough on its own. `4C X 95/50 mm²` is
+    a phase-and-earth size, not a rating, and its 95 is the size being ordered.
+    A rating counts up — 600/1000, 6350/11000 — and this one counts down.
+  */
+  it('leaves a phase-and-earth size alone', () => {
+    const r74 = { ...at('7.4 4C X 95/50 mm² m 3000'), cores: 4, sizeMm2: 95, quantity: 3000 };
+
+    expect(read([r74], VOLTAGES).document.lines).toEqual(['4C x 95 mm² — 3,000 m']);
+  });
+});
+
+describe('a heading the row quotes as if it were a cell', () => {
+  /*
+    The split between `evidence.row` and `evidence.heading` is the model's own
+    grouping, and nothing stopped it putting a heading line on both sides — or
+    only on the row side. Once it is there, every figure in that heading counts
+    as printed on the row, which is exactly what the split exists to prevent.
+
+    Headings are collected from the whole answer, the way row numbers already
+    are: a heading governs a group, so the sibling rows beneath it name it even
+    when the row doing the smuggling does not.
+  */
+  const RATED = [
+    'SL. NO DESCRIPTION UNIT QTY',
+    'XLPE INSULATED TO IEC 60502-1, 90 DEG C CONDUCTOR TEMPERATURE, ALUMINIUM WIRE ARMOUR',
+    '8.1 3C X 95 mm² m 2500',
+    '8.2 3C X 120 mm² m 800',
+  ].join('\n');
+  const RATED_HEAD =
+    'XLPE INSULATED TO IEC 60502-1, 90 DEG C CONDUCTOR TEMPERATURE, ALUMINIUM WIRE ARMOUR';
+
+  const honest: Candidate = {
+    ...row51,
+    itemRef: '8.2',
+    cores: 3,
+    sizeMm2: 120,
+    quantity: 800,
+    armour: null,
+    evidence: { row: ['8.2 3C X 120 mm² m 800'], heading: [RATED_HEAD] },
+  };
+
+  it('does not let the heading supply a quantity', () => {
+    const smuggler: Candidate = {
+      ...honest,
+      itemRef: '8.1',
+      sizeMm2: 95,
+      quantity: 90,
+      evidence: { row: ['8.1 3C X 95 mm² m 2500', RATED_HEAD], heading: [RATED_HEAD] },
+    };
+    const out = read([smuggler, honest], RATED).document;
+
+    expect(out.lines).toEqual(['3C x 120 mm² XLPE — 800 m']);
+    expect(out.notes.join(' ')).toContain('no quantity is printed');
+  });
+
+  it('does not let it in by naming the heading on one side only', () => {
+    const smuggler: Candidate = {
+      ...honest,
+      itemRef: '8.1',
+      sizeMm2: 95,
+      quantity: 90,
+      evidence: { row: ['8.1 3C X 95 mm² m 2500', RATED_HEAD], heading: [] },
+    };
+    const out = read([smuggler, honest], RATED).document;
+
+    expect(out.lines).toEqual(['3C x 120 mm² XLPE — 800 m']);
+  });
+
+  /*
+    The heading is still what the construction is read from — that is the whole
+    reason it is quoted. Only figures stop coming out of it.
+  */
+  it('still reads the construction off the heading it cites', () => {
+    const out = read([honest], RATED).document;
+
+    expect(out.lines).toEqual(['3C x 120 mm² XLPE — 800 m']);
+  });
+});
+
+describe('a figure quoted off a neighbouring row', () => {
+  /*
+    The last door left open after the row-number guards. Column extraction
+    hands the model a bare `4000` cell: it carries no row number of its own,
+    it is genuinely printed in the document, and nothing in the answer says
+    which row it was printed on. Quote it under 5.1 and 5.1 comes out at 5.2's
+    quantity — every figure printed, every check passed.
+
+    The document knows which row it was printed on. Every cell a figure is
+    read out of is looked for in the text, and when every line it sits on is
+    a line the document numbers as somebody else's row, that is whose cell it
+    is.
+  */
+  it('will not take a bare quantity cell printed on the row below', () => {
+    const crossed: Candidate = {
+      ...row51,
+      quantity: 4000,
+      evidence: { row: ['5.1', '2C X 16 mm²', '4000'], heading: [] },
+    };
+    const out = read([crossed]).document;
+
+    expect(out.lines).toEqual([]);
+    expect(out.notes.join(' ')).toContain('quotes a cell belonging to item 5.2');
+  });
+
+  it('will not take a description cell printed on the row below', () => {
+    const crossed: Candidate = {
+      ...row51,
+      cores: 3,
+      sizeMm2: 2.5,
+      evidence: { row: ['5.1', '3C X 2.5 mm²', '19000'], heading: [] },
+    };
+    const out = read([crossed]).document;
+
+    expect(out.lines).toEqual([]);
+    expect(out.notes.join(' ')).toContain('quotes a cell belonging to item 5.2');
+  });
+
+  it('will not let a row escape by claiming no number', () => {
+    // No row number to check against, and the figures read off a row the
+    // document numbers 5.2 all the same.
+    const nobody: Candidate = {
+      ...row51,
+      itemRef: null,
+      quantity: 4000,
+      evidence: { row: ['2C X 16 mm²', '4000'], heading: [] },
+    };
+    const out = read([nobody]).document;
+
+    expect(out.lines).toEqual([]);
+    // Both cells are printed under a number the row does not claim; the first
+    // of them is the one named.
+    expect(out.notes.join(' ')).toContain('quotes a cell belonging to item 5.1');
+  });
+
+  it('keeps a figure the row prints as well as its neighbour', () => {
+    // Two rows at 4,000 m. The cell is on 5.2's line, and on 5.1's.
+    const text = ['5.1 2C X 16 mm² m 4000', '5.2 3C X 2.5 mm² m 4000'].join('\n');
+    const out = readCandidates({
+      candidates: [
+        {
+          ...row51,
+          quantity: 4000,
+          armour: null,
+          insulation: null,
+          voltage: null,
+          evidence: { row: ['5.1', '2C X 16 mm²', '4000'], heading: [] },
+        },
+      ],
+      text,
+    }).document;
+
+    expect(out.lines).toEqual(['2C x 16 mm² — 4,000 m']);
+  });
+
+  it('keeps a row the reader put one cell to a line', () => {
+    // Column extraction at its worst: no line carries a row number and
+    // anything else, so no line says whose the figure is. Nothing to refuse on.
+    const text = ['5.1', '2C X 16 mm²', 'm', '19000', '5.2', '3C X 2.5 mm²', 'm', '4000'].join(
+      '\n',
+    );
+    const out = readCandidates({
+      candidates: [
+        {
+          ...row51,
+          armour: null,
+          insulation: null,
+          voltage: null,
+          evidence: { row: ['5.1', '2C X 16 mm²', '19000'], heading: [] },
+        },
+      ],
+      text,
+    }).document;
+
+    expect(out.lines).toEqual(['2C x 16 mm² — 19,000 m']);
+  });
+
+  it('keeps a description an earlier row shares', () => {
+    // `1C x 630 mm²` is item 2 near the top and item 4.2 further down. The
+    // cell is printed on 4.2's own line, whatever else it is printed on.
+    const text = ['2 1C X 630 mm² m 1300', '4.2 1C X 630 mm² m 5600'].join('\n');
+    const out = readCandidates({
+      candidates: [
+        {
+          ...row51,
+          itemRef: '4.2',
+          cores: 1,
+          sizeMm2: 630,
+          quantity: 5600,
+          armour: null,
+          insulation: null,
+          voltage: null,
+          evidence: { row: ['4.2', '1C X 630 mm²', '5600'], heading: [] },
+        },
+      ],
+      text,
+    }).document;
+
+    expect(out.lines).toEqual(['1C x 630 mm² — 5,600 m']);
+  });
+});
